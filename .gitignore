@@ -1,0 +1,14 @@
+*.pyc
+*.png
+*.dot
+*.xml
+*.txt
+*.csv
+*.owl
+*.rdf
+*.bel
+*.db
+venv
+lib
+*~
+\#*#
