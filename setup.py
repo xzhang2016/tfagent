@@ -9,7 +9,7 @@ def main():
           long_description='TF Agent',
           author='Xue Zhang',
           author_email='xue.zhang@tufts.edu',
-          url='http://github.com/sorgerlab/bioagents',
+          url='https://github.com/xzhang2016/tfagent',
           packages=['tfta'],
           install_requires=['pysb', 'indra', 'pykqml', 'objectpath', 'rdflib',
                             'functools32', 'requests', 'lxml',
