@@ -3,13 +3,9 @@ TFTA module is to receive and decode messages and send responses from and to oth
 '''
 
 import sys
-#import re
 import logging
-from bioagents.trips import trips_module
-from bioagents.trips.kqml_performative import KQMLPerformative
-from bioagents.trips.kqml_list import KQMLList
+from kqml import KQMLModule, KQMLPerformative, KQMLList
 from tfta import TFTA, TFNotFoundException, TargetNotFoundException
-import xml.etree.ElementTree as ET
 from indra.trips.processor import TripsProcessor
 
 logger = logging.getLogger('TFTA')
@@ -45,9 +41,9 @@ class TFTA_Module(trips_module.TripsModule):
         if task_str == 'IS-TF-TARGET':
         	reply_content = self.respond_is_tf_target(content_list)
         elif task_str == 'FIND-TF-TARGET':
-        	reply_content = self.respond_find_tf_target(content_list)
+        	reply_content = self.respond_find_tf_targets(content_list)
         elif task_str == 'FIND-TARGET-TF':
-        	reply_content = self.respond_find_target_tf(content_list)
+        	reply_content = self.respond_find_target_tfs(content_list)
         else:
         	self.error_reply(msg, 'unknown request task ' + task_str)
         	return
@@ -97,7 +93,7 @@ class TFTA_Module(trips_module.TripsModule):
         reply_content.add(msg_str)
 		return reply_content
 		
-	def respond_find_tf_target(self, content_list):
+	def respond_find_tf_targets(self, content_list):
 		'''
 		Response content to find-tf-target request
 		For a tf, reply with the targets found
@@ -105,16 +101,17 @@ class TFTA_Module(trips_module.TripsModule):
 		tf_arg = content_list.get_keyword_arg(':tf')
 		tf = self._get_target(tf_arg)
 		tf_name = tf.name
-		target_names = self.tfta.find_targets(tf_name)
+		target_names, targetEntrezIDs = self.tfta.find_targets(tf_name)
 		
 		target_list_str = ''
-		for tg in target_names:
-			target_list_str += '(:name %s) ' % tg.encode('ascii', 'ignore')
+		for tg, ez in zip(target_names,targetEntrezIDs):
+			target_list_str += '(:name %s :EntrezID %s) ' % tg(tg, ez)
+			
 		reply_content = KQMLList.from_string(
             '(SUCCESS :targets (' + target_list_str + '))')
 		return reply_content
 		
-	def respond_find_target_tf(self, content_list):
+	def respond_find_target_tfs(self, content_list):
 		'''
 		Response content to find-target-tf request
 		For a target, reply the tfs found
