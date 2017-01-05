@@ -1,1 +1,10 @@
-This database currently tf-target pairs by combining 6 databases.
+This data has been collected from multiple different databases.
+It combines the following datasets into one:
+
+    TRED (2007)
+    ITFP (2008)
+    ENCODE (2012)
+    Neph2012 (2012)
+    TRRUST (2015)
+    Marbach2016 (2016)
+We will add more information into it.
