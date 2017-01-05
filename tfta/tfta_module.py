@@ -10,11 +10,10 @@ from indra.trips.processor import TripsProcessor
 
 logger = logging.getLogger('TFTA')
 
-class TFTA_Module(trips_module.TripsModule):
+class TFTA_Module(KQMLModule):
 	'''
 	TFTA module is used to receive and decode messages and send responses from and to other agents in the system
-	'''
-	
+    '''
 	def __init__(self, argv):
 		super(TFTA_Module, self).__init__(argv)
 		self.tasks = ['IS-TF-TARGET', 'FIND-TF-TARGET', 'FIND-TARGET-TF']
@@ -36,20 +35,20 @@ class TFTA_Module(trips_module.TripsModule):
         and call the appropriate function to prepare the response. A reply
         message is then sent back.
         '''
-        content_list = content
-        task_str = content_list[0].to_string().upper()
-        if task_str == 'IS-TF-TARGET':
-        	reply_content = self.respond_is_tf_target(content_list)
-        elif task_str == 'FIND-TF-TARGET':
-        	reply_content = self.respond_find_tf_targets(content_list)
-        elif task_str == 'FIND-TARGET-TF':
-        	reply_content = self.respond_find_target_tfs(content_list)
-        else:
-        	self.error_reply(msg, 'unknown request task ' + task_str)
-        	return
+		content_list = content
+		task_str = content_list[0].to_string().upper()
+		if task_str == 'IS-TF-TARGET':
+			reply_content = self.respond_is_tf_target(content_list)
+		elif task_str == 'FIND-TF-TARGET':
+			reply_content = self.respond_find_tf_targets(content_list)
+		elif task_str == 'FIND-TARGET-TF':
+			reply_content = self.respond_find_target_tfs(content_list)
+		else:
+			self.error_reply(msg, 'unknown request task ' + task_str)
+			return
         	
-        reply_msg = KQMLPerformative('reply')
-        reply_msg.set_parameter(':content', reply_content)
+		reply_msg = KQMLPerformative('reply')
+		reply_msg.set_parameter(':content', reply_content)
 		self.reply(msg, reply_msg)
 	
 	'''	
@@ -86,11 +85,11 @@ class TFTA_Module(trips_module.TripsModule):
 		status = 'SUCCESS'
 		if is_target:
 			is_target_str = 'TRUE'
-        else:
-            is_target_str = 'FALSE'
-        msg_str = '%s :is-tf-target %s' %\
+		else:
+			is_target_str = 'FALSE'
+		msg_str = '%s :is-tf-target %s' %\
                   (status, is_target_str)
-        reply_content.add(msg_str)
+		reply_content.add(msg_str)
 		return reply_content
 		
 	def respond_find_tf_targets(self, content_list):
@@ -105,7 +104,7 @@ class TFTA_Module(trips_module.TripsModule):
 		
 		target_list_str = ''
 		for tg, ez in zip(target_names,targetEntrezIDs):
-			target_list_str += '(:name %s :EntrezID %s) ' % tg(tg, ez)
+			target_list_str += '(:name %s :EntrezID %s) ' % (tg, ez)
 			
 		reply_content = KQMLList.from_string(
             '(SUCCESS :targets (' + target_list_str + '))')
@@ -128,21 +127,21 @@ class TFTA_Module(trips_module.TripsModule):
 		return reply_content
 		
 	def _get_target(self, target_arg):
-        target_str = str(target_arg)
-        target_str = self.decode_description('<ekb>' + target_str + '</ekb>')
-        tp = TripsProcessor(target_str)
-        terms = tp.tree.findall('TERM')
-        term_id = terms[0].attrib['id']
-        agent = tp._get_agent_by_id(term_id, None)
+		target_str = str(target_arg)
+		target_str = self.decode_description('<ekb>' + target_str + '</ekb>')
+		tp = TripsProcessor(target_str)
+		terms = tp.tree.findall('TERM')
+		term_id = terms[0].attrib['id']
+		agent = tp._get_agent_by_id(term_id, None)
 		return agent
 		
 	@staticmethod
-    def decode_description(descr):
-        if descr[0] == '"':
-            descr = descr[1:]
-        if descr[-1] == '"':
-            descr = descr[:-1]
-        descr = descr.replace('\\"', '"')
+	def decode_description(descr):
+		if descr[0] == '"':
+			descr = descr[1:]
+		if descr[-1] == '"':
+			descr = descr[:-1]
+		descr = descr.replace('\\"', '"')
 		return descr
 		
 if __name__ == "__main__":
