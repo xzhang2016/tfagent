@@ -20,7 +20,7 @@ class TFTA_Module(KQMLModule):
 		
 		#Send subscribe messages
 		for task in self.tasks:
-			msg_txt = '(subscrbe :content (request &key :content (%s . *)))' % task
+			msg_txt = '(subscribe :content (request &key :content (%s . *)))' % task
 			self.send(KQMLPerformative.from_string(msg_txt))
 		
 		#Instantiate a singleton TFTA agent
@@ -77,7 +77,7 @@ class TFTA_Module(KQMLModule):
 		
 		reply_content = KQMLList()
 		try:
-			is_target = self.tfta.is_tf_target(tf_name, target_name)
+			is_target = self.tfta.Is_tf_target(tf_name, target_name)
 		except TFNotFoundException:
 			reply_content.add('FAILURE :reason TF_NOT_FOUND')
 			return reply_content
