@@ -49,6 +49,21 @@ class TFTA:
  		
  		return False
  		
+ 	def Is_tf_target_tissue(self,tf_name,target_name,tissue_name):
+ 		'''
+ 		Return True if the tf regulates the target in a given tissue, and False if not
+ 		'''
+ 		if self.tfdb is not None:
+ 			t = (tf_name, tissue_name)
+ 			res = self.tfdb.execute("SELECT Target FROM Target2TF2Tissue WHERE TF = ? AND Tissue = ?", t).fetchall()
+ 			if not res:
+ 				raise TFNotFoundException
+ 			for r in res:
+ 				if r[0].upper() == target_name.upper():
+ 					return True
+ 		
+ 		return False
+ 		
 
 	def find_tfs(self,target_name):
 		'''
@@ -59,7 +74,23 @@ class TFTA:
  		if self.tfdb is not None:
  			t = (target_name,)
  			res = self.tfdb.execute("SELECT TF FROM CombinedDB "
- 									"WHERE Target = ? ", t).fetchall()
+ 									"WHERE Target = ?  ORDER BY TF", t).fetchall()
+ 			tf_names = [r[0] for r in res]
+ 		else:
+ 			tf_names = []
+ 				
+ 		return tf_names
+ 		
+ 	def find_tfs_tissue(self,target_name,tissue_name):
+		'''
+		Return TFs regulating the target in a given tissue
+		'''
+ 			
+ 		#query
+ 		if self.tfdb is not None:
+ 			t = (target_name,tissue_name)
+ 			res = self.tfdb.execute("SELECT TF FROM Target2TF2Tissue "
+ 									"WHERE Target = ? and Tissue = ? ORDER BY TF", t).fetchall()
  			tf_names = [r[0] for r in res]
  		else:
  			tf_names = []
@@ -75,7 +106,7 @@ class TFTA:
  		if self.tfdb is not None:
  			t = (tf_name,)
  			res = self.tfdb.execute("SELECT Target,TargetEntrezID FROM CombinedDB "
- 									"WHERE TF = ? ", t).fetchall()
+ 									"WHERE TF = ?  ORDER BY Target", t).fetchall()
  			target_names = [r[0] for r in res]
  			targetEntrez = [r[1] for r in res]
  		else:
@@ -83,6 +114,22 @@ class TFTA:
  			targetEntrez = []
  				
  		return target_names, targetEntrez
+ 		
+ 	def find_targets_tissue(self,tf_name, tissue_name):
+ 		'''
+		Return Targets regulated by the tf in a given tissue
+		'''
+		
+ 		#query
+ 		if self.tfdb is not None:
+ 			t = (tf_name, tissue_name)
+ 			res = self.tfdb.execute("SELECT Target FROM Target2TF2Tissue "
+ 									"WHERE TF = ? and Tissue = ? ORDER BY Target", t).fetchall()
+ 			target_names = [r[0] for r in res]	
+ 		else:
+ 			target_names = []
+ 				
+ 		return target_names
 		 							 
 
 #test functions
@@ -112,4 +159,28 @@ if __name__ == "__main__":
 		
 	else:
 		print 'ss4 is none'
+	
+	ss6=a.Is_tf_target_tissue('BSAP','USP1','bladder')
+	if ss6 is not None:
+		print 'ss6='+str(ss6)
+	else:
+		print 'ss6 is none'
+		
+	ss7=a.find_tfs_tissue('USP1','bladder')
+	if ss7 is not None:
+		print 'lenth(ss7)='+str(len(ss7))
+		print 'ss7='+','.join(ss7)
+		
+		ss77=set(ss7)
+		print 'length(ss77)='+str(len(ss77))
+		print 'ss77='+';'.join(ss77)
+	else:
+		print 'ss7 is none'
+		
+	ss8=a.find_targets_tissue('BSAP','bladder')
+	if ss8 is not None:
+		print 'ss8='+','.join(ss8)
+		
+	else:
+		print 'ss8 is none'
  			
