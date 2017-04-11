@@ -18,7 +18,7 @@ class TFTA_Module(KQMLModule):
 		super(TFTA_Module, self).__init__(argv)
 		self.tasks = ['IS-TF-TARGET', 'FIND-TF-TARGET', 'FIND-TARGET-TF',
 		              'FIND_PATHWAY_GENE', 'FIND_PATHWAY_DB_GENE', 'FIND_TF_PATHWAY',
-		              'FIND_GENE_PATHWAY', 'FIND_PATHWAY_CHEMICAL', 'FIND_TF_CHEMICAL',
+		              'FIND_GENE_PATHWAY', 'FIND_PATHWAY_KEYWORD', 'FIND_TF_KEYWORD',
 		              'FIND_COMMON_TF_GENES', 'FIND_OVERLAP_TARGETS_TF_GENES',
 		              'IS-TF-TARGET-TISSUE', 'FIND-TF-TARGET-TISSUE', 'FIND-TARGET-TF-TISSUE']
 		
@@ -55,9 +55,9 @@ class TFTA_Module(KQMLModule):
 			reply_content = self.respond_find_tf_pathway(content_list)
 		elif task_str == 'FIND_GENE_PATHWAY':
 			reply_content = self.respond_find_gene_pathway(content_list)
-		elif task_str == 'FIND_PATHWAY_CHEMICAL':
+		elif task_str == 'FIND_PATHWAY_KEYWORD':
 			reply_content = self.respond_find_pathway_chemical(content_list)
-		elif task_str == 'FIND_TF_CHEMICAL':
+		elif task_str == 'FIND_TF_KEYWORD':
 			reply_content = self.respond_find_tf_chemical(content_list)
 		elif task_str == 'FIND_COMMON_TF_GENES':
 			reply_content = self.respond_find_common_tfs_genes(content_list)
@@ -365,7 +365,7 @@ class TFTA_Module(KQMLModule):
 		
 	def respond_find_pathway_chemical(self, content_list):
 		'''
-		Response content to FIND_PATHWAY_CHEMICAL request
+		Response content to FIND_PATHWAY_KEYWORD request
 		For a given chemical name, reply the pathways involving the chemical
 		'''
 		chemical_arg = content_list.get_keyword_arg(':chemical')
@@ -388,7 +388,7 @@ class TFTA_Module(KQMLModule):
 		
 	def respond_find_tf_chemical(self, content_list):
 		'''
-		Response content to FIND_TF_CHEMICAL request
+		Response content to FIND_TF_KEYWORD request
 		For a given chemical name, reply the tfs within the pathways involving the chemical
 		'''
 		chemical_arg = content_list.get_keyword_arg(':chemical')
