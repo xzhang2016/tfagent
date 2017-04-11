@@ -368,7 +368,7 @@ class TFTA_Module(KQMLModule):
 		Response content to FIND_PATHWAY_KEYWORD request
 		For a given chemical name, reply the pathways involving the chemical
 		'''
-		chemical_arg = content_list.get_keyword_arg(':chemical')
+		chemical_arg = content_list.get_keyword_arg(':keyword')
 		chemical_name = chemical_arg[0].to_string()
 		
 		reply_content = KQMLList()
@@ -391,7 +391,7 @@ class TFTA_Module(KQMLModule):
 		Response content to FIND_TF_KEYWORD request
 		For a given chemical name, reply the tfs within the pathways involving the chemical
 		'''
-		chemical_arg = content_list.get_keyword_arg(':chemical')
+		chemical_arg = content_list.get_keyword_arg(':keyword')
 		chemical_name = chemical_arg[0].to_string()
 		
 		reply_content = KQMLList()
