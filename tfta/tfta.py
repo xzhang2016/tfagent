@@ -76,7 +76,7 @@ class TFTA:
  			
  		#query
  		if self.tfdb is not None:
- 			t = (target_names[1],)
+ 			t = (target_names[0],)
  			res = self.tfdb.execute("SELECT TF FROM CombinedDB "
  									"WHERE Target = ?  ORDER BY TF", t).fetchall()
  			tf_names = [r[0] for r in res]
@@ -376,7 +376,7 @@ class TFTA:
 		
  		#query
  		if self.tfdb is not None:
- 			t = (tf_names[1],)
+ 			t = (tf_names[0],)
  			res = self.tfdb.execute("SELECT Target,TargetEntrezID FROM CombinedDB "
  									"WHERE TF = ?  ORDER BY Target", t).fetchall()
  			target_names = [r[0] for r in res]
