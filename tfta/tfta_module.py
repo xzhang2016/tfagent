@@ -168,16 +168,19 @@ class TFTA_Module(KQMLModule):
 	def respond_find_tf_targets(self, content_list):
 		'''
 		Response content to find-tf-target request
-		For a tf, reply with the targets found
+		For a tf list, reply with the targets found
 		'''
 		tf_arg = content_list.get_keyword_arg(':tf')
-		tf = self._get_target(tf_arg)
-		tf_name = tf.name
-		target_names, targetEntrezIDs = self.tfta.find_targets(tf_name)
+		tfs = self._get_targets(tf_arg)
+		tf_names = []
+		for tf in tfs:
+			tf_names.append(tf.name)
+			
+		target_names = self.tfta.find_targets(tf_names)
 		
 		target_list_str = ''
-		for tg, ez in zip(target_names,targetEntrezIDs):
-			target_list_str += '(:name %s :EntrezID %s) ' % (tg, ez)
+		for tg in target_names:
+			target_list_str += '(:name %s ) ' % tg.encode('ascii', 'ignore')
 			
 		reply_content = KQMLList.from_string(
             '(SUCCESS :targets (' + target_list_str + '))')
@@ -213,12 +216,15 @@ class TFTA_Module(KQMLModule):
 	def respond_find_target_tfs(self, content_list):
 		'''
 		Response content to find-target-tf request
-		For a target, reply the tfs found
+		For a target list, reply the tfs found
 		'''
 		target_arg = content_list.get_keyword_arg(':target')
-		target = self._get_target(target_arg)
-		target_name = target.name
-		tf_names = self.tfta.find_tfs(target_name)
+		targets = self._get_targets(target_arg)
+		target_names = []
+		for target in targets:
+			target_names.append(target.name)
+			
+		tf_names = self.tfta.find_tfs(target_names)
 		tf_list_str = ''
 		for tf in tf_names:
 			tf_list_str += '(:name %s) ' % tf.encode('ascii', 'ignore')

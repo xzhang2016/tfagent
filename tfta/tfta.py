@@ -69,17 +69,24 @@ class TFTA:
  		return False
  		
 
-	def find_tfs(self,target_name):
+	def find_tfs(self,target_names):
 		'''
-		Return TFs regulating the target
+		Return TFs regulating all the given targets
 		'''
  			
  		#query
  		if self.tfdb is not None:
- 			t = (target_name,)
+ 			t = (target_names[1],)
  			res = self.tfdb.execute("SELECT TF FROM CombinedDB "
  									"WHERE Target = ?  ORDER BY TF", t).fetchall()
  			tf_names = [r[0] for r in res]
+ 			
+ 			if len(target_names)>1:
+ 				for i in range(1,len(target_names)):
+ 					t = (target_names[i],)
+ 					res = self.tfdb.execute("SELECT TF FROM CombinedDB "
+ 									"WHERE Target = ?  ORDER BY TF", t).fetchall()
+ 					tf_names = list(set(tf_names) & set([r[0] for r in res]))
  		else:
  			tf_names = []
  				
@@ -362,23 +369,29 @@ class TFTA:
  			
  		return pathwayId,pathwayName,tflist
  			
- 	def find_targets(self,tf_name):
+ 	def find_targets(self,tf_names):
  		'''
-		Return Targets regulated by the tf
+		Return Targets regulated by the tf or tf list
 		'''
 		
  		#query
  		if self.tfdb is not None:
- 			t = (tf_name,)
+ 			t = (tf_names[1],)
  			res = self.tfdb.execute("SELECT Target,TargetEntrezID FROM CombinedDB "
  									"WHERE TF = ?  ORDER BY Target", t).fetchall()
  			target_names = [r[0] for r in res]
- 			targetEntrez = [r[1] for r in res]
+ 			if len(tf_names) > 1:
+ 				for i in range(1,len(tf_names)):
+ 					t = (tf_names[i],)
+ 					res = self.tfdb.execute("SELECT Target,TargetEntrezID FROM CombinedDB "
+ 									"WHERE TF = ?  ORDER BY Target", t).fetchall()
+ 					target_names = list(set(target_names) & set([r[0] for r in res]))
+ 			#targetEntrez = [r[1] for r in res]
  		else:
  			target_names = []
- 			targetEntrez = []
+ 			#targetEntrez = []
  				
- 		return target_names, targetEntrez
+ 		return target_names
  		
  	def find_overlap_targets_tfs_genes(self,tf_names,target_names):
  		'''
@@ -438,19 +451,19 @@ if __name__ == "__main__":
 		print 'ss2='+str(ss2)
 	else:
 		print 'ss2 is none'
-	
-	ss3 = a.find_tfs('ELF3') 
+	'''
+	ss3 = a.find_tfs(['ELF3','KRAS']) 
 	if ss3 is not None:
 		print 'lenth(ss3)='+str(len(ss3))
 		print 'ss3='+','.join(ss3)
 		
-	ss4,ss5 = a.find_targets('FOS')
+	ss4 = a.find_targets(['FOS','STAT3'])
 	if ss4 is not None:
 		print 'ss4='+','.join(ss4)
 		
 	else:
 		print 'ss4 is none'
-	
+	'''
 	ss6=a.Is_tf_target_tissue('BSAP','USP1','bladder')
 	if ss6 is not None:
 		print 'ss6='+str(ss6)
@@ -490,12 +503,12 @@ if __name__ == "__main__":
  	print 'extId='+','.join(extId)
  	print 'pathsource='+','.join(pathsource)
  	print 'pathlink='+','.join(pathlink)
- 	'''
+ 	
  	pathId,pathName,genelist=a.find_genes_from_pathwayName('MAPK signaling pathway')
  	print 'pathId='+','.join(map(str,pathId))
  	print genelist
  	print genelist.keys()
- 	'''
+ 	
  	pathId,pathName,extId,pathsource,pathlink=a.find_pathways_from_genelist(['KRAS','ELK1'])
  	print 'pathId='+','.join(map(str,pathId))
  	print 'pathName='+','.join(pathName)
