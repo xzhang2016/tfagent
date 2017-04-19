@@ -434,23 +434,28 @@ class TFTA_Module(KQMLModule):
         return reply
     
     def respond_find_common_pathway_genes(self, content):
-		'''
-		response content to FIND_COMMON_PATHWAY_GENES request
-		'''
-		target_arg = content.gets('target')
-		targets = self._get_targets(target_arg)
-		target_names = []
-		for tg in targets:
-			target_names.append(tg.name)
+	'''
+	response content to FIND_COMMON_PATHWAY_GENES request
+	'''
+	target_arg = content.gets('target')
+	targets = self._get_targets(target_arg)
+	target_names = []
+	for tg in targets:
+	    target_names.append(tg.name)
 			
-		pathwayName,externalId,source,dblink,counts = self.tfta.find_pathway_count_genes(target_names)
-		path_list_str = ''
-		for pn,eid,src,dbl,ct in zip(pathwayName,externalId,source,dblink,counts):
-			path_list_str += '(:name %s :externalId %s :source %s :dblink %s :count %s) ' % (pn, eid ,src, dbl, ct)
+	try:	
+	    pathwayName,externalId,source,dblink,counts = self.tfta.find_pathway_count_genes(target_names)
+	except PathwayNotFoundException:
+	    reply = make_failure('PathwayNotFoundException')
+	    return reply
+	
+	path_list_str = ''
+	for pn,eid,src,dbl,ct in zip(pathwayName,externalId,source,dblink,counts):
+	    path_list_str += '(:name %s :externalId %s :source %s :dblink %s :count %s) ' % (pn, eid ,src, dbl, ct)
 			
-		reply = KQMLList.from_string(
+	reply = KQMLList.from_string(
             '(SUCCESS :pathway (' + path_list_str + '))')
-		return reply
+	return reply
 
 def _get_target(target_str):
     target_str = '<ekb>' + target_str + '</ekb>'
