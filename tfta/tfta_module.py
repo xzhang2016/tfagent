@@ -19,6 +19,7 @@ class TFTA_Module(KQMLModule):
                       'FIND_TF_PATHWAY', 'FIND_GENE_PATHWAY',
                       'FIND_PATHWAY_KEYWORD', 'FIND_TF_KEYWORD',
                       'FIND_COMMON_TF_GENES', 'FIND_OVERLAP_TARGETS_TF_GENES',
+                      'FIND_COMMON_PATHWAY_GENES',
                       'IS-TF-TARGET-TISSUE', 'FIND-TF-TARGET-TISSUE',
                       'FIND-TARGET-TF-TISSUE']
 
@@ -61,6 +62,8 @@ class TFTA_Module(KQMLModule):
             reply_content = self.respond_find_common_tfs_genes(content)
         elif task_str == 'FIND_OVERLAP_TARGETS_TF_GENES':
             reply_content = self.respond_find_overlap_targets_tf_genes(content)
+        elif task_str == 'FIND_COMMON_PATHWAY_GENES':
+			reply_content = self.respond_find_common_pathway_genes(content_list)
         elif task_str == 'IS-TF-TARGET-TISSUE':
             reply_content = self.respond_is_tf_target_tissue(content)
         elif task_str == 'FIND-TF-TARGET_TISSUE':
@@ -429,6 +432,25 @@ class TFTA_Module(KQMLModule):
         reply = KQMLList.from_string(
             '(SUCCESS :targets (' + target_list_str + '))')
         return reply
+    
+    def respond_find_common_pathway_genes(self, content):
+		'''
+		response content to FIND_COMMON_PATHWAY_GENES request
+		'''
+		target_arg = content.gets('target')
+		targets = self._get_targets(target_arg)
+		target_names = []
+		for tg in targets:
+			target_names.append(tg.name)
+			
+		pathwayName,externalId,source,dblink,counts = self.tfta.find_pathway_count_genes(target_names)
+		path_list_str = ''
+		for pn,eid,src,dbl,ct in zip(pathwayName,externalId,source,dblink,counts):
+			path_list_str += '(:name %s :externalId %s :source %s :dblink %s :count %s) ' % (pn, eid ,src, dbl, ct)
+			
+		reply = KQMLList.from_string(
+            '(SUCCESS :pathway (' + path_list_str + '))')
+		return reply
 
 def _get_target(target_str):
     target_str = '<ekb>' + target_str + '</ekb>'
