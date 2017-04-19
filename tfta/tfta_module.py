@@ -4,7 +4,7 @@ and to other agents in the system"""
 import sys
 import logging
 from kqml import KQMLModule, KQMLPerformative, KQMLList
-from tfta import TFTA, TFNotFoundException, TargetNotFoundException
+from tfta import TFTA, TFNotFoundException, TargetNotFoundException, PathwayNotFoundException
 from indra.trips.processor import TripsProcessor
 
 logger = logging.getLogger('TFTA')
