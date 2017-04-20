@@ -455,13 +455,13 @@ def _get_target(target_str):
     return agent
 
 def _get_targets(target_arg):
-	print target_arg
-	target_args = target_arg.split('</TERM>')
-	agent = []
-	for i in range(len(target_args)-1):
-    	target_str = '<ekb>' + target_args[i] + '</TERM></ekb>'
-    	tp = TripsProcessor(target_str)
-    	terms = tp.tree.findall('TERM')
+    print target_arg
+    target_args = target_arg.split('</TERM>')
+    agent = []
+    for i in range(len(target_args)-1):
+        target_str = '<ekb>' + target_args[i] + '</TERM></ekb>'
+        tp = TripsProcessor(target_str)
+        terms = tp.tree.findall('TERM')
         term_id = terms[0].attrib['id']
         agent.append(tp._get_agent_by_id(term_id, None))
     return agent
