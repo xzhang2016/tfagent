@@ -78,17 +78,6 @@ class TFTA_Module(KQMLModule):
         reply_msg.set('content', reply_content)
         self.reply(msg, reply_msg)
 
-    '''
-    def respond_dont_know(self, msg, content_string):
-        #TODO: need to rewrite this function
-        resp = '(ONT::TELL :content (ONT::DONT-KNOW :content %s))' %\
-            content_string
-        resp_list = KQMLList.from_string(resp)
-        reply_msg = KQMLPerformative('reply')
-        reply_msg.set_parameter(':content', resp_list)
-        self.reply(msg, reply_msg)
-    '''
-
     def respond_is_tf_target(self, content):
         """Response content to is-tf-target request."""
         tf_arg = content.gets('tf')
@@ -153,7 +142,7 @@ class TFTA_Module(KQMLModule):
         For a tf list, reply with the targets found
         """
         tf_arg = content.gets('tf')
-        tfs = _get_targets(tf_arg)
+        tfs = _get_target(tf_arg)
         tf_names = []
         for tf in tfs:
             tf_names.append(tf.name)
@@ -197,7 +186,7 @@ class TFTA_Module(KQMLModule):
         """Response content to find-target-tf request
         For a target list, reply the tfs found"""
         target_arg = content.gets('target')
-        targets = _get_targets(target_arg)
+        targets = _get_target(target_arg)
         target_names = []
         for target in targets:
             target_names.append(target.name)
@@ -237,7 +226,7 @@ class TFTA_Module(KQMLModule):
         """Response content to find_pathway_gene request
         For a given gene list, reply the related pathways information"""
         gene_arg = content.gets('gene')
-        genes = _get_targets(gene_arg)
+        genes = _get_target(gene_arg)
         gene_names = []
         for gene in genes:
             gene_names.append(gene.name)
@@ -266,7 +255,7 @@ class TFTA_Module(KQMLModule):
         db_name = db_arg.head()
 
         gene_arg = content.gets('gene')
-        genes = _get_targets(gene_arg)
+        genes = _get_target(gene_arg)
         gene_names = []
         for gene in genes:
             gene_names.append(gene.name)
@@ -393,7 +382,7 @@ class TFTA_Module(KQMLModule):
         For a given target list, reply the tfs regulating these genes
         and the frequency of each TF"""
         target_arg = content.gets('target')
-        targets = _get_targets(target_arg)
+        targets = _get_target(target_arg)
         target_names = []
         for target in targets:
             target_names.append(target.name)
@@ -411,7 +400,7 @@ class TFTA_Module(KQMLModule):
         by all of them; then return the overlap between the targets
         and the given gene list"""
         tf_arg = content.gets('tf')
-        tfs = _get_targets(tf_arg)
+        tfs = _get_target(tf_arg)
         tf_names = []
         for tf in tfs:
             tf_names.append(tf.name)
@@ -438,7 +427,7 @@ class TFTA_Module(KQMLModule):
 	response content to FIND_COMMON_PATHWAY_GENES request
 	'''
 	target_arg = content.gets('target')
-	targets = self._get_targets(target_arg)
+	targets = self._get_target(target_arg)
 	target_names = []
 	for tg in targets:
 	    target_names.append(tg.name)
