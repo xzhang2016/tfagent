@@ -143,9 +143,13 @@ class TFTA_Module(KQMLModule):
         """
         tf_arg = content.gets('tf')
         tfs = _get_target(tf_arg)
-        tf_names = []
-        for tf in tfs:
-            tf_names.append(tf.name)
+	print 'tfs:'+tfs
+	tf_names = []
+	if type(tfs)==str:
+		tf_names.append(tfs.name)
+	elif type(tfs)==list:
+        	for tf in tfs:
+            		tf_names.append(tf.name)
 
         target_names = self.tfta.find_targets(tf_names)
 
@@ -188,8 +192,11 @@ class TFTA_Module(KQMLModule):
         target_arg = content.gets('target')
         targets = _get_target(target_arg)
         target_names = []
-        for target in targets:
-            target_names.append(target.name)
+	if type(targets)==str:
+		target_names.append(targets.name)
+	elif type(targets)==list:
+        	for target in targets:
+            		target_names.append(target.name)
 
         tf_names = self.tfta.find_tfs(target_names)
         tf_list_str = ''
