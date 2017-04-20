@@ -144,12 +144,13 @@ class TFTA_Module(KQMLModule):
         tf_arg = content.gets('tf')
         tfs = _get_target(tf_arg)
 	print 'tfs:'+tfs
+	print 'type(tfs):'+type(tfs)
 	tf_names = []
 	if type(tfs)==str:
-		tf_names.append(tfs.name)
+	    tf_names.append(tfs.name)
 	elif type(tfs)==list:
-        	for tf in tfs:
-            		tf_names.append(tf.name)
+            for tf in tfs:
+                tf_names.append(tf.name)
 
         target_names = self.tfta.find_targets(tf_names)
 
@@ -193,10 +194,10 @@ class TFTA_Module(KQMLModule):
         targets = _get_target(target_arg)
         target_names = []
 	if type(targets)==str:
-		target_names.append(targets.name)
+	    target_names.append(targets.name)
 	elif type(targets)==list:
-        	for target in targets:
-            		target_names.append(target.name)
+            for target in targets:
+                target_names.append(target.name)
 
         tf_names = self.tfta.find_tfs(target_names)
         tf_list_str = ''
@@ -459,6 +460,8 @@ def _get_target(target_str):
     terms = tp.tree.findall('TERM')
     term_id = terms[0].attrib['id']
     agent = tp._get_agent_by_id(term_id, None)
+    print 'type(agent):'+type(agent)
+    print 'agent:'+agent
     return agent
 
 def _get_targets(target_arg):
