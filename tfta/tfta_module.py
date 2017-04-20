@@ -149,6 +149,8 @@ class TFTA_Module(KQMLModule):
 	elif type(tfs)==list:
             for tf in tfs:
                 tf_names.append(tf.name)
+	else:
+	    tf_names.append(tfs.name)
 
         target_names = self.tfta.find_targets(tf_names)
 
@@ -196,6 +198,8 @@ class TFTA_Module(KQMLModule):
 	elif type(targets)==list:
             for target in targets:
                 target_names.append(target.name)
+	else:
+	    target_names.append(targets.name)
 
         tf_names = self.tfta.find_tfs(target_names)
         tf_list_str = ''
