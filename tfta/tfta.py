@@ -130,16 +130,16 @@ class TFTA:
  		#query
  		if self.tfdb is not None:
  		    t = (target_names[0],tissue_name)
- 			res = self.tfdb.execute("SELECT TF FROM Target2TF2Tissue "
- 									"WHERE Target = ? AND Tissue LIKE ? ", t).fetchall()
+ 		    res = self.tfdb.execute("SELECT TF FROM Target2TF2Tissue "
+ 					"WHERE Target = ? AND Tissue LIKE ? ", t).fetchall()
  			tf_names = [r[0] for r in res]
  			
  			if len(target_names)>1:
- 				for i in range(1,len(target_names)):
- 					t = (target_names[i],tissue_name)
- 					res = self.tfdb.execute("SELECT TF FROM Target2TF2Tissue "
- 									"WHERE Target = ? AND Tissue LIKE ? ", t).fetchall()
- 					tf_names = list(set(tf_names) & set([r[0] for r in res]))
+ 			    for i in range(1,len(target_names)):
+ 			        t = (target_names[i],tissue_name)
+ 			        res = self.tfdb.execute("SELECT TF FROM Target2TF2Tissue "
+ 							"WHERE Target = ? AND Tissue LIKE ? ", t).fetchall()
+ 			        tf_names = list(set(tf_names) & set([r[0] for r in res]))
  					
  			tf_names.sort()
  			
