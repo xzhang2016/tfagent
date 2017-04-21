@@ -29,7 +29,7 @@ class TFTA:
         tf_db_file = _resource_dir + 'TF_target_v2.db'
         if os.path.isfile(tf_db_file):
             self.tfdb = sqlite3.connect(tf_db_file, check_same_thread=False)
- 	    else:
+        else:
             logger.error('TFTA could not load TF-target database.')
             self.tfdb = None;
 		
@@ -39,10 +39,11 @@ class TFTA:
  				
  		
     def Is_tf_target(self,tf_name,target_name):
- 		'''
- 		Return True if the tf regulates the target, and False if not
- 		'''
+        '''
+        Return True if the tf regulates the target, and False if not
+        '''
         if self.tfdb is not None:
+            
             t = (tf_name,)
             res = self.tfdb.execute("SELECT Target FROM CombinedDB WHERE TF = ? ", t).fetchall()
             if not res:
@@ -54,9 +55,9 @@ class TFTA:
         return False
  		
     def Is_tf_target_tissue(self,tf_name,target_name,tissue_name):
- 		'''
- 		Return True if the tf regulates the target in a given tissue, and False if not
- 		'''
+        '''
+        Return True if the tf regulates the target in a given tissue, and False if not
+        '''
         if self.tfdb is not None:
             t = (tf_name, tissue_name)
             res = self.tfdb.execute("SELECT Target FROM Target2TF2Tissue WHERE TF = ? AND Tissue LIKE ? ", t).fetchall()
@@ -70,9 +71,9 @@ class TFTA:
  		
 
     def find_tfs(self,target_names):
-		'''
-		Return TFs regulating all the given targets
-		'''
+        '''
+        Return TFs regulating all the given targets
+        '''
  			
  		#query
         if self.tfdb is not None:
@@ -80,7 +81,7 @@ class TFTA:
             res = self.tfdb.execute("SELECT TF FROM CombinedDB "
  									"WHERE Target = ? ", t).fetchall()
             tf_names = [r[0] for r in res]
- 			if len(target_names)>1:
+            if len(target_names)>1:
                 for i in range(1,len(target_names)):
                     t = (target_names[i],)
                     res = self.tfdb.execute("SELECT TF FROM CombinedDB "
@@ -94,8 +95,8 @@ class TFTA:
         return tf_names
  		
     def find_tfs_count(self,target_names):
-		'''
-		Return TFs regulating the given target list as well as the frequency (count)
+        '''
+        Return TFs regulating the given target list as well as the frequency (count)
 		of each TF
 		'''
  			
@@ -122,9 +123,9 @@ class TFTA:
         return unique_tfs, tf_counts
  		
     def find_tfs_tissue(self,target_name,tissue_name):
-		'''
-		Return TFs regulating the target in a given tissue
-		'''
+        '''
+        Return TFs regulating the target in a given tissue
+        '''
  			
  		#query
         if self.tfdb is not None:
@@ -148,9 +149,9 @@ class TFTA:
         return tf_names
  		
     def find_pathways_from_name(self, pathway_name):
- 		'''
- 		return pathway information related to pathway_name
- 		'''
+        '''
+        return pathway information related to pathway_name
+        '''
  		#query
         if self.tfdb is not None:
             regstr='%'+pathway_name+'%'
@@ -177,9 +178,9 @@ class TFTA:
         return pathwayId,pathwayName,externalId,source,dblink
  		
     def find_pathways_from_dbsource_geneName(self, dbsource,gene_name):
- 		'''
- 		return pathway information for given dbsource and gene_name
- 		'''
+        '''
+        return pathway information for given dbsource and gene_name
+        '''
  		#query
         if self.tfdb is not None:
  			#regstr='%'+pathway_name+'%'
@@ -207,9 +208,9 @@ class TFTA:
         return pathwayId,pathwayName,externalId,source,dblink
  		
     def find_genes_from_pathwayName(self, pathway_name):
- 		'''
- 		return genes related to pathway_name
- 		'''
+        '''
+        return genes related to pathway_name
+        '''
  		#query
         if self.tfdb is not None:
             regstr='%'+pathway_name+'%'
@@ -220,11 +221,11 @@ class TFTA:
             if res is not None:
                 pathwayId=[r[0] for r in res]
                 pathwayName=[r[1] for r in res]
- 				'''
- 				externalId=[r[2] for r in res]
- 				source=[r[3] for r in res]
- 				dblink=[r[4] for r in res]
- 				'''
+ 				
+ 				#externalId=[r[2] for r in res]
+ 				#source=[r[3] for r in res]
+ 				#dblink=[r[4] for r in res]
+ 				
                 genelist=dict()
                 for pthID in pathwayId:
                     t=(pthID,)
@@ -247,9 +248,9 @@ class TFTA:
         return pathwayId,pathwayName,genelist
  	
     def find_tfs_from_pathwayName(self,pathway_name):
-		'''
-		Return TFs within the given pathway
-		'''
+        '''
+        Return TFs within the given pathway
+        '''
  			
  		#query
         if self.tfdb is not None:
@@ -282,9 +283,9 @@ class TFTA:
         return pathwayId,pathwayName,tflist
  		
     def find_pathways_from_genelist(self,gene_names):
- 		'''
- 		return pathways having given genes
- 		'''
+        '''
+        return pathways having given genes
+        '''
  		#query
         pathwayId=[]
         pathwayName=[]
@@ -322,9 +323,9 @@ class TFTA:
         return pathwayId,pathwayName,externalId,source,dblink
  		
     def find_pathways_from_chemical(self, chemical_name):
- 		'''
- 		return pathways containing the given chemical
- 		'''
+        '''
+        return pathways containing the given chemical
+        '''
  		#query
         if self.tfdb is not None:
             regstr='%'+chemical_name+'%'
@@ -350,9 +351,9 @@ class TFTA:
         return pathwayId,pathwayName,externalId,source,dblink
  		
     def find_tfs_from_pathwaysWithChemical(self, chemical_name):
- 		'''
- 		return pathways containing the given chemical and related tfs 
- 		'''
+        '''
+        return pathways containing the given chemical and related tfs 
+        '''
  		#query
         if self.tfdb is not None:
             regstr='%'+chemical_name+'%'
@@ -383,8 +384,8 @@ class TFTA:
         return pathwayId,pathwayName,tflist
  		
     def find_pathway_count_genes(self, gene_names):
- 		'''
- 		For a given gene list, find the pathways containing one of the genes,
+        '''
+        For a given gene list, find the pathways containing one of the genes,
  		and the frequency of the pathways 
  		'''
  		#query
@@ -427,9 +428,9 @@ class TFTA:
         return pathwayName,externalId,source,dblink,counts
  			
     def find_targets(self,tf_names):
- 		'''
-		Return Targets regulated by the tf or tf list
-		'''
+        '''
+        Return Targets regulated by the tf or tf list
+        '''
 		
  		#query
         if self.tfdb is not None:
@@ -453,8 +454,8 @@ class TFTA:
         return target_names
  		
     def find_overlap_targets_tfs_genes(self,tf_names,target_names):
- 		'''
-		Return Targets which are regulated by all the given tfs and are 
+        '''
+        Return Targets which are regulated by all the given tfs and are 
 		also in the given target list
 		'''
  		#query
@@ -482,9 +483,9 @@ class TFTA:
         return overlap_targets
  		
     def find_targets_tissue(self,tf_names, tissue_name):
- 		'''
-		Return Targets regulated by the tf in a given tissue
-		'''
+        '''
+        Return Targets regulated by the tf in a given tissue
+        '''
 		
  		#query
         if self.tfdb is not None:
@@ -507,10 +508,10 @@ class TFTA:
         return target_names
  			
     def find_targets_1(self,tf_name):
- 		'''
-		Return Targets regulated by the tf
-		Accept only one tf name
-		'''
+        '''
+        Return Targets regulated by the tf
+        Accept only one tf name
+        '''
  		#query
         if self.tfdb is not None:
             t = (tf_name,)
@@ -523,10 +524,10 @@ class TFTA:
         return target_names
  		
     def find_tfs_1(self,target_name):
-		'''
-		Return TFs regulating the target in a given tissue
-		Accept only one target
-		'''
+        '''
+        Return TFs regulating the target in a given tissue
+        Accept only one target
+        '''
  			
  		#query
         if self.tfdb is not None:
