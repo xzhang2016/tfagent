@@ -78,15 +78,17 @@ class TFTA:
  		if self.tfdb is not None:
  			t = (target_names[0],)
  			res = self.tfdb.execute("SELECT TF FROM CombinedDB "
- 									"WHERE Target = ?  ORDER BY TF", t).fetchall()
+ 									"WHERE Target = ? ", t).fetchall()
  			tf_names = [r[0] for r in res]
  			
  			if len(target_names)>1:
  				for i in range(1,len(target_names)):
  					t = (target_names[i],)
  					res = self.tfdb.execute("SELECT TF FROM CombinedDB "
- 									"WHERE Target = ?  ORDER BY TF", t).fetchall()
+ 									"WHERE Target = ? ", t).fetchall()
  					tf_names = list(set(tf_names) & set([r[0] for r in res]))
+ 					
+ 			tf_names.sort()
  		else:
  			tf_names = []
  				
@@ -107,13 +109,16 @@ class TFTA:
  									"WHERE Target = ? ", t).fetchall()
  				tf_names = tf_names + [r[0] for r in res]
  			#count for each TF
- 			unique_tfs=list(set(tf_names))
- 			tf_counts=[]
+ 			unique_tfs = list(set(tf_names))
+ 			tf_counts = []
  			for i in range(len(unique_tfs)):
  				tf_counts.append(tf_names.count(unique_tfs[i]))
  				
  			#sort
  			tf_counts,unique_tfs = zip(*sorted(zip(tf_counts, unique_tfs),reverse=True))
+ 		else:
+ 			unique_tfs = []
+ 			tf_counts = []
  			
  		return unique_tfs, tf_counts
  		
@@ -124,10 +129,20 @@ class TFTA:
  			
  		#query
  		if self.tfdb is not None:
- 			t = (target_name,tissue_name)
+ 		    t = (target_names[0],tissue_name)
  			res = self.tfdb.execute("SELECT TF FROM Target2TF2Tissue "
- 									"WHERE Target = ? and Tissue LIKE ? ORDER BY TF", t).fetchall()
+ 									"WHERE Target = ? AND Tissue LIKE ? ", t).fetchall()
  			tf_names = [r[0] for r in res]
+ 			
+ 			if len(target_names)>1:
+ 				for i in range(1,len(target_names)):
+ 					t = (target_names[i],tissue_name)
+ 					res = self.tfdb.execute("SELECT TF FROM Target2TF2Tissue "
+ 									"WHERE Target = ? AND Tissue LIKE ? ", t).fetchall()
+ 					tf_names = list(set(tf_names) & set([r[0] for r in res]))
+ 					
+ 			tf_names.sort()
+ 			
  		else:
  			tf_names = []
  				
@@ -368,6 +383,50 @@ class TFTA:
  			tflist=dict()
  			
  		return pathwayId,pathwayName,tflist
+ 		
+ 	def find_pathway_count_genes(self, gene_names):
+ 		'''
+ 		For a given gene list, find the pathways containing one of the genes,
+ 		and the frequency of the pathways 
+ 		'''
+ 		#query
+ 		#pathwayId=[]
+ 		pathwayName=[]
+ 		externalId=[]
+ 		source=[]
+ 		dblink=[]
+ 		counts=[]
+ 		if self.tfdb is not None:
+ 			pathlist=[]
+ 			for gene_name in gene_names:
+ 				t = (gene_name,)
+ 				res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
+ 										"WHERE genesymbol = ? ", t).fetchall()
+ 				pathlist=pathlist+[r[0] for r in res1]
+ 				#pathIDs=set(pathIDs).intersection(set([r[0] for r in res1]))
+ 			#pathway frequency
+ 			uniq_path = list(set(pathlist))
+ 			for pth in uniq_path:
+ 				counts.append(pathlist.count(pth))
+ 			
+ 			if len(uniq_path)>0:
+ 				for pth in uniq_path:
+ 					t=(pth,)	
+ 					res = self.tfdb.execute("SELECT * FROM pathwayInfo "
+ 									"WHERE Id = ? ", t).fetchall()
+ 			
+ 					#pathwayId=pathwayId+[r[0] for r in res]
+ 					pathwayName=pathwayName+[r[1] for r in res]
+ 					externalId=externalId+[r[2] for r in res]
+ 					source=source+[r[3] for r in res]
+ 					dblink=dblink+[r[4] for r in res]
+ 					
+ 				#sort
+ 				counts,pathwayNmae,externalId,source,dblink = zip(*sorted(zip(counts,pathwayNmae,externalId,source,dblink),reverse=True))
+ 			else:
+ 				raise PathwayNotFoundException
+ 				
+ 		return pathwayName,externalId,source,dblink,counts
  			
  	def find_targets(self,tf_names):
  		'''
@@ -377,15 +436,17 @@ class TFTA:
  		#query
  		if self.tfdb is not None:
  			t = (tf_names[0],)
- 			res = self.tfdb.execute("SELECT Target,TargetEntrezID FROM CombinedDB "
- 									"WHERE TF = ?  ORDER BY Target", t).fetchall()
+ 			res = self.tfdb.execute("SELECT Target FROM CombinedDB "
+ 									"WHERE TF = ? ", t).fetchall()
  			target_names = [r[0] for r in res]
  			if len(tf_names) > 1:
  				for i in range(1,len(tf_names)):
  					t = (tf_names[i],)
- 					res = self.tfdb.execute("SELECT Target,TargetEntrezID FROM CombinedDB "
- 									"WHERE TF = ?  ORDER BY Target", t).fetchall()
+ 					res = self.tfdb.execute("SELECT Target FROM CombinedDB "
+ 									"WHERE TF = ? ", t).fetchall()
  					target_names = list(set(target_names) & set([r[0] for r in res]))
+ 			
+ 			target_names.sort()
  			#targetEntrez = [r[1] for r in res]
  		else:
  			target_names = []
@@ -398,7 +459,6 @@ class TFTA:
 		Return Targets which are regulated by all the given tfs and are 
 		also in the given target list
 		'''
-		
  		#query
  		if self.tfdb is not None:
  			targets = []
@@ -423,23 +483,63 @@ class TFTA:
  				
  		return overlap_targets
  		
- 	def find_targets_tissue(self,tf_name, tissue_name):
+ 	def find_targets_tissue(self,tf_names, tissue_name):
  		'''
 		Return Targets regulated by the tf in a given tissue
 		'''
 		
  		#query
  		if self.tfdb is not None:
- 			t = (tf_name, tissue_name)
+ 		    t = (tf_names[0],tissue_name)
  			res = self.tfdb.execute("SELECT Target FROM Target2TF2Tissue "
- 									"WHERE TF = ? and Tissue = ? ORDER BY Target", t).fetchall()
+ 									"WHERE TF = ? AND Tissue LIKE ? ", t).fetchall()
+ 			target_names = [r[0] for r in res]
+ 			if len(tf_names) > 1:
+ 				for i in range(1,len(tf_names)):
+ 					t = (tf_names[i],tissue_name)
+ 					res = self.tfdb.execute("SELECT Target FROM Target2TF2Tissue "
+ 									"WHERE TF = ? AND Tissue LIKE ? ", t).fetchall()
+ 					target_names = list(set(target_names) & set([r[0] for r in res]))
+ 			
+ 			target_names.sort()
+ 				
+ 		else:
+ 			target_names = []
+ 				
+ 		return target_names
+ 			
+ 	def find_targets_1(self,tf_name):
+ 		'''
+		Return Targets regulated by the tf
+		Accept only one tf name
+		'''
+ 		#query
+ 		if self.tfdb is not None:
+ 			t = (tf_name,)
+ 			res = self.tfdb.execute("SELECT DISTINCT Target FROM CombinedDB "
+ 									"WHERE TF = ? ORDER BY Target", t).fetchall()
  			target_names = [r[0] for r in res]	
  		else:
  			target_names = []
  				
  		return target_names
  		
- 	
+ 	def find_tfs_1(self,target_name):
+		'''
+		Return TFs regulating the target in a given tissue
+		Accept only one target
+		'''
+ 			
+ 		#query
+ 		if self.tfdb is not None:
+ 			t = (target_name,)
+ 			res = self.tfdb.execute("SELECT DISTINCT TF FROM CombinedDB "
+ 									"WHERE Target = ? ORDER BY TF", t).fetchall()
+ 			tf_names = [r[0] for r in res]
+ 		else:
+ 			tf_names = []
+ 				
+ 		return tf_names
 		 							 
 
 #test functions
@@ -452,13 +552,14 @@ if __name__ == "__main__":
 	else:
 		print 'ss2 is none'
 	'''
-	ss3 = a.find_tfs(['ELF3','KRAS']) 
+	ss3 = a.find_tfs_1('KRAS') 
 	if ss3 is not None:
 		print 'lenth(ss3)='+str(len(ss3))
 		print 'ss3='+','.join(ss3)
 		
-	ss4 = a.find_targets(['FOS','STAT3'])
+	ss4 = a.find_targets_1('FOS')
 	if ss4 is not None:
+		print 'length(ss4)='+str(len(ss4))
 		print 'ss4='+','.join(ss4)
 		
 	else:
