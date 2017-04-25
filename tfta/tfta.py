@@ -619,7 +619,7 @@ if __name__ == "__main__":
         print 'lenth(ss7)='+str(len(ss7))
         print 'ss7='+','.join(ss7)
 	'''	
-	ss8=a.find_targets_tissue(['USF''BACH2'],'bladder')
+	ss8=a.find_targets_tissue(['USF','BACH2'],'bladder')
         print 'length(ss8)=', len(ss8)
         print 'ss8='+','.join(ss8)
  	'''
