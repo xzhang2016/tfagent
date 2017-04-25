@@ -421,7 +421,7 @@ class TFTA:
                     dblink=dblink+[r[4] for r in res]
  					
  				#sort
-                counts,pathwayNmae,externalId,source,dblink = zip(*sorted(zip(counts,pathwayNmae,externalId,source,dblink),reverse=True))
+                counts,pathwayName,externalId,source,dblink = zip(*sorted(zip(counts,pathwayName,externalId,source,dblink),reverse=True))
             else:
                 raise PathwayNotFoundException
  				
