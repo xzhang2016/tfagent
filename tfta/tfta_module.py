@@ -277,8 +277,8 @@ class TFTA_Module(KQMLModule):
         pathway_list_str = ''
         for pn, eid, src, dbl in zip(pathwayName, externalId, source, dblink):
             pnslash = '_'.join(pn.split(' '))
-            eidslash = '_'.join(pn.split(' '))
-            eidslash = '_'.join(pn.split(':'))
+            eidslash = '_'.join(eid.split(' '))
+            eidslash = '_'.join(eidslash.split(':'))
             pathway_list_str += \
                 '(:name %s :externalId %s :source %s :dblink %s) ' % (pnslash, eidslash ,src, dbl)
 
@@ -309,8 +309,8 @@ class TFTA_Module(KQMLModule):
         pathway_list_str = ''
         for pn, eid, src, dbl in zip(pathwayName, externalId, source, dblink):
             pnslash = '_'.join(pn.split(' '))
-            eidslash = '_'.join(pn.split(' '))
-            eidslash = '_'.join(pn.split(':'))
+            eidslash = '_'.join(eid.split(' '))
+            eidslash = '_'.join(eidslash.split(':'))
             pathway_list_str += \
                 '(:name %s :externalId %s :source %s :dblink %s) ' % (pnslash, eidslash ,src, dbl)
 
@@ -388,8 +388,8 @@ class TFTA_Module(KQMLModule):
         pathway_list_str = ''
         for pn, eid, src, dbl in zip(pathwayName,externalId,source,dblink):
             pnslash = '_'.join(pn.split(' '))
-            eidslash = '_'.join(pn.split(' '))
-            eidslash = '_'.join(pn.split(':'))
+            eidslash = '_'.join(eid.split(' '))
+            eidslash = '_'.join(eidslash.split(':'))
             pathway_list_str += \
                 '(:name %s :externalId %s :source %s :dblink %s) ' % (pnslash, eidslash ,src, dbl)
 
@@ -494,8 +494,8 @@ class TFTA_Module(KQMLModule):
         path_list_str = ''
 	for pn,eid,src,dbl,ct in zip(pathwayName,externalId,source,dblink,counts):
             pnslash = '_'.join(pn.split(' '))
-            eidslash = '_'.join(pn.split(' '))
-            eidslash = '_'.join(pn.split(':'))
+            eidslash = '_'.join(eid.split(' '))
+            eidslash = '_'.join(eidslash.split(':'))
             path_list_str += '(:name %s :externalId %s :source %s :dblink %s :count %s) ' % (pnslash, eidslash ,src, dbl, ct)
 
 	reply = KQMLList.from_string(
