@@ -15,7 +15,7 @@ class TFTA_Module(KQMLModule):
     def __init__(self, argv):
         super(TFTA_Module, self).__init__(argv)
         self.tasks = ['IS-TF-TARGET', 'FIND-TF-TARGET', 'FIND-TARGET-TF',
-                      'FIND-PATHWAY-GENE', 'FIND_PATHWAY_DB_GENE',
+                      'FIND-PATHWAY-GENE', 'FIND-PATHWAY-DB-GENE',
                       'FIND_TF_PATHWAY', 'FIND-GENE-PATHWAY',
                       'FIND_PATHWAY_KEYWORD', 'FIND_TF_KEYWORD',
                       'FIND_COMMON_TF_GENES', 'FIND_OVERLAP_TARGETS_TF_GENES',
@@ -48,7 +48,7 @@ class TFTA_Module(KQMLModule):
             reply_content = self.respond_find_target_tfs(content)
         elif task_str == 'FIND-PATHWAY-GENE':
             reply_content = self.respond_find_pathway_gene(content)
-        elif task_str == 'FIND_PATHWAY_DB_GENE':
+        elif task_str == 'FIND-PATHWAY-DB-GENE':
             reply_content = self.respond_find_pathway_db_gene(content)
         elif task_str == 'FIND_TF_PATHWAY':
             reply_content = self.respond_find_tf_pathway(content)
@@ -290,7 +290,7 @@ class TFTA_Module(KQMLModule):
         return reply
 
     def respond_find_pathway_db_gene(self, content):
-        """Response content to FIND_PATHWAY_DB_GENE request
+        """Response content to FIND-PATHWAY-DB-GENE request
         For a given gene list and certain db source, reply the related
         pathways information"""
         db_arg = content.get('database')
