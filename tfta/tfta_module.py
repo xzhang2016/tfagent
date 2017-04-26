@@ -276,8 +276,9 @@ class TFTA_Module(KQMLModule):
 
         pathway_list_str = ''
         for pn, eid, src, dbl in zip(pathwayName, externalId, source, dblink):
+            pnslash = '_'.join(pn.split(' '))
             pathway_list_str += \
-                '(:name %s :externalId %s :source %s :dblink %s) ' % (pn, eid ,src, dbl)
+                '(:name %s :externalId %s :source %s :dblink %s) ' % (pnslash, eid ,src, dbl)
 
         reply = KQMLList.from_string(
             '(SUCCESS :pathways (' + pathway_list_str + '))')
@@ -305,8 +306,9 @@ class TFTA_Module(KQMLModule):
 
         pathway_list_str = ''
         for pn, eid, src, dbl in zip(pathwayName, externalId, source, dblink):
+            pnslash = '_'.join(pn.split(' '))
             pathway_list_str += \
-                '(:name %s :externalId %s :source %s :dblink %s) ' % (pn, eid ,src, dbl)
+                '(:name %s :externalId %s :source %s :dblink %s) ' % (pnslash, eid ,src, dbl)
 
         reply = KQMLList.from_string(
             '(SUCCESS :pathways (' + pathway_list_str + '))')
@@ -332,7 +334,8 @@ class TFTA_Module(KQMLModule):
                 tf_list_str += '(:name %s) ' % tf.encode('ascii', 'ignore')
 
             tf_list_str = '(' + tf_list_str + ')'
-            pathway_list_str += '(:name %s :tfs %s) ' % (pn, tf_list_str)
+            pnslash = '_'.join(pn.split(' '))
+            pathway_list_str += '(:name %s :tfs %s) ' % (pnslash, tf_list_str)
 
         reply = KQMLList.from_string(
             '(SUCCESS :pathways (' + pathway_list_str + '))')
@@ -358,7 +361,8 @@ class TFTA_Module(KQMLModule):
                 gene_list_str += '(:name %s) ' % gene.encode('ascii', 'ignore')
 
             gene_list_str = '(' + gene_list_str + ')'
-            pathway_list_str += '(:name %s :genes %s) ' % (pn, gene_list_str)
+            pnslash = '_'.join(pn.split(' '))
+            pathway_list_str += '(:name %s :genes %s) ' % (pnslash, gene_list_str)
 
         reply = KQMLList.from_string(
             '(SUCCESS :pathways (' + pathway_list_str + '))')
@@ -379,8 +383,9 @@ class TFTA_Module(KQMLModule):
 
         pathway_list_str = ''
         for pn, eid, src, dbl in zip(pathwayName,externalId,source,dblink):
+            pnslash = '_'.join(pn.split(' '))
             pathway_list_str += \
-                '(:name %s :externalId %s :source %s :dblink %s) ' % (pn, eid ,src, dbl)
+                '(:name %s :externalId %s :source %s :dblink %s) ' % (pnslash, eid ,src, dbl)
 
         reply = KQMLList.from_string(
             '(SUCCESS :pathways (' + pathway_list_str + '))')
@@ -407,7 +412,8 @@ class TFTA_Module(KQMLModule):
                 tf_list_str += '(:name %s) ' % tf.encode('ascii', 'ignore')
 
             tf_list_str = '(' + tf_list_str + ')'
-            pathway_list_str += '(:name %s :tfs %s) ' % (pn, tf_list_str)
+            pnslash = '_'.join(pn.split(' '))
+            pathway_list_str += '(:name %s :tfs %s) ' % (pnslash, tf_list_str)
 
         reply = KQMLList.from_string(
             '(SUCCESS :pathways (' + pathway_list_str + '))')
@@ -476,12 +482,13 @@ class TFTA_Module(KQMLModule):
         try:
             pathwayName,externalId,source,dblink,counts = self.tfta.find_pathway_count_genes(target_names)
 	except PathwayNotFoundException:
-		reply = make_failure('PathwayNotFoundException')
-		return reply
+            reply = make_failure('PathwayNotFoundException')
+            return reply
 			
         path_list_str = ''
 	for pn,eid,src,dbl,ct in zip(pathwayName,externalId,source,dblink,counts):
-		path_list_str += '(:name %s :externalId %s :source %s :dblink %s :count %s) ' % (pn, eid ,src, dbl, ct)
+            pnslash = '_'.join(pn.split(' '))
+            path_list_str += '(:name %s :externalId %s :source %s :dblink %s :count %s) ' % (pnslash, eid ,src, dbl, ct)
 
 	reply = KQMLList.from_string(
                '(SUCCESS :pathway (' + path_list_str + '))')
