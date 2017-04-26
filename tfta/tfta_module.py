@@ -452,7 +452,7 @@ class TFTA_Module(KQMLModule):
                 self.tfta.find_overlap_targets_tfs_genes(tf_names, target_names)
         except TFNotFoundException:
             reply = make_failure('TF_NOT_FOUND')
-			return reply
+	    return reply
 			
         if len(overlap_targets):
             target_list_str = ''
@@ -466,28 +466,26 @@ class TFTA_Module(KQMLModule):
         return reply
         
     def respond_find_common_pathway_genes(self, content):
-		'''
-		response content to FIND_COMMON_PATHWAY_GENES request
-		'''
-		target_arg = content.gets('target')
-		targets = self._get_targets(target_arg)
-		target_names = []
-		for tg in targets:
-			target_names.append(tg.name)
+	'''response content to FIND_COMMON_PATHWAY_GENES request'''
+	target_arg = content.gets('target')
+	targets = self._get_targets(target_arg)
+	target_names = []
+	for tg in targets:
+            target_names.append(tg.name)
 		
-		try:	
-		    pathwayName,externalId,source,dblink,counts = self.tfta.find_pathway_count_genes(target_names)
-		except PathwayNotFoundException:
-			reply = make_failure('PathwayNotFoundException')
-			return reply
-			
-		path_list_str = ''
-		for pn,eid,src,dbl,ct in zip(pathwayName,externalId,source,dblink,counts):
-			path_list_str += '(:name %s :externalId %s :source %s :dblink %s :count %s) ' % (pn, eid ,src, dbl, ct)
-			
-		reply = KQMLList.from_string(
-            '(SUCCESS :pathway (' + path_list_str + '))')
+        try:
+            pathwayName,externalId,source,dblink,counts = self.tfta.find_pathway_count_genes(target_names)
+	except PathwayNotFoundException:
+		reply = make_failure('PathwayNotFoundException')
 		return reply
+			
+        path_list_str = ''
+	for pn,eid,src,dbl,ct in zip(pathwayName,externalId,source,dblink,counts):
+		path_list_str += '(:name %s :externalId %s :source %s :dblink %s :count %s) ' % (pn, eid ,src, dbl, ct)
+
+	reply = KQMLList.from_string(
+               '(SUCCESS :pathway (' + path_list_str + '))')
+        return reply
 
 def _get_target(target_str):
     target_str = '<ekb>' + target_str + '</ekb>'
