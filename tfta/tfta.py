@@ -43,14 +43,20 @@ class TFTA:
         Return True if the tf regulates the target, and False if not
         '''
         if self.tfdb is not None:
-            
-            t = (tf_name,)
-            res = self.tfdb.execute("SELECT DISTINCT Target FROM CombinedDB WHERE TF = ? ", t).fetchall()
+            #check if target_name in the database
+            t = (target_name,)
+            res = self.tfdb.execute("SELECT DISTINCT TF FROM CombinedDB WHERE Target = ? ", t).fetchall()
             if not res:
-                raise TFNotFoundException
-            for r in res:
-                if r[0].upper() == target_name.upper():
-                    return True
+                raise TargetNotFoundException
+            else:
+            
+                t = (tf_name,)
+                res = self.tfdb.execute("SELECT DISTINCT Target FROM CombinedDB WHERE TF = ? ", t).fetchall()
+                if not res:
+                    raise TFNotFoundException
+                for r in res:
+                    if r[0].upper() == target_name.upper():
+                        return True
  		
         return False
  		
@@ -67,6 +73,13 @@ class TFTA:
             for r in res:
                 if r[0].upper() == target_name.upper():
                     return True
+                    
+            #check if target_name in database
+            t = (target_name, tissue_name)
+            res = self.tfdb.execute("SELECT DISTINCT TF FROM Target2TF2Tissue "
+                                    "WHERE Target = ? AND Tissue LIKE ? ", t).fetchall()
+            if not res:
+                raise TargetNotFoundException
  		
         return False
  		
@@ -84,8 +97,8 @@ class TFTA:
             if res:
                 tf_names = [r[0] for r in res]
             else:
-                tf_names = []
-                return tf_names
+                raise TargetNotFoundException
+                
             if len(target_names)>1:
                 for i in range(1,len(target_names)):
                     t = (target_names[i],)
@@ -94,8 +107,7 @@ class TFTA:
                     if res:
                         tf_names = list(set(tf_names) & set([r[0] for r in res]))
                     else:
-                        tf_names = []
-                        return tf_names
+                        raise TargetNotFoundException
  					
             tf_names.sort()
         else:
@@ -145,8 +157,7 @@ class TFTA:
             if res:
                 tf_names = [r[0] for r in res]
             else:
-                tf_names = []
-                return tf_names
+                raise TargetNotFoundException
  			
             if len(target_names)>1:
                 for i in range(1,len(target_names)):
@@ -156,8 +167,7 @@ class TFTA:
                     if res:
                         tf_names = list(set(tf_names) & set([r[0] for r in res]))
                     else:
-                        tf_names = []
-                        return tf_names
+                        raise TargetNotFoundException
  					
             tf_names.sort()
  			
@@ -472,8 +482,8 @@ class TFTA:
             if res:
                 target_names = [r[0] for r in res]
             else:
-                target_names = []
-                return target_names
+                raise TFNotFoundException
+                
             if len(tf_names) > 1:
                 for i in range(1,len(tf_names)):
                     t = (tf_names[i],)
@@ -482,8 +492,7 @@ class TFTA:
                     if res:
                         target_names = list(set(target_names) & set([r[0] for r in res]))
                     else:
-                        target_names = []
-                        return target_names
+                        raise TFNotFoundException
  			
             target_names.sort()
  			#targetEntrez = [r[1] for r in res]
@@ -508,8 +517,7 @@ class TFTA:
                 if res:
                     targets = targets + [r[0] for r in res]
                 else:
-                    targets = []
-                    return targets
+                    raise TFNotFoundException
  				
  			#common regulated targets by the given tf list
             com_targets = []
@@ -539,8 +547,8 @@ class TFTA:
             if res:
                 target_names = [r[0] for r in res]
             else:
-                target_names = []
-                return target_names
+                raise TFNotFoundException
+                
             if len(tf_names) > 1:
                 for i in range(1,len(tf_names)):
                     t = (tf_names[i],tissue_name)
@@ -549,8 +557,7 @@ class TFTA:
                     if res:
                         target_names = list(set(target_names) & set([r[0] for r in res]))
                     else:
-                        target_names = []
-                        return target_names
+                        raise TFNotFoundException
  			
             target_names.sort()
  				
@@ -596,7 +603,7 @@ class TFTA:
 #test functions
 if __name__ == "__main__":
 	a=TFTA()
-	'''
+	
 	ss2 = a.Is_tf_target('FOS','ELF3');
 	if ss2 is not None:
 		print 'ss2='+str(ss2)
@@ -618,11 +625,11 @@ if __name__ == "__main__":
 	ss7=a.find_tfs_tissue(['MAPK14','SYPL1'],'bladder')
         print 'lenth(ss7)='+str(len(ss7))
         print 'ss7='+','.join(ss7)
-	'''	
-	ss8=a.find_targets_tissue(['USF','BACH2'],'bladder')
+	
+	ss8=a.find_targets_tissue(['SREBP-1','USF'],'bladder')
         print 'length(ss8)=', len(ss8)
         print 'ss8='+','.join(ss8)
- 	'''
+ 	
  	pathId,pathName,extId,pathsource,pathlink=a.find_pathways_from_name('MAPK signaling pathway')
  	print 'pathId='+','.join(str(i) for i in pathId)
  	#imap
@@ -693,6 +700,6 @@ if __name__ == "__main__":
  	pathwayName,externalId,source,dblink,counts=a.find_pathway_count_genes(targets)
  	for pn, ct in zip(pathwayName, counts):
  	    print pn, '(',ct,')'
- 	'''
+ 
  	
  	

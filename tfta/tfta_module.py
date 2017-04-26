@@ -93,6 +93,9 @@ class TFTA_Module(KQMLModule):
         except TFNotFoundException:
             reply = make_failure('TF_NOT_FOUND')
             return reply
+        except TargetNotFoundException:
+            reply = make_failure('TARGET_NOT_FOUND')
+            return reply
 
         reply = KQMLList('SUCCESS')
         is_target_str = 'TRUE' if is_target else 'FALSE'
@@ -126,10 +129,12 @@ class TFTA_Module(KQMLModule):
             return reply
 
         try:
-            is_target = self.tfta.Is_tf_target_tissue(tf_name, target_name,
-                                                      tissue_name)
+            is_target = self.tfta.Is_tf_target_tissue(tf_name, target_name, tissue_name)
         except TFNotFoundException:
             reply = make_failure('TF_NOT_FOUND')
+            return reply
+        except TargetNotFoundException:
+            reply = make_failure('TARGET_NOT_FOUND')
             return reply
 
         reply = KQMLList('SUCCESS')
@@ -146,24 +151,33 @@ class TFTA_Module(KQMLModule):
         tf_names = []
         for tf in tfs:
             tf_names.append(tf.name)
+            
+        try:
+            target_names = self.tfta.find_targets(tf_names)
+        except TFNotFoundException:
+            reply = make_failure('TF_NOT_FOUND')
+            return reply
+        
+        if len(target_names):
+            target_list_str = ''
+            for tg in target_names:
+                target_list_str += '(:name %s ) ' % tg.encode('ascii', 'ignore')
 
-        target_names = self.tfta.find_targets(tf_names)
-
-        target_list_str = ''
-        for tg in target_names:
-            target_list_str += '(:name %s ) ' % tg.encode('ascii', 'ignore')
-
-        reply = KQMLList.from_string(
-            '(SUCCESS :targets (' + target_list_str + '))')
+            reply = KQMLList.from_string(
+                '(SUCCESS :targets (' + target_list_str + '))')
+        else:
+            reply = make_failure('NO_TARGET_FOUND')
         return reply
 
     def respond_find_tf_targets_tissue(self, content):
         """Response content to find-tf-target request
-        For a tf, reply with the targets found within given tissue
+        For tf list, reply with the targets found within given tissue
         """
         tf_arg = content.gets('tf')
-        tf = _get_target(tf_arg)
-        tf_name = tf.name
+        tfs = _get_targets(tf_arg)
+        tf_names = []
+        for tf in tfs:
+            tf_names.append(tf.name)
 
         tissue_arg = content.get('tissue')
         tissue_name = tissue_arg.head()
@@ -171,15 +185,22 @@ class TFTA_Module(KQMLModule):
         if tissue_name not in tissue_list:
             reply = make_failure('INVALID_TISSUE')
             return reply
+        
+        try:
+            target_names = self.tfta.find_targets_tissue(tf_names, tissue_name)
+        except TFNotFoundException:
+            reply = make_failure('TF_NOT_FOUND')
+            return reply
+        
+        if len(target_names):
+            target_list_str = ''
+            for tg in target_names:
+                target_list_str += '(:name %s) ' % tg.encode('ascii', 'ignore')
 
-        target_names = self.tfta.find_targets_tissue(tf_name, tissue_name)
-
-        target_list_str = ''
-        for tg in target_names:
-            target_list_str += '(:name %s) ' % tg.encode('ascii', 'ignore')
-
-        reply = KQMLList.from_string(
-            '(SUCCESS :targets (' + target_list_str + '))')
+            reply = KQMLList.from_string(
+                '(SUCCESS :targets (' + target_list_str + '))')
+        else:
+            reply = make_failure('NO_TARGET_FOUND')
         return reply
 
     def respond_find_target_tfs(self, content):
@@ -190,13 +211,20 @@ class TFTA_Module(KQMLModule):
         target_names = []
         for target in targets:
             target_names.append(target.name)
-
-        tf_names = self.tfta.find_tfs(target_names)
-        tf_list_str = ''
-        for tf in tf_names:
-            tf_list_str += '(:name %s) ' % tf.encode('ascii', 'ignore')
-        reply = KQMLList.from_string(
-            '(SUCCESS :tfs (' + tf_list_str + '))')
+        try:
+            tf_names = self.tfta.find_tfs(target_names)
+        except TargetNotFoundException:
+            reply = make_failure('TARGET_NOT_FOUND')
+            return reply
+            
+        if len(tf_names):    
+            tf_list_str = ''
+            for tf in tf_names:
+                tf_list_str += '(:name %s) ' % tf.encode('ascii', 'ignore')
+            reply = KQMLList.from_string(
+                '(SUCCESS :tfs (' + tf_list_str + '))')
+        else:
+            reply = make_failure('NO_TF_FOUND')
         return reply
 
     def respond_find_target_tfs_tissue(self, content):
@@ -212,14 +240,22 @@ class TFTA_Module(KQMLModule):
         if tissue_name not in tissue_list:
             reply = make_failure('INVALID_TISSUE')
             return reply
+        
+        try:
+            tf_names = self.tfta.find_tfs_tissue(target_name, tissue_name)
+        except TargetNotFoundException:
+            reply = make_failure('TARGET_NOT_FOUND')
+            return reply
+            
+        if len(tf_names):
+            tf_list_str = ''
+            for tf in tf_names:
+                tf_list_str += '(:name %s) ' % tf.encode('ascii', 'ignore')
 
-        tf_names = self.tfta.find_tfs_tissue(target_name, tissue_name)
-        tf_list_str = ''
-        for tf in tf_names:
-            tf_list_str += '(:name %s) ' % tf.encode('ascii', 'ignore')
-
-        reply = KQMLList.from_string(
-            '(SUCCESS :tfs (' + tf_list_str + '))')
+            reply = KQMLList.from_string(
+                '(SUCCESS :tfs (' + tf_list_str + '))')
+        else:
+            reply = make_failure('NO_TF_FOUND')
         return reply
 
     def respond_find_pathway_gene(self,content):
@@ -410,16 +446,23 @@ class TFTA_Module(KQMLModule):
         target_names = []
         for tg in targets:
             target_names.append(tg.name)
+        
+        try:
+            overlap_targets = \
+                self.tfta.find_overlap_targets_tfs_genes(tf_names, target_names)
+        except TFNotFoundException:
+            reply = make_failure('TF_NOT_FOUND')
+			return reply
+			
+        if len(overlap_targets):
+            target_list_str = ''
+            for tg in overlap_targets:
+                target_list_str += '(:name %s ) ' % tg.encode('ascii', 'ignore')
 
-        overlap_targets = \
-            self.tfta.find_overlap_targets_tfs_genes(tf_names, target_names)
-
-        target_list_str = ''
-        for tg in overlap_targets:
-            target_list_str += '(:name %s ) ' % tg.encode('ascii', 'ignore')
-
-        reply = KQMLList.from_string(
-            '(SUCCESS :targets (' + target_list_str + '))')
+            reply = KQMLList.from_string(
+                '(SUCCESS :targets (' + target_list_str + '))')
+        else:
+            reply = make_failure('NO_TARGET_FOUND')
         return reply
         
     def respond_find_common_pathway_genes(self, content):
