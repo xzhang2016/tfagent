@@ -277,8 +277,10 @@ class TFTA_Module(KQMLModule):
         pathway_list_str = ''
         for pn, eid, src, dbl in zip(pathwayName, externalId, source, dblink):
             pnslash = '_'.join(pn.split(' '))
+            eidslash = '_'.join(pn.split(' '))
+            eidslash = '_'.join(pn.split(':'))
             pathway_list_str += \
-                '(:name %s :externalId %s :source %s :dblink %s) ' % (pnslash, eid ,src, dbl)
+                '(:name %s :externalId %s :source %s :dblink %s) ' % (pnslash, eidslash ,src, dbl)
 
         reply = KQMLList.from_string(
             '(SUCCESS :pathways (' + pathway_list_str + '))')
@@ -307,8 +309,10 @@ class TFTA_Module(KQMLModule):
         pathway_list_str = ''
         for pn, eid, src, dbl in zip(pathwayName, externalId, source, dblink):
             pnslash = '_'.join(pn.split(' '))
+            eidslash = '_'.join(pn.split(' '))
+            eidslash = '_'.join(pn.split(':'))
             pathway_list_str += \
-                '(:name %s :externalId %s :source %s :dblink %s) ' % (pnslash, eid ,src, dbl)
+                '(:name %s :externalId %s :source %s :dblink %s) ' % (pnslash, eidslash ,src, dbl)
 
         reply = KQMLList.from_string(
             '(SUCCESS :pathways (' + pathway_list_str + '))')
@@ -384,8 +388,10 @@ class TFTA_Module(KQMLModule):
         pathway_list_str = ''
         for pn, eid, src, dbl in zip(pathwayName,externalId,source,dblink):
             pnslash = '_'.join(pn.split(' '))
+            eidslash = '_'.join(pn.split(' '))
+            eidslash = '_'.join(pn.split(':'))
             pathway_list_str += \
-                '(:name %s :externalId %s :source %s :dblink %s) ' % (pnslash, eid ,src, dbl)
+                '(:name %s :externalId %s :source %s :dblink %s) ' % (pnslash, eidslash ,src, dbl)
 
         reply = KQMLList.from_string(
             '(SUCCESS :pathways (' + pathway_list_str + '))')
@@ -488,7 +494,9 @@ class TFTA_Module(KQMLModule):
         path_list_str = ''
 	for pn,eid,src,dbl,ct in zip(pathwayName,externalId,source,dblink,counts):
             pnslash = '_'.join(pn.split(' '))
-            path_list_str += '(:name %s :externalId %s :source %s :dblink %s :count %s) ' % (pnslash, eid ,src, dbl, ct)
+            eidslash = '_'.join(pn.split(' '))
+            eidslash = '_'.join(pn.split(':'))
+            path_list_str += '(:name %s :externalId %s :source %s :dblink %s :count %s) ' % (pnslash, eidslash ,src, dbl, ct)
 
 	reply = KQMLList.from_string(
                '(SUCCESS :pathway (' + path_list_str + '))')
