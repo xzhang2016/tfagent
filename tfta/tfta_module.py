@@ -478,7 +478,7 @@ class TFTA_Module(KQMLModule):
         return reply
         
     def respond_find_common_pathway_genes(self, content):
-	'''response content to FIND_COMMON_PATHWAY_GENES request'''
+        '''response content to FIND_COMMON_PATHWAY_GENES request'''
 	target_arg = content.gets('target')
 	targets = self._get_targets(target_arg)
 	target_names = []
