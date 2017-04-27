@@ -217,7 +217,7 @@ class TFTA:
         dblink = []
         if self.tfdb is not None:
  			#regstr='%'+pathway_name+'%'
-            t = (gene_name,)
+            t = (gene_name[0],)
  			#get pathwayId
             #res = self.tfdb.execute("SELECT * FROM pathwayInfo "
             #                       "WHERE Id in (SELECT DISTINCT pathwayID FROM pathway2Genes "
