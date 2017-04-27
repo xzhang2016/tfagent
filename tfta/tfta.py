@@ -204,7 +204,7 @@ class TFTA:
             dblink = []
  			
         return pathwayId,pathwayName,externalId,source,dblink
- 		
+    '''	
     def find_pathways_from_dbsource_geneName(self, dbsource,gene_name):
         '''
         return pathway information for given dbsource and gene_name
@@ -234,6 +234,47 @@ class TFTA:
             dblink = []
  			
         return pathwayId,pathwayName,externalId,source,dblink
+    '''
+
+    def find_pathways_from_dbsource_geneName(self, dbsource,gene_name):
+        '''
+        return pathway information for given dbsource and gene_name
+        '''
+	#query
+        pathwayId = []
+        pathwayName = []
+        externalId = []
+        psource = []
+        dblink = []
+        if self.tfdb is not None:
+ 			#regstr='%'+pathway_name+'%'
+            t = (gene_name,)
+ 			#get pathwayId
+            #res = self.tfdb.execute("SELECT * FROM pathwayInfo "
+            #                       "WHERE Id in (SELECT DISTINCT pathwayID FROM pathway2Genes "
+              #                      "WHERE genesymbol = ?) AND source LIKE ? ", t).fetchall()
+            res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
+                                    "WHERE genesymbol = ? ", t).fetchall()
+            if res1 is not None:
+                pids = [r[0] for r in res1]
+            else:
+                raise PathwayNotFoundException
+            
+	    for pid in pids:  
+                t = (pid, dbsource)
+                res = self.tfdb.execute("SELECT * FROM pathwayInfo "
+                                    "WHERE Id = ? AND source LIKE ? ", t).fetchall()
+            
+                if res is not None:
+                    pathwayId = pathwayId + [r[0] for r in res]
+                    pathwayName = pathwayName + [r[1] for r in res]
+                    externalId = externalId + [r[2] for r in res]
+                    psource = psource + [r[3] for r in res]
+                    dblink = dblink + [r[4] for r in res]
+                else:
+                    raise PathwayNotFoundException
+ 						
+        return pathwayId,pathwayName,externalId,psource,dblink
  		
     def find_genes_from_pathwayName(self, pathway_name):
         '''
