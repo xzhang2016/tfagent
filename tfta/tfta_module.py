@@ -295,6 +295,7 @@ class TFTA_Module(KQMLModule):
         pathways information"""
         db_arg = content.get('database')
         db_name = db_arg.head()
+	print db_name
 
         gene_arg = content.gets('gene')
         genes = _get_targets(gene_arg)
