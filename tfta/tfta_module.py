@@ -325,7 +325,8 @@ class TFTA_Module(KQMLModule):
         """Response content to FIND_TF_PATHWAY request
         For a given pathway name, reply the tfs within the pathway"""
         pathway_arg = content.get('pathway')
-        pathway_name = pathway_arg.head()
+        #pathway_name = pathway_arg.head()
+	pathway_name = _get_targets(pathway_arg)
 
         try:
             pathwayId,pathwayName,tflist = \
@@ -354,7 +355,8 @@ class TFTA_Module(KQMLModule):
         """Response content to FIND-GENE-PATHWAY request
         For a given pathway name, reply the genes within the pathway"""
         pathway_arg = content.get('pathway')
-        pathway_name = pathway_arg.head()
+        #pathway_name = pathway_arg.head()
+	pathway_name = _get_targets(pathway_arg)
 
         try:
             pathwayId,pathwayName,genelist = \
