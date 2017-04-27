@@ -296,6 +296,7 @@ class TFTA_Module(KQMLModule):
         db_arg = content.get('database')
         db_name = db_arg.head()
 	print db_name
+	db_name = trim_quotes(db_name)
 
         gene_arg = content.gets('gene')
         genes = _get_targets(gene_arg)
@@ -534,6 +535,14 @@ def make_failure(reason):
     msg = KQMLList('FAILURE')
     msg.set('reason', reason)
     return msg
+
+def trim_quotes(descr):
+    if descr[0] == '"':
+	descr = descr[1:]
+    if descr[-1] == '"':
+	descr = descr[:-1]
+    return descr
+
 
 if __name__ == "__main__":
     TFTA_Module(['-name', 'TFTA'] + sys.argv[1:])
