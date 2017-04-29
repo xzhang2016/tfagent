@@ -167,6 +167,8 @@ class TFTA_Module(KQMLModule):
                 '(SUCCESS :targets (' + target_list_str + '))')
         else:
             reply = make_failure('NO_TARGET_FOUND')
+	
+	print "reply=",reply
         return reply
 
     def respond_find_tf_targets_tissue(self, content):
@@ -225,6 +227,7 @@ class TFTA_Module(KQMLModule):
                 '(SUCCESS :tfs (' + tf_list_str + '))')
         else:
             reply = make_failure('NO_TF_FOUND')
+	print "reply=", reply
         return reply
 
     def respond_find_target_tfs_tissue(self, content):
