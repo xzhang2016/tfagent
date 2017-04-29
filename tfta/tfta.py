@@ -112,7 +112,8 @@ class TFTA:
             tf_names.sort()
         else:
             tf_names = []
- 				
+ 	
+	print tf_names
         return tf_names
  		
     def find_tfs_count(self,target_names):
@@ -509,7 +510,7 @@ class TFTA:
         else:
             target_names = []
  			#targetEntrez = []
- 				
+        print "target_names=",target_names
         return target_names
  		
     def find_overlap_targets_tfs_genes(self,tf_names,target_names):
