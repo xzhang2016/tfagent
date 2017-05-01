@@ -18,8 +18,8 @@ class TFTA_Module(KQMLModule):
                       'FIND-PATHWAY-GENE', 'FIND-PATHWAY-DB-GENE',
                       'FIND_TF_PATHWAY', 'FIND-GENE-PATHWAY',
                       'FIND_PATHWAY_KEYWORD', 'FIND_TF_KEYWORD',
-                      'FIND_COMMON_TF_GENES', 'FIND_OVERLAP_TARGETS_TF_GENES',
-                      'FIND_COMMON_PATHWAY_GENES',
+                      'FIND-COMMON-TF-GENES', 'FIND_OVERLAP_TARGETS_TF_GENES',
+                      'FIND-COMMON-PATHWAY-GENES',
                       'IS-TF-TARGET-TISSUE', 'FIND-TF-TARGET-TISSUE',
                       'FIND-TARGET-TF-TISSUE']
 
@@ -58,12 +58,12 @@ class TFTA_Module(KQMLModule):
             reply_content = self.respond_find_pathway_chemical(content)
         elif task_str == 'FIND_TF_KEYWORD':
             reply_content = self.respond_find_tf_chemical(content)
-        elif task_str == 'FIND_COMMON_TF_GENES':
+        elif task_str == 'FIND-COMMON-TF-GENES':
             reply_content = self.respond_find_common_tfs_genes(content)
         elif task_str == 'FIND_OVERLAP_TARGETS_TF_GENES':
             reply_content = self.respond_find_overlap_targets_tf_genes(content)
-        elif task_str == 'FIND_COMMON_PATHWAY_GENES':
-			reply_content = self.respond_find_common_pathway_genes(content_list)
+        elif task_str == 'FIND-COMMON-PATHWAY-GENES':
+			reply_content = self.respond_find_common_pathway_genes(content)
         elif task_str == 'IS-TF-TARGET-TISSUE':
             reply_content = self.respond_is_tf_target_tissue(content)
         elif task_str == 'FIND-TF-TARGET_TISSUE':
@@ -438,7 +438,7 @@ class TFTA_Module(KQMLModule):
         return reply
 
     def respond_find_common_tfs_genes(self, content):
-        """Response content to FIND_COMMON_TF_GENES request
+        """Response content to FIND-COMMON-TF-GENES request
         For a given target list, reply the tfs regulating these genes
         and the frequency of each TF"""
         target_arg = content.gets('target')
@@ -490,9 +490,9 @@ class TFTA_Module(KQMLModule):
         return reply
         
     def respond_find_common_pathway_genes(self, content):
-        '''response content to FIND_COMMON_PATHWAY_GENES request'''
+        '''response content to FIND-COMMON-PATHWAY-GENES request'''
 	target_arg = content.gets('target')
-	targets = self._get_targets(target_arg)
+	targets = _get_targets(target_arg)
 	target_names = []
 	for tg in targets:
             target_names.append(tg.name)
