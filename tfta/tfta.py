@@ -425,7 +425,7 @@ class TFTA:
             else:
                 raise PathwayNotFoundException
                 
-        if not len(pathwayId):
+            if not len(pathwayId):
 		raise PathwayNotFoundException
         return pathwayId,pathwayName1,externalId,source,dblink
  		
