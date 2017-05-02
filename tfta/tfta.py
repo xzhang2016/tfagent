@@ -249,8 +249,8 @@ class TFTA:
                     raise PathwayNotFoundException
 		
             #sort
-	    pathwayName,pathwayId,externalId,source,dblink = \
-	        zip(*sorted(zip(pathwayName,pathwayId,externalId,source,dblink)))
+	    pathwayName,pathwayId,externalId,psource,dblink = \
+	        zip(*sorted(zip(pathwayName,pathwayId,externalId,psource,dblink)))
  						
         return pathwayId,pathwayName,externalId,psource,dblink
  		
