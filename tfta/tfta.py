@@ -380,6 +380,54 @@ class TFTA:
                 raise PathwayNotFoundException
  			
         return pathwayId,pathwayName,externalId,source,dblink
+
+    def find_pathways_from_genelist_keyword(self,gene_names, keyword):
+        '''
+        return pathways having given genes and some information in pathway name
+        '''
+ 	#query
+        pathwayId = []
+        pathwayName1 = []
+        externalId = []
+        source = []
+        dblink = []
+        if self.tfdb is not None:
+            pathlist = []
+            for gene_name in gene_names:
+                t = (gene_name,)
+                res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
+                                         "WHERE genesymbol = ? ", t).fetchall()
+                if res1:
+                    pathlist=pathlist+[r[0] for r in res1]
+                else:
+                    raise PathwayNotFoundException
+ 				
+ 	    #intersection
+            pathIDs=[]
+            for pth in set(pathlist):
+                if pathlist.count(pth)==len(gene_names):
+                    pathIDs.append(pth)
+ 			
+            if len(pathIDs)>0:
+                regstr='%'+keyword+'%'
+                for pth in pathIDs:
+                    t = (pth, regstr)
+                    res = self.tfdb.execute("SELECT * FROM pathwayInfo "
+                                            "WHERE Id = ? AND pathwayName LIKE ? ", t).fetchall()
+                                            
+                    if res:
+                        pathwayId = pathwayId + [r[0] for r in res]
+                        pathwayName1 = pathwayName1 + [r[1] for r in res]
+                        externalId = externalId + [r[2] for r in res]
+                        source = source + [r[3] for r in res]
+                        dblink = dblink + [r[4] for r in res]
+		
+            else:
+                raise PathwayNotFoundException
+                
+        if not len(pathwayId):
+		raise PathwayNotFoundException
+        return pathwayId,pathwayName1,externalId,source,dblink
  		
     def find_pathways_from_chemical(self, chemical_name):
         '''
