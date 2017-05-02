@@ -359,9 +359,10 @@ class TFTA_Module(KQMLModule):
     def respond_find_gene_pathway(self, content):
         """Response content to FIND-GENE-PATHWAY request
         For a given pathway name, reply the genes within the pathway"""
-        pathway_arg = content.get('pathway')
+        pathway_arg = content.gets('pathway')
         #pathway_name = pathway_arg.head()
-	pathway_name = _get_targets(pathway_arg)
+        target = _get_target(pathway_arg)
+        pathway_name = target.name
 
         try:
             pathwayId,pathwayName,genelist = \
