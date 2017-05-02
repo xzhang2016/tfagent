@@ -16,10 +16,10 @@ class TFTA_Module(KQMLModule):
         super(TFTA_Module, self).__init__(argv)
         self.tasks = ['IS-TF-TARGET', 'FIND-TF-TARGET', 'FIND-TARGET-TF',
                       'FIND-PATHWAY-GENE', 'FIND-PATHWAY-DB-GENE',
-                      'FIND_TF_PATHWAY', 'FIND-GENE-PATHWAY',
-                      'FIND_PATHWAY_KEYWORD', 'FIND_TF_KEYWORD',
+                      'FIND-TF-PATHWAY', 'FIND-GENE-PATHWAY',
+                      'FIND-PATHWAY-KEYWORD', 'FIND-TF-KEYWORD',
                       'FIND-COMMON-TF-GENES', 'FIND-OVERLAP-TARGETS-TF-GENES',
-                      'FIND-COMMON-PATHWAY-GENES','FIND-PATHWAY-GENE-NAME',
+                      'FIND-COMMON-PATHWAY-GENES','FIND-PATHWAY-GENE-KEYWORD',
                       'IS-TF-TARGET-TISSUE', 'FIND-TF-TARGET-TISSUE',
                       'FIND-TARGET-TF-TISSUE']
 
@@ -48,27 +48,29 @@ class TFTA_Module(KQMLModule):
             reply_content = self.respond_find_target_tfs(content)
         elif task_str == 'FIND-PATHWAY-GENE':
             reply_content = self.respond_find_pathway_gene(content)
+	elif task_str == 'FIND-PATHWAY-GENE-KEYWORD':
+            reply_content = self.respond_find_pathway_gene_keyword(content)
         elif task_str == 'FIND-PATHWAY-DB-GENE':
             reply_content = self.respond_find_pathway_db_gene(content)
-        elif task_str == 'FIND_TF_PATHWAY':
+        elif task_str == 'FIND-TF-PATHWAY':
             reply_content = self.respond_find_tf_pathway(content)
         elif task_str == 'FIND-GENE-PATHWAY':
             reply_content = self.respond_find_gene_pathway(content)
-        elif task_str == 'FIND_PATHWAY_KEYWORD':
+        elif task_str == 'FIND-PATHWAY-KEYWORD':
             reply_content = self.respond_find_pathway_chemical(content)
-        elif task_str == 'FIND_TF_KEYWORD':
+        elif task_str == 'FIND-TF-KEYWORD':
             reply_content = self.respond_find_tf_chemical(content)
         elif task_str == 'FIND-COMMON-TF-GENES':
             reply_content = self.respond_find_common_tfs_genes(content)
-        elif task_str == 'FIND_OVERLAP_TARGETS_TF_GENES':
+        elif task_str == 'FIND-OVERLAP-TARGETS-TF-GENES':
             reply_content = self.respond_find_overlap_targets_tf_genes(content)
         elif task_str == 'FIND-COMMON-PATHWAY-GENES':
-			reply_content = self.respond_find_common_pathway_genes(content)
+	    reply_content = self.respond_find_common_pathway_genes(content)
         elif task_str == 'IS-TF-TARGET-TISSUE':
             reply_content = self.respond_is_tf_target_tissue(content)
-        elif task_str == 'FIND-TF-TARGET_TISSUE':
+        elif task_str == 'FIND-TF-TARGET-TISSUE':
             reply_content = self.respond_find_tf_targets_tissue(content)
-        elif task_str == 'FIND-TARGET-TF_TISSUE':
+        elif task_str == 'FIND-TARGET-TF-TISSUE':
             reply_content = self.respond_find_target_tfs_tissue(content)
         else:
             self.error_reply(msg, 'unknown request task ' + task_str)
@@ -285,6 +287,38 @@ class TFTA_Module(KQMLModule):
 	    pnslash = '"' + pn +'"'
 	    eidslash= '"' + eid +'"'
 	    dbl = '"' + dbl +'"'
+            pathway_list_str += \
+                '(:name %s :externalId %s :source %s :dblink %s) ' % (pnslash, eidslash ,src, dbl)
+
+        reply = KQMLList.from_string(
+            '(SUCCESS :pathways (' + pathway_list_str + '))')
+        return reply
+
+    def respond_find_pathway_gene_keyword(self,content):
+        """Response content to find_pathway_gene_name request
+        For a given gene list and keyword, reply the related pathways information"""
+        keyword_arg = content.get('keyword')
+        keyword_name = keyword_arg.head()
+        keyword = trim_quotes(keyword_name)
+        
+        gene_arg = content.gets('gene')
+        genes = _get_targets(gene_arg)
+        gene_names = []
+        for gene in genes:
+            gene_names.append(gene.name)
+
+        try:
+            pathwayId, pathwayName, externalId, source,dblink = \
+                self.tfta.find_pathways_from_genelist_keyword(gene_names)
+        except PathwayNotFoundException:
+            reply = make_failure('PathwayNotFoundException')
+            return reply
+
+        pathway_list_str = ''
+        for pn, eid, src, dbl in zip(pathwayName, externalId, source, dblink):
+            pnslash = '_'.join(pn.split(' '))
+            eidslash = '_'.join(pn.split(' '))
+            eidslash = '_'.join(pn.split(':'))
             pathway_list_str += \
                 '(:name %s :externalId %s :source %s :dblink %s) ' % (pnslash, eidslash ,src, dbl)
 
