@@ -39,9 +39,9 @@ class TFTA:
  				
  		
     def Is_tf_target(self,tf_name,target_name):
-        '''
+        """
         Return True if the tf regulates the target, and False if not
-        '''
+        """
         if self.tfdb is not None:
             #check if target_name in the database
             t = (target_name,)
@@ -61,9 +61,9 @@ class TFTA:
         return False
  		
     def Is_tf_target_tissue(self,tf_name,target_name,tissue_name):
-        '''
+        """
         Return True if the tf regulates the target in a given tissue, and False if not
-        '''
+        """
         if self.tfdb is not None:
             t = (tf_name, tissue_name)
             res = self.tfdb.execute("SELECT DISTINCT Target FROM Target2TF2Tissue "
@@ -85,11 +85,11 @@ class TFTA:
  		
 
     def find_tfs(self,target_names):
-        '''
+        """
         Return TFs regulating all the given targets
-        '''
+        """
  			
- 		#query
+ 	#query
         if self.tfdb is not None:
             t = (target_names[0],)
             res = self.tfdb.execute("SELECT DISTINCT TF FROM CombinedDB "
@@ -117,12 +117,12 @@ class TFTA:
         return tf_names
  		
     def find_tfs_count(self,target_names):
-        '''
+        """
         Return TFs regulating the given target list as well as the frequency (count)
-		of each TF
-		'''
+	of each TF
+	"""
  			
- 		#query
+ 	#query
         if self.tfdb is not None:
             tf_names = []
             for target_name in target_names:
@@ -131,13 +131,14 @@ class TFTA:
                                         "WHERE Target = ? ", t).fetchall()
                 if res:
                     tf_names = tf_names + [r[0] for r in res]
- 			#count for each TF
+ 	    
+	    #count for each TF
             unique_tfs = list(set(tf_names))
             tf_counts = []
             for i in range(len(unique_tfs)):
                 tf_counts.append(tf_names.count(unique_tfs[i]))
  				
- 			#sort
+ 	    #sort
             tf_counts,unique_tfs = zip(*sorted(zip(tf_counts, unique_tfs),reverse=True))
         else:
             unique_tfs = []
@@ -146,11 +147,11 @@ class TFTA:
         return unique_tfs, tf_counts
  		
     def find_tfs_tissue(self,target_names,tissue_name):
-        '''
-        Return TFs regulating the target in a given tissue
-        '''
+        """
+        Return TFs regulating the targets in a given tissue
+        """
  			
- 		#query
+ 	#query
         if self.tfdb is not None:
             t = (target_names[0],tissue_name)
             res = self.tfdb.execute("SELECT DISTINCT TF FROM Target2TF2Tissue "
@@ -178,9 +179,9 @@ class TFTA:
         return tf_names
  		
     def find_pathways_from_name(self, pathway_name):
-        '''
+        """
         return pathway information related to pathway_name
-        '''
+        """
  	#query
         if self.tfdb is not None:
             regstr='%'+pathway_name+'%'
@@ -189,11 +190,11 @@ class TFTA:
             res = self.tfdb.execute("SELECT * FROM pathwayInfo "
                                     "WHERE pathwayName LIKE ? ORDER BY pathwayName", t).fetchall()
             if res is not None:
-                pathwayId=[r[0] for r in res]
-                pathwayName=[r[1] for r in res]
-                externalId=[r[2] for r in res]
-                source=[r[3] for r in res]
-                dblink=[r[4] for r in res]
+                pathwayId = [r[0] for r in res]
+                pathwayName = [r[1] for r in res]
+                externalId = [r[2] for r in res]
+                source = [r[3] for r in res]
+                dblink = [r[4] for r in res]
             else:
                 raise PathwayNotFoundException
 
@@ -210,19 +211,19 @@ class TFTA:
         return pathwayId,pathwayName,externalId,source,dblink
 
     def find_pathways_from_dbsource_geneName(self, dbsource,gene_name):
-        '''
+        """
         return pathway information for given dbsource and gene_name
-        '''
-	#query
+        """
+ 	#query
         pathwayId = []
         pathwayName = []
         externalId = []
         psource = []
         dblink = []
         if self.tfdb is not None:
- 			#regstr='%'+pathway_name+'%'
+ 	    #regstr='%'+pathway_name+'%'
             t = (gene_name[0],)
- 			#get pathwayId
+ 	    #get pathwayId
             #res = self.tfdb.execute("SELECT * FROM pathwayInfo "
             #                       "WHERE Id in (SELECT DISTINCT pathwayID FROM pathway2Genes "
               #                      "WHERE genesymbol = ?) AND source LIKE ? ", t).fetchall()
@@ -233,7 +234,7 @@ class TFTA:
             else:
                 raise PathwayNotFoundException
             
-	    for pid in pids:  
+            for pid in pids:  
                 t = (pid, dbsource)
                 res = self.tfdb.execute("SELECT * FROM pathwayInfo "
                                     "WHERE Id = ? AND source LIKE ? ", t).fetchall()
@@ -244,14 +245,12 @@ class TFTA:
                     externalId = externalId + [r[2] for r in res]
                     psource = psource + [r[3] for r in res]
                     dblink = dblink + [r[4] for r in res]
-		    
                 else:
                     raise PathwayNotFoundException
-		
+ 				
             #sort
 	    pathwayName,pathwayId,externalId,psource,dblink = \
 	        zip(*sorted(zip(pathwayName,pathwayId,externalId,psource,dblink)))
- 						
         return pathwayId,pathwayName,externalId,psource,dblink
  		
     def find_genes_from_pathwayName(self, pathway_name):
