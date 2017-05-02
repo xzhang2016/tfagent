@@ -181,13 +181,13 @@ class TFTA:
         '''
         return pathway information related to pathway_name
         '''
- 		#query
+ 	#query
         if self.tfdb is not None:
             regstr='%'+pathway_name+'%'
             t = (regstr,)
- 			#get pathwayId
+ 	    #get pathwayId
             res = self.tfdb.execute("SELECT * FROM pathwayInfo "
-                                    "WHERE pathwayName LIKE ? ", t).fetchall()
+                                    "WHERE pathwayName LIKE ? ORDER BY pathwayName", t).fetchall()
             if res is not None:
                 pathwayId=[r[0] for r in res]
                 pathwayName=[r[1] for r in res]
@@ -203,7 +203,10 @@ class TFTA:
             externalId = []
             source = []
             dblink = []
- 			
+ 	
+	#sort
+	#pathwayName,pathwayId,externalId,source,dblink = \
+	    #zip(*sorted(zip(pathwayName,pathwayId,externalId,source,dblink)))
         return pathwayId,pathwayName,externalId,source,dblink
 
     def find_pathways_from_dbsource_geneName(self, dbsource,gene_name):
@@ -241,8 +244,13 @@ class TFTA:
                     externalId = externalId + [r[2] for r in res]
                     psource = psource + [r[3] for r in res]
                     dblink = dblink + [r[4] for r in res]
+		    
                 else:
                     raise PathwayNotFoundException
+		
+            #sort
+	    pathwayName,pathwayId,externalId,source,dblink = \
+	        zip(*sorted(zip(pathwayName,pathwayId,externalId,source,dblink)))
  						
         return pathwayId,pathwayName,externalId,psource,dblink
  		
@@ -254,7 +262,7 @@ class TFTA:
         if self.tfdb is not None:
             regstr='%'+pathway_name+'%'
             t = (regstr,)
- 			#get pathwayId
+ 	    #get pathwayId
             res = self.tfdb.execute("SELECT Id,pathwayName FROM pathwayInfo "
                                     "WHERE pathwayName LIKE ? ", t).fetchall()
             if res is not None:
@@ -269,7 +277,7 @@ class TFTA:
                 for pthID in pathwayId:
                     t=(pthID,)
                     res1=self.tfdb.execute("SELECT DISTINCT genesymbol FROM pathway2Genes "
-                                           "WHERE pathwayID = ? ", t).fetchall()
+                                           "WHERE pathwayID = ? ORDER BY genesymbol", t).fetchall()
                     genes=[r[0] for r in res1]
                     genelist[pthID]=genes
  					
@@ -291,11 +299,11 @@ class TFTA:
         Return TFs within the given pathway
         '''
  			
- 		#query
+ 	#query
         if self.tfdb is not None:
             regstr='%'+pathway_name+'%'
             t = (regstr,)
- 			#get pathwayId and TF symbols
+ 	    #get pathwayId and TF symbols
             res = self.tfdb.execute("SELECT Id,pathwayName FROM pathwayInfo "
                                     "WHERE pathwayName LIKE ? ", t).fetchall()
  			
@@ -309,7 +317,7 @@ class TFTA:
                 for pn,pthID in zip(pathwayName,pathwayId):
                     t=(pthID,)
                     res1 = self.tfdb.execute("SELECT DISTINCT genesymbol FROM pathway2Genes "
-                                             "WHERE pathwayID = ? AND isTF=1 ", t).fetchall()
+                                             "WHERE pathwayID = ? AND isTF=1 ORDER BY genesymbol", t).fetchall()
                     if res1:
                         tfs=[r[0] for r in res1]
                         tflist[pthID]=tfs
@@ -330,7 +338,7 @@ class TFTA:
         '''
         return pathways having given genes
         '''
- 		#query
+ 	#query
         pathwayId=[]
         pathwayName=[]
         externalId=[]
@@ -347,7 +355,7 @@ class TFTA:
                 else:
                     raise PathwayNotFoundException
  				
- 			#intersection
+ 	    #intersection
             pathIDs=[]
             for pth in set(pathlist):
                 if pathlist.count(pth)==len(gene_names):
@@ -364,6 +372,10 @@ class TFTA:
                     externalId=externalId+[r[2] for r in res]
                     source=source+[r[3] for r in res]
                     dblink=dblink+[r[4] for r in res]
+		
+		#sort
+	        pathwayName,pathwayId,externalId,source,dblink = \
+	            zip(*sorted(zip(pathwayName,pathwayId,externalId,source,dblink)))
             else:
                 raise PathwayNotFoundException
  			
@@ -378,7 +390,7 @@ class TFTA:
             regstr='%'+chemical_name+'%'
             t = (regstr,)
             res = self.tfdb.execute("SELECT * FROM pathwayInfo "
-                                    "WHERE pathwayName LIKE ? ", t).fetchall()
+                                    "WHERE pathwayName LIKE ? ORDER BY pathwayName", t).fetchall()
             if res is not None:
                 pathwayId=[r[0] for r in res]
                 pathwayName=[r[1] for r in res]
@@ -418,7 +430,7 @@ class TFTA:
                 for pn,pthID in zip(pathwayName,pathwayId):
                     t=(pthID,)
                     res1 = self.tfdb.execute("SELECT DISTINCT genesymbol FROM pathway2Genes "
-                                             "WHERE pathwayID = ? AND isTF=1 ", t).fetchall()
+                                             "WHERE pathwayID = ? AND isTF=1 ORDER BY genesymbol", t).fetchall()
                     if res1:
                         tfs=[r[0] for r in res1]
                         tflist[pthID]=tfs
@@ -436,12 +448,12 @@ class TFTA:
         return newpathwayId,newpathwayName,tflist
  		
     def find_pathway_count_genes(self, gene_names):
-        '''
+        """
         For a given gene list, find the pathways containing one of the genes,
- 		and the frequency of the pathways 
- 		'''
- 		#query
- 		#pathwayId=[]
+ 	and the frequency of the pathways 
+ 	"""
+ 	#query
+ 	#pathwayId=[]
         pathwayName=[]
         externalId=[]
         source=[]
@@ -456,7 +468,7 @@ class TFTA:
                 if res1:
                     pathlist=pathlist+[r[0] for r in res1]
  				
- 			#pathway frequency
+ 	    #pathway frequency
             uniq_path = list(set(pathlist))
             for pth in uniq_path:
                 counts.append(pathlist.count(pth))
@@ -467,14 +479,15 @@ class TFTA:
                     res = self.tfdb.execute("SELECT * FROM pathwayInfo "
                                             "WHERE Id = ? ", t).fetchall()
  			
- 					#pathwayId=pathwayId+[r[0] for r in res]
+ 		    #pathwayId=pathwayId+[r[0] for r in res]
                     pathwayName=pathwayName+[r[1] for r in res]
                     externalId=externalId+[r[2] for r in res]
                     source=source+[r[3] for r in res]
                     dblink=dblink+[r[4] for r in res]
  					
- 				#sort
-                counts,pathwayName,externalId,source,dblink = zip(*sorted(zip(counts,pathwayName,externalId,source,dblink),reverse=True))
+ 		#sort
+                counts,pathwayName,externalId,source,dblink = \
+		    zip(*sorted(zip(counts,pathwayName,externalId,source,dblink),reverse=True))
             else:
                 raise PathwayNotFoundException
  				
