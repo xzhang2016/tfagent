@@ -437,7 +437,7 @@ class TFTA_Module(KQMLModule):
             '(SUCCESS :pathways (' + pathway_list_str + '))')
         return reply
 
-    def respond_find_common_tfs_genes(self, content):
+    def respond_find_common_tfs_genes2(self, content):
         """Response content to FIND-COMMON-TF-GENES request
         For a given target list, reply the tfs regulating these genes
         and the frequency of each TF"""
@@ -453,6 +453,32 @@ class TFTA_Module(KQMLModule):
             tf_list_str += '(:name %s :count %s) ' % (tf, ct)
         reply = KQMLList.from_string(
             '(SUCCESS :tfs (' + tf_list_str + '))')
+        return reply
+
+    def respond_find_common_tfs_genes(self, content):
+        """Response content to FIND-COMMON-TF-GENES request
+        For a given target list, reply the tfs regulating all these genes
+        ,same as find_target_tf"""
+        target_arg = content.gets('target')
+        targets = _get_targets(target_arg)
+        target_names = []
+        for target in targets:
+            target_names.append(target.name)
+
+	try:
+            tf_names = self.tfta.find_tfs(target_names)
+	except TargetNotFoundException:
+            reply = make_failure('TARGET_NOT_FOUND')
+            return reply
+	
+        if len(tf_names):    
+            tf_list_str = ''
+            for tf in tf_names:
+                tf_list_str += '(:name %s) ' % tf.encode('ascii', 'ignore')
+            reply = KQMLList.from_string(
+                '(SUCCESS :tfs (' + tf_list_str + '))')
+        else:
+            reply = make_failure('NO_TF_FOUND')
         return reply
 
     def respond_find_overlap_targets_tf_genes(self, content):
