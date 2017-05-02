@@ -18,8 +18,8 @@ class TFTA_Module(KQMLModule):
                       'FIND-PATHWAY-GENE', 'FIND-PATHWAY-DB-GENE',
                       'FIND_TF_PATHWAY', 'FIND-GENE-PATHWAY',
                       'FIND_PATHWAY_KEYWORD', 'FIND_TF_KEYWORD',
-                      'FIND-COMMON-TF-GENES', 'FIND_OVERLAP_TARGETS_TF_GENES',
-                      'FIND-COMMON-PATHWAY-GENES',
+                      'FIND-COMMON-TF-GENES', 'FIND-OVERLAP-TARGETS-TF-GENES',
+                      'FIND-COMMON-PATHWAY-GENES','FIND-PATHWAY-GENE-NAME',
                       'IS-TF-TARGET-TISSUE', 'FIND-TF-TARGET-TISSUE',
                       'FIND-TARGET-TF-TISSUE']
 
