@@ -511,7 +511,7 @@ class TFTA_Module(KQMLModule):
             path_list_str += '(:name %s :externalId %s :source %s :dblink %s :count %s) ' % (pnslash, eidslash ,src, dbl, ct)
 
 	reply = KQMLList.from_string(
-               '(SUCCESS :pathway (' + path_list_str + '))')
+               '(SUCCESS :pathways (' + path_list_str + '))')
         return reply
 
 def _get_target(target_str):
