@@ -316,9 +316,12 @@ class TFTA_Module(KQMLModule):
 
         pathway_list_str = ''
         for pn, eid, src, dbl in zip(pathwayName, externalId, source, dblink):
-            pnslash = '_'.join(pn.split(' '))
-            eidslash = '_'.join(pn.split(' '))
-            eidslash = '_'.join(pn.split(':'))
+            #pnslash = '_'.join(pn.split(' '))
+            #eidslash = '_'.join(pn.split(' '))
+            #eidslash = '_'.join(pn.split(':'))
+	    pnslash = '"' + pn +'"'
+	    eidslash= '"' + eid +'"'
+	    dbl = '"' + dbl +'"'
             pathway_list_str += \
                 '(:name %s :externalId %s :source %s :dblink %s) ' % (pnslash, eidslash ,src, dbl)
 
