@@ -636,13 +636,14 @@ class TFTA:
                         dblink=dblink+[r[4] for r in res]
  					
  		#sort
-                counts,pathwayName,externalId,source,dblink = \
-		    zip(*sorted(zip(counts,pathwayName,externalId,source,dblink),reverse=True))
+		if len(counts):
+                    counts,pathwayName,externalId,source,dblink = \
+		        zip(*sorted(zip(counts,pathwayName,externalId,source,dblink),reverse=True))
+		else:
+                    raise PathwayNotFoundException
             else:
                 raise PathwayNotFoundException
- 	
-	    if not len(counts):
-		raise PathwayNotFoundException
+ 
         return pathwayName,externalId,source,dblink,counts
  			
     def find_targets(self,tf_names):
