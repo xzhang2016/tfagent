@@ -20,6 +20,7 @@ class TFTA_Module(KQMLModule):
                       'FIND-PATHWAY-KEYWORD', 'FIND-TF-KEYWORD',
                       'FIND-COMMON-TF-GENES', 'FIND-OVERLAP-TARGETS-TF-GENES',
                       'FIND-COMMON-PATHWAY-GENES','FIND-PATHWAY-GENE-KEYWORD',
+		      'FIND-COMMON-PATHWAY-GENES-KEYWORD',
                       'IS-TF-TARGET-TISSUE', 'FIND-TF-TARGET-TISSUE',
                       'FIND-TARGET-TF-TISSUE']
 
@@ -66,6 +67,8 @@ class TFTA_Module(KQMLModule):
             reply_content = self.respond_find_overlap_targets_tf_genes(content)
         elif task_str == 'FIND-COMMON-PATHWAY-GENES':
 	    reply_content = self.respond_find_common_pathway_genes(content)
+	elif task_str == 'FIND-COMMON-PATHWAY-GENES-KEYWORD':
+	    reply_content = self.respond_find_common_pathway_genes_keyword(content)
         elif task_str == 'IS-TF-TARGET-TISSUE':
             reply_content = self.respond_is_tf_target_tissue(content)
         elif task_str == 'FIND-TF-TARGET-TISSUE':
@@ -553,7 +556,7 @@ class TFTA_Module(KQMLModule):
             reply = make_failure('NO_TARGET_FOUND')
         return reply
         
-    def respond_find_common_pathway_genes2(self, content):
+    def respond_find_common_pathway_genes(self, content):
         '''response content to FIND-COMMON-PATHWAY-GENES request'''
 	target_arg = content.gets('target')
 	targets = _get_targets(target_arg)
@@ -578,7 +581,7 @@ class TFTA_Module(KQMLModule):
                '(SUCCESS :pathways (' + path_list_str + '))')
         return reply
 
-    def respond_find_common_pathway_genes(self, content):
+    def respond_find_common_pathway_genes2(self, content):
         """response content to FIND-COMMON-PATHWAY-GENES request,same as find-pathway-gene
 	For a given gene list, reply the related pathways information"""
         gene_arg = content.gets('target')
@@ -604,6 +607,35 @@ class TFTA_Module(KQMLModule):
 
         reply = KQMLList.from_string(
             '(SUCCESS :pathways (' + pathway_list_str + '))')
+        return reply
+
+    def respond_find_common_pathway_genes_keyword(self, content):
+        '''response content to FIND-COMMON-PATHWAY-GENES-KEYWORD request'''
+	keyword_arg = content.get('keyword')
+        keyword_name = keyword_arg.head()
+        keyword = trim_quotes(keyword_name)
+	
+	target_arg = content.gets('target')
+	targets = _get_targets(target_arg)
+	target_names = []
+	for tg in targets:
+            target_names.append(tg.name)
+		
+        try:
+            pathwayName,externalId,source,dblink,counts = self.tfta.find_pathway_count_genes_keyword(target_names, keyword)
+	except PathwayNotFoundException:
+            reply = make_failure('PathwayNotFoundException')
+            return reply
+			
+        path_list_str = ''
+	for pn,eid,src,dbl,ct in zip(pathwayName,externalId,source,dblink,counts):
+            pnslash = '"' + pn +'"'
+	    eidslash= '"' + eid +'"'
+	    dbl = '"' + dbl +'"'
+            path_list_str += '(:name %s :externalId %s :source %s :dblink %s :count %s) ' % (pnslash, eidslash ,src, dbl, ct)
+
+	reply = KQMLList.from_string(
+               '(SUCCESS :pathways (' + path_list_str + '))')
         return reply
 
 def _get_target(target_str):
