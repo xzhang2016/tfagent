@@ -564,11 +564,15 @@ class TFTA:
  				
  	    #pathway frequency
             uniq_path = list(set(pathlist))
+	    uniq_path2 = []
             for pth in uniq_path:
-                counts.append(pathlist.count(pth))
+                ct = pathlist.count(pth)
+		if ct > 1:
+                    counts.append(ct)
+		    uniq_path2.append(pth)
  			
-            if len(uniq_path)>0:
-                for pth in uniq_path:
+            if len(uniq_path2)>0:
+                for pth in uniq_path2:
                     t=(pth,)
                     res = self.tfdb.execute("SELECT * FROM pathwayInfo "
                                             "WHERE Id = ? ", t).fetchall()
@@ -585,6 +589,59 @@ class TFTA:
             else:
                 raise PathwayNotFoundException
  				
+        return pathwayName,externalId,source,dblink,counts
+
+    def find_pathway_count_genes_keyword(self, gene_names, keyword):
+        """
+        For a given gene list and keyword, find the pathways containing one of the genes,
+ 	and the frequency of the pathways 
+ 	"""
+ 	#query
+ 	#pathwayId=[]
+        pathwayName=[]
+        externalId=[]
+        source=[]
+        dblink=[]
+        counts=[]
+        if self.tfdb is not None:
+            pathlist=[]
+            for gene_name in gene_names:
+                t = (gene_name,)
+                res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
+                                         "WHERE genesymbol = ? ", t).fetchall()
+                if res1:
+                    pathlist=pathlist+[r[0] for r in res1]
+ 				
+ 	    #pathway frequency
+            uniq_path = list(set(pathlist))
+	    uniq_path2 = []
+            for pth in uniq_path:
+                ct = pathlist.count(pth)
+		if ct > 1:
+                    counts.append(ct)
+		    uniq_path2.append(pth)
+ 			
+            if len(uniq_path2)>0:
+		regstr='%'+keyword+'%'
+                for pth in uniq_path2:
+                    t=(pth, regstr)
+                    res = self.tfdb.execute("SELECT * FROM pathwayInfo "
+                                            "WHERE Id = ? AND pathwayName LIKE ?", t).fetchall()
+ 			
+ 		    if res:
+                        pathwayName=pathwayName+[r[1] for r in res]
+                        externalId=externalId+[r[2] for r in res]
+                        source=source+[r[3] for r in res]
+                        dblink=dblink+[r[4] for r in res]
+ 					
+ 		#sort
+                counts,pathwayName,externalId,source,dblink = \
+		    zip(*sorted(zip(counts,pathwayName,externalId,source,dblink),reverse=True))
+            else:
+                raise PathwayNotFoundException
+ 	
+	    if not len(counts):
+		raise PathwayNotFoundException
         return pathwayName,externalId,source,dblink,counts
  			
     def find_targets(self,tf_names):
