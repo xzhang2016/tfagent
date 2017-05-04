@@ -465,14 +465,15 @@ class TFTA:
                         dblink = dblink + [r[4] for r in res]
 			
 		#sort
-		pathwayName1,pathwayId,externalId,source,dblink = \
-	            zip(*sorted(zip(pathwayName1,pathwayId,externalId,source,dblink)))
+		if len(pathwayId):
+		    pathwayName1,pathwayId,externalId,source,dblink = \
+	                zip(*sorted(zip(pathwayName1,pathwayId,externalId,source,dblink)))
+		else:
+		    raise PathwayNotFoundException
 		
             else:
                 raise PathwayNotFoundException
                 
-            if not len(pathwayId):
-		raise PathwayNotFoundException
         return pathwayId,pathwayName1,externalId,source,dblink
  		
     def find_pathways_from_chemical(self, chemical_name):
