@@ -128,6 +128,9 @@ class TFTA_Module(KQMLModule):
 
         tissue_arg = content.get('tissue')
         tissue_name = tissue_arg.head()
+	tissue_name = trim_quotes(tissue_name)
+	tissue_name = tissue_name.lower()
+	tissue_name = tissue_name.replace(' ', '_')
 
         if tissue_name not in tissue_list:
             reply = make_failure('INVALID_TISSUE')
@@ -188,6 +191,9 @@ class TFTA_Module(KQMLModule):
 
         tissue_arg = content.get('tissue')
         tissue_name = tissue_arg.head()
+	tissue_name = trim_quotes(tissue_name)
+	tissue_name = tissue_name.lower()
+	tissue_name = tissue_name.replace(' ', '_')
 
         if tissue_name not in tissue_list:
             reply = make_failure('INVALID_TISSUE')
@@ -237,20 +243,25 @@ class TFTA_Module(KQMLModule):
 
     def respond_find_target_tfs_tissue(self, content):
         """Response content to find-target-tf request
-        For a target, reply the tfs found within a given tissue"""
+        For a target list, reply the tfs found within a given tissue"""
         target_arg = content.gets('target')
-        target = _get_target(target_arg)
-        target_name = target.name
+        targets = _get_targets(target_arg)
+	target_names = []
+	for target in targets:
+            target_names.append(target.name)
 
         tissue_arg = content.get('tissue')
         tissue_name = tissue_arg.head()
+	tissue_name = trim_quotes(tissue_name)
+	tissue_name = tissue_name.lower()
+	tissue_name = tissue_name.replace(' ', '_')
 
         if tissue_name not in tissue_list:
             reply = make_failure('INVALID_TISSUE')
             return reply
         
         try:
-            tf_names = self.tfta.find_tfs_tissue(target_name, tissue_name)
+            tf_names = self.tfta.find_tfs_tissue(target_names, tissue_name)
         except TargetNotFoundException:
             reply = make_failure('TARGET_NOT_FOUND')
             return reply
@@ -284,12 +295,9 @@ class TFTA_Module(KQMLModule):
 
         pathway_list_str = ''
         for pn, eid, src, dbl in zip(pathwayName, externalId, source, dblink):
-            #pnslash = '_'.join(pn.split(' '))
-            #eidslash = '_'.join(eid.split(' '))
-            #eidslash = '_'.join(eidslash.split(':'))
-	    pnslash = '"' + pn +'"'
-	    eidslash= '"' + eid +'"'
-	    dbl = '"' + dbl +'"'
+	    pnslash = '"' + pn + '"'
+	    eidslash = '"' + eid + '"'
+	    dbl = '"' + dbl + '"'
             pathway_list_str += \
                 '(:name %s :externalId %s :source %s :dblink %s) ' % (pnslash, eidslash ,src, dbl)
 
@@ -319,9 +327,6 @@ class TFTA_Module(KQMLModule):
 
         pathway_list_str = ''
         for pn, eid, src, dbl in zip(pathwayName, externalId, source, dblink):
-            #pnslash = '_'.join(pn.split(' '))
-            #eidslash = '_'.join(pn.split(' '))
-            #eidslash = '_'.join(pn.split(':'))
 	    pnslash = '"' + pn +'"'
 	    eidslash= '"' + eid +'"'
 	    dbl = '"' + dbl +'"'
@@ -356,9 +361,9 @@ class TFTA_Module(KQMLModule):
 
         pathway_list_str = ''
         for pn, eid, src, dbl in zip(pathwayName, externalId, source, dblink):
-            pnslash = '"' + pn +'"'
-	    eidslash= '"' + eid +'"'
-	    dbl = '"' + dbl +'"'
+            pnslash = '"' + pn + '"'
+	    eidslash= '"' + eid + '"'
+	    dbl = '"' + dbl + '"'
             pathway_list_str += \
                 '(:name %s :externalId %s :source %s :dblink %s) ' % (pnslash, eidslash ,src, dbl)
 
@@ -387,7 +392,6 @@ class TFTA_Module(KQMLModule):
                 tf_list_str += '(:name %s) ' % tf.encode('ascii', 'ignore')
 
             tf_list_str = '(' + tf_list_str + ')'
-            #pnslash = '_'.join(pn.split(' '))
 	    pnslash = '"' + pn +'"'
 	    #eidslash= '"' + eid +'"'
             pathway_list_str += '(:name %s :tfs %s) ' % (pnslash, tf_list_str)
@@ -430,6 +434,7 @@ class TFTA_Module(KQMLModule):
         For a given chemical name, reply the pathways involving the chemical"""
         chemical_arg = content.get('keyword')
         chemical_name = chemical_arg.head()
+	chemical_name = trim_quotes(chemical_name)
 
         try:
             pathwayId, pathwayName, externalId, source, dblink = \
@@ -456,6 +461,7 @@ class TFTA_Module(KQMLModule):
         involving the chemical"""
         chemical_arg = content.get('keyword')
         chemical_name = chemical_arg.head()
+	chemical_name = trim_quotes(chemical_name)
 
         try:
             pathwayId, pathwayName, tflist = \
@@ -478,7 +484,7 @@ class TFTA_Module(KQMLModule):
             '(SUCCESS :pathways (' + pathway_list_str + '))')
         return reply
 
-    def respond_find_common_tfs_genes2(self, content):
+    def respond_find_common_tfs_genes(self, content):
         """Response content to FIND-COMMON-TF-GENES request
         For a given target list, reply the tfs regulating these genes
         and the frequency of each TF"""
@@ -496,7 +502,7 @@ class TFTA_Module(KQMLModule):
             '(SUCCESS :tfs (' + tf_list_str + '))')
         return reply
 
-    def respond_find_common_tfs_genes(self, content):
+    def respond_find_common_tfs_genes2(self, content):
         """Response content to FIND-COMMON-TF-GENES request
         For a given target list, reply the tfs regulating all these genes
         ,same as find_target_tf"""
