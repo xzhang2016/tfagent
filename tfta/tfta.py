@@ -21,6 +21,10 @@ class TargetNotFoundException(Exception):
 class PathwayNotFoundException(Exception):
     def __init__(self, *args, **kwargs):
         Exception.__init__(self, *args, **kwargs)
+	
+class GONotFoundException(Exception):
+    def __init__(self, *args, **kwargs):
+        Exception.__init__(self, *args, **kwargs)
  	
 class TFTA:
     def __init__(self):
