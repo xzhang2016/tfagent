@@ -4,7 +4,7 @@ and to other agents in the system"""
 import sys
 import logging
 from kqml import KQMLModule, KQMLPerformative, KQMLList
-from tfta import TFTA, TFNotFoundException, TargetNotFoundException, PathwayNotFoundException
+from tfta import TFTA, TFNotFoundException, TargetNotFoundException, PathwayNotFoundException, GONotFoundException
 from indra.trips.processor import TripsProcessor
 
 logger = logging.getLogger('TFTA')
@@ -20,7 +20,7 @@ class TFTA_Module(KQMLModule):
                       'FIND-PATHWAY-KEYWORD', 'FIND-TF-KEYWORD',
                       'FIND-COMMON-TF-GENES', 'FIND-OVERLAP-TARGETS-TF-GENES',
                       'FIND-COMMON-PATHWAY-GENES','FIND-PATHWAY-GENE-KEYWORD',
-		      'FIND-COMMON-PATHWAY-GENES-KEYWORD',
+		      'FIND-COMMON-PATHWAY-GENES-KEYWORD', 'FIND-GENE-GO-TF',
                       'IS-TF-TARGET-TISSUE', 'FIND-TF-TARGET-TISSUE',
                       'FIND-TARGET-TF-TISSUE']
 
@@ -69,6 +69,8 @@ class TFTA_Module(KQMLModule):
 	    reply_content = self.respond_find_common_pathway_genes(content)
 	elif task_str == 'FIND-COMMON-PATHWAY-GENES-KEYWORD':
 	    reply_content = self.respond_find_common_pathway_genes_keyword(content)
+	elif task_str == 'FIND-GENE-GO-TF':
+            reply_content = self.respond_find_genes_go_tf(content)
         elif task_str == 'IS-TF-TARGET-TISSUE':
             reply_content = self.respond_is_tf_target_tissue(content)
         elif task_str == 'FIND-TF-TARGET-TISSUE':
@@ -477,7 +479,7 @@ class TFTA_Module(KQMLModule):
                 tf_list_str += '(:name %s) ' % tf.encode('ascii', 'ignore')
 
             tf_list_str = '(' + tf_list_str + ')'
-            pnslash = '"' + pn +'"'
+            pnslash = '"' + pn + '"'
             pathway_list_str += '(:name %s :tfs %s) ' % (pnslash, tf_list_str)
 
         reply = KQMLList.from_string(
@@ -563,7 +565,7 @@ class TFTA_Module(KQMLModule):
         return reply
         
     def respond_find_common_pathway_genes(self, content):
-        '''response content to FIND-COMMON-PATHWAY-GENES request'''
+        """response content to FIND-COMMON-PATHWAY-GENES request"""
 	target_arg = content.gets('target')
 	targets = _get_targets(target_arg)
 	target_names = []
@@ -616,7 +618,7 @@ class TFTA_Module(KQMLModule):
         return reply
 
     def respond_find_common_pathway_genes_keyword(self, content):
-        '''response content to FIND-COMMON-PATHWAY-GENES-KEYWORD request'''
+        """response content to FIND-COMMON-PATHWAY-GENES-KEYWORD request"""
 	keyword_arg = content.get('keyword')
         keyword_name = keyword_arg.head()
         keyword = trim_quotes(keyword_name)
@@ -642,6 +644,46 @@ class TFTA_Module(KQMLModule):
 
 	reply = KQMLList.from_string(
                '(SUCCESS :pathways (' + path_list_str + '))')
+        return reply
+
+    def respond_find_genes_go_tf(self, content):
+	"""
+        Respond content to FIND-GENE-GO-TF request
+        """
+        keyword_arg = content.get('keyword')
+        keyword_name = keyword_arg.head()
+        keyword = trim_quotes(keyword_name)
+        keyword = keyword.lower()
+        
+        tf_arg = content.gets('tf')
+        tfs = _get_targets(tf_arg)
+        tf_names = []
+        for tf in tfs:
+            tf_names.append(tf.name)
+            
+        try:
+            go_ids,go_types,go_names,go_genes = \
+                self.tfta.find_genes_GO_tf(keyword, tf_names)
+        except TFNotFoundException:
+            reply = make_failure('TF_NOT_FOUND')
+            return reply
+        except GONotFoundException:
+            reply = make_failure('GOTERM_NOT_FOUND')
+            return reply
+            
+        go_list_str = ''
+        for gid,gn in zip(go_ids, go_names):
+            gene_list_str = ''
+            for gene in go_genes[gid]:
+                gene_list_str += '(:name %s) ' % gene.encode('ascii', 'ignore')
+                
+            gene_list_str = '(' + gene_list_str + ')'
+            gn_str = '"' + gn + '"'
+            go_list_str += '(:name %s :genes %s) ' % (gn_str, gene_list_str)
+            
+        reply = KQMLList.from_string(
+            '(SUCCESS :GOTERMs (' + go_list_str + '))')
+            
         return reply
 
 def _get_target(target_str):
