@@ -9,5 +9,7 @@ It combines the following datasets into one:
     TRRUST (2015)
     Marbach2016 (2016)
     
-2) pathway database
-We will add more information into it.
+2) pathway databases
+It includes 7 pathway databases: KEGG, Wikipathways, BioCarta, Reactome, HumanCyc, PharmGKB, SMPDB
+
+3) Gene Ontology database
