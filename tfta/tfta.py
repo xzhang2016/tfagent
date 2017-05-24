@@ -30,7 +30,7 @@ class TFTA:
     def __init__(self):
         logger.debug('Using resource folder: %s' % _resource_dir)
  	#Load TF_target database
-        tf_db_file = _resource_dir + 'TF_target_v2.db'
+        tf_db_file = _resource_dir + 'TF_target_v3.db'
         if os.path.isfile(tf_db_file):
             self.tfdb = sqlite3.connect(tf_db_file, check_same_thread=False)
         else:
