@@ -7,6 +7,8 @@ from kqml import KQMLModule, KQMLPerformative, KQMLList
 from tfta import TFTA, TFNotFoundException, TargetNotFoundException, PathwayNotFoundException, GONotFoundException
 from indra.trips.processor import TripsProcessor
 
+logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
+		    level=logging.INFO)
 logger = logging.getLogger('TFTA')
 
 class TFTA_Module(KQMLModule):
