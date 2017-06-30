@@ -693,7 +693,7 @@ class TFTA_Module(KQMLModule):
         return reply
 
 def _get_target(target_str):
-    #target_str = '<ekb>' + target_str + '</ekb>'
+    target_str = '<ekb>' + target_str + '</ekb>'
     tp = TripsProcessor(target_str)
     terms = tp.tree.findall('TERM')
     term_id = terms[0].attrib['id']
@@ -705,8 +705,8 @@ def _get_targets(target_arg):
     target_args = target_arg.split('</TERM>')
     agent = []
     for i in range(len(target_args)-1):
-        #target_str = '<ekb>' + target_args[i] + '</TERM></ekb>'
-	target_str = target_args[i] + '</TERM>'
+        target_str = '<ekb>' + target_args[i] + '</TERM></ekb>'
+	#target_str = target_args[i] + '</TERM>'
         tp = TripsProcessor(target_str)
         terms = tp.tree.findall('TERM')
         term_id = terms[0].attrib['id']
