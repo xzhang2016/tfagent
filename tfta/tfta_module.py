@@ -15,7 +15,11 @@ class TFTA_Module(KQMLModule):
     """TFTA module is used to receive and decode messages and send
     responses from and to other agents in the system."""
     def __init__(self, argv):
+	# Call the constructor of KQMLModule
         super(TFTA_Module, self).__init__(argv)
+	#Instantiate a singleton TFTA agent
+	self.tfta = TFTA()
+	
         self.tasks = ['IS-TF-TARGET', 'FIND-TF-TARGET', 'FIND-TARGET-TF',
                       'FIND-PATHWAY-GENE', 'FIND-PATHWAY-DB-GENE',
                       'FIND-TF-PATHWAY', 'FIND-GENE-PATHWAY',
@@ -28,21 +32,21 @@ class TFTA_Module(KQMLModule):
 
         #Send subscribe messages
         for task in self.tasks:
-            msg_txt = '(subscribe :content (request &key :content (%s . *)))' % task
-            self.send(KQMLPerformative.from_string(msg_txt))
-
-        #Instantiate a singleton TFTA agent
-        self.tfta = TFTA()
+            #msg_txt = '(subscribe :content (request &key :content (%s . *)))' % task
+            #self.send(KQMLPerformative.from_string(msg_txt))
+	    self.subscribe_request(task)
+	
         #send ready message
         self.ready()
-        super(TFTA_Module, self).start()
+        #super(TFTA_Module, self).start()
+	self.start()
 
     def receive_request(self, msg, content):
         """If a "request" message is received, decode the task and
         the content and call the appropriate function to prepare the
         response. A reply message is then sent back.
         """
-        task_str = content.head()
+        task_str = content.head().upper()
         if task_str == 'IS-TF-TARGET':
             reply_content = self.respond_is_tf_target(content)
         elif task_str == 'FIND-TF-TARGET':
