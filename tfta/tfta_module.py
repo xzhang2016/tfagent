@@ -3,13 +3,13 @@ and to other agents in the system"""
 
 import sys
 import logging
+logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
+		    level=logging.INFO)
+logger = logging.getLogger('TFTA')
 from kqml import KQMLModule, KQMLPerformative, KQMLList
 from tfta import TFTA, TFNotFoundException, TargetNotFoundException, PathwayNotFoundException, GONotFoundException
 from indra.trips.processor import TripsProcessor
 
-logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
-		    level=logging.INFO)
-logger = logging.getLogger('TFTA')
 
 class TFTA_Module(KQMLModule):
     """TFTA module is used to receive and decode messages and send
