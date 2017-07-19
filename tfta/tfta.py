@@ -33,6 +33,7 @@ class TFTA:
         tf_db_file = _resource_dir + 'TF_target_v3.db'
         if os.path.isfile(tf_db_file):
             self.tfdb = sqlite3.connect(tf_db_file, check_same_thread=False)
+	    logger.info('Loaded TF-target database')
         else:
             logger.error('TFTA could not load TF-target database.')
             self.tfdb = None;
