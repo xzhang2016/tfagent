@@ -128,7 +128,7 @@ class TFTA_Module(KQMLModule):
         tf_arg = content.gets('tf')
         tf = _get_target(tf_arg)
         tf_name = tf.name
-        print 'tf=' + tf.name
+        #print 'tf=' + tf.name
 
         target_arg = content.gets('target')
         target = _get_target(target_arg)
@@ -163,10 +163,14 @@ class TFTA_Module(KQMLModule):
         For a tf list, reply with the targets found
         """
         tf_arg = content.gets('tf')
-        tfs = _get_targets(tf_arg)
-        tf_names = []
-        for tf in tfs:
-            tf_names.append(tf.name)
+	try:
+            tfs = _get_targets(tf_arg)
+            tf_names = []
+            for tf in tfs:
+                tf_names.append(tf.name)
+	except Exception as e:
+	    reply = make_failure('TF_NOT_FOUND')
+	    return reply
             
         try:
             target_names = self.tfta.find_targets(tf_names)
@@ -228,10 +232,14 @@ class TFTA_Module(KQMLModule):
         """Response content to find-target-tf request
         For a target list, reply the tfs found"""
         target_arg = content.gets('target')
-        targets = _get_targets(target_arg)
-        target_names = []
-        for target in targets:
-            target_names.append(target.name)
+	try:
+            targets = _get_targets(target_arg)
+            target_names = []
+            for target in targets:
+                target_names.append(target.name)
+	except Exception as e:
+	    reply = make_failure('TARGET_NOT_FOUND')
+	    return reply
         try:
             tf_names = self.tfta.find_tfs(target_names)
         except TargetNotFoundException:
@@ -289,10 +297,14 @@ class TFTA_Module(KQMLModule):
         """Response content to find_pathway_gene request
         For a given gene list, reply the related pathways information"""
         gene_arg = content.gets('gene')
-        genes = _get_targets(gene_arg)
-        gene_names = []
-        for gene in genes:
-            gene_names.append(gene.name)
+	try:
+            genes = _get_targets(gene_arg)
+            gene_names = []
+            for gene in genes:
+                gene_names.append(gene.name)
+	except Exception as e:
+	    reply = make_failure('GENE_NOT_FOUND')
+	    return reply
 
         try:
             pathwayId, pathwayName, externalId, source,dblink = \
@@ -321,10 +333,14 @@ class TFTA_Module(KQMLModule):
         keyword = trim_quotes(keyword_name)
         
         gene_arg = content.gets('gene')
-        genes = _get_targets(gene_arg)
-        gene_names = []
-        for gene in genes:
-            gene_names.append(gene.name)
+	try:
+            genes = _get_targets(gene_arg)
+            gene_names = []
+            for gene in genes:
+                gene_names.append(gene.name)
+	except Exception as e:
+	    reply = make_failure('GENE_NOT_FOUND')
+	    return reply
 
         try:
             pathwayId, pathwayName, externalId, source,dblink = \
