@@ -836,6 +836,62 @@ class TFTA:
                         res_go_genes[go_ids[i]] = tmp
                 
         return res_go_ids,res_go_types,res_go_names,res_go_genes
+
+    def find_genes_GO_tf2(self, go_id, tf_names):
+        """
+        Return GO terms and genes regulated by tf_names
+        """
+        res_go_ids = []
+        res_go_types = []
+        res_go_names = []
+        res_go_genes = dict()
+        if self.tfdb is not None:
+            t = (tf_names[0],)
+            res = self.tfdb.execute("SELECT DISTINCT Target FROM CombinedDB "
+                                    "WHERE TF = ? ", t).fetchall()
+            if res:
+                target_names = [r[0] for r in res]
+            else:
+                raise TFNotFoundException
+                
+            if (len(tf_names)>1):
+                for i in range(1,len(tf_names)):
+                    t = (tf_names[i],)
+                    res = self.tfdb.execute("SELECT DISTINCT Target FROM CombinedDB "
+                                            "WHERE TF = ? ", t).fetchall()
+                    if res:
+                        target_names = list(set(target_names) & set([r[0] for r in res]))
+                    else:
+                        raise TFNotFoundException
+                        
+            #regstr = '%' + go_name + '%'
+            t = (go_id,)
+            res = self.tfdb.execute("SELECT * FROM goInfo "
+                                    "WHERE goId = ? ", t).fetchall()
+                                    
+            if not res:
+                raise GONotFoundException
+            else:
+                record_id = [r[0] for r in res]
+                go_ids = [r[1] for r in res]
+                go_names = [r[2] for r in res]
+                go_types = [r[3] for r in res]
+                
+                #search genes
+                for i in range(len(record_id)):
+                    t = (record_id[i],)
+                    res1 = self.tfdb.execute("SELECT DISTINCT geneSymbol FROM go2Genes "
+                                             "WHERE termId = ? ", t).fetchall()
+                                             
+                    tmp = list(set(target_names) & set([r[0] for r in res1]))
+                    if len(tmp):
+                        res_go_ids.append(go_ids[i])
+                        res_go_types.append(go_types[i])
+                        res_go_names.append(go_names[i])
+                        tmp.sort()
+                        res_go_genes[go_ids[i]] = tmp
+                        
+        return res_go_ids,res_go_types,res_go_names,res_go_genes
 		 							 
 
 #test functions
