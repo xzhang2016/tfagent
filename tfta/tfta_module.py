@@ -169,6 +169,7 @@ class TFTA_Module(KQMLModule):
             for tf in tfs:
                 tf_names.append(tf.name)
 	except Exception as e:
+	    print 'received message:' + content
 	    reply = make_failure('TF_NOT_FOUND')
 	    return reply
             
