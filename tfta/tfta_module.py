@@ -378,7 +378,7 @@ class TFTA_Module(KQMLModule):
             for gene in genes:
                 gene_names.append(gene.name)
 	except Exception as e:
-	    reply = make_failure('PathwayNotFoundException')
+	    reply = make_failure('GENE_NOT_FOUND')
 	    return reply
 
         try:
