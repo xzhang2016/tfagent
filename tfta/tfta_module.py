@@ -372,10 +372,14 @@ class TFTA_Module(KQMLModule):
 	db_name = trim_quotes(db_name)
 
         gene_arg = content.gets('gene')
-        genes = _get_targets(gene_arg)
-        gene_names = []
-        for gene in genes:
-            gene_names.append(gene.name)
+	try:
+            genes = _get_targets(gene_arg)
+            gene_names = []
+            for gene in genes:
+                gene_names.append(gene.name)
+	except Exception as e:
+	    reply = make_failure('PathwayNotFoundException')
+	    return reply
 
         try:
             pathwayId, pathwayName, externalId, source, dblink = \
