@@ -94,12 +94,20 @@ class TFTA_Module(KQMLModule):
     def respond_is_tf_target(self, content):
         """Response content to is-tf-target request."""
         tf_arg = content.gets('tf')
-        tf = _get_target(tf_arg)
-        tf_name = tf.name
+	try:
+            tf = _get_target(tf_arg)
+            tf_name = tf.name
+	except Exception as e:
+	    reply = make_failure('NO_TF_NAME')
+	    return reply
 
         target_arg = content.gets('target')
-        target = _get_target(target_arg)
-        target_name = target.name
+	try:
+            target = _get_target(target_arg)
+            target_name = target.name
+	except Exception as e:
+	    reply = make_failure('NO_TARGET_NAME')
+	    return reply
 
         try:
             is_target = self.tfta.Is_tf_target(tf_name, target_name)
@@ -126,13 +134,21 @@ class TFTA_Module(KQMLModule):
     def respond_is_tf_target_tissue(self, content):
         """Response content to is-tf-target-tissue request."""
         tf_arg = content.gets('tf')
-        tf = _get_target(tf_arg)
-        tf_name = tf.name
-        #print 'tf=' + tf.name
+	try:
+            tf = _get_target(tf_arg)
+            tf_name = tf.name
+            #print 'tf=' + tf.name
+	except Exception as e:
+	    reply = make_failure('NO_TF_NAME')
+	    return reply
 
         target_arg = content.gets('target')
-        target = _get_target(target_arg)
-        target_name = target.name
+	try:
+            target = _get_target(target_arg)
+            target_name = target.name
+	except Exception as e:
+	    reply = make_failure('NO_TARGET_NAME')
+	    return reply
 
         tissue_arg = content.get('tissue')
         tissue_name = tissue_arg.head()
@@ -170,7 +186,7 @@ class TFTA_Module(KQMLModule):
                 tf_names.append(tf.name)
 	except Exception as e:
 	    print 'received message:' + content
-	    reply = make_failure('TF_NOT_FOUND')
+	    reply = make_failure('NO_TF_NAME')
 	    return reply
             
         try:
@@ -197,10 +213,14 @@ class TFTA_Module(KQMLModule):
         For tf list, reply with the targets found within given tissue
         """
         tf_arg = content.gets('tf')
-        tfs = _get_targets(tf_arg)
-        tf_names = []
-        for tf in tfs:
-            tf_names.append(tf.name)
+	try:
+            tfs = _get_targets(tf_arg)
+            tf_names = []
+            for tf in tfs:
+                tf_names.append(tf.name)
+	except Exception as e:
+	    reply = make_failure('NO_TF_NAME')
+	    return reply
 
         tissue_arg = content.get('tissue')
         tissue_name = tissue_arg.head()
@@ -239,7 +259,7 @@ class TFTA_Module(KQMLModule):
             for target in targets:
                 target_names.append(target.name)
 	except Exception as e:
-	    reply = make_failure('TARGET_NOT_FOUND')
+	    reply = make_failure('NO_TARGET_NAME')
 	    return reply
         try:
             tf_names = self.tfta.find_tfs(target_names)
@@ -262,10 +282,14 @@ class TFTA_Module(KQMLModule):
         """Response content to find-target-tf request
         For a target list, reply the tfs found within a given tissue"""
         target_arg = content.gets('target')
-        targets = _get_targets(target_arg)
-	target_names = []
-	for target in targets:
-            target_names.append(target.name)
+	try:
+            targets = _get_targets(target_arg)
+	    target_names = []
+	    for target in targets:
+                target_names.append(target.name)
+	except Exception as e:
+	    reply = make_failure('NO_TARGET_NAME')
+	    return reply
 
         tissue_arg = content.get('tissue')
         tissue_name = tissue_arg.head()
@@ -304,7 +328,7 @@ class TFTA_Module(KQMLModule):
             for gene in genes:
                 gene_names.append(gene.name)
 	except Exception as e:
-	    reply = make_failure('GENE_NOT_FOUND')
+	    reply = make_failure('NO_GENE_NAME')
 	    return reply
 
         try:
@@ -330,8 +354,12 @@ class TFTA_Module(KQMLModule):
         """Response content to find_pathway_gene_name request
         For a given gene list and keyword, reply the related pathways information"""
         keyword_arg = content.get('keyword')
-        keyword_name = keyword_arg.head()
-        keyword = trim_quotes(keyword_name)
+	try:
+            keyword_name = keyword_arg.head()
+            keyword = trim_quotes(keyword_name)
+	except Exception as e:
+	    reply = make_failure('NO_KEYWORD')
+	    return reply
         
         gene_arg = content.gets('gene')
 	try:
@@ -340,7 +368,7 @@ class TFTA_Module(KQMLModule):
             for gene in genes:
                 gene_names.append(gene.name)
 	except Exception as e:
-	    reply = make_failure('GENE_NOT_FOUND')
+	    reply = make_failure('NO_GENE_NAME')
 	    return reply
 
         try:
@@ -367,9 +395,13 @@ class TFTA_Module(KQMLModule):
         For a given gene list and certain db source, reply the related
         pathways information"""
         db_arg = content.get('database')
-        db_name = db_arg.head()
-	print db_name
-	db_name = trim_quotes(db_name)
+	try:
+            db_name = db_arg.head()
+	    print db_name
+	    db_name = trim_quotes(db_name)
+	except Exception as e:
+	    reply = make_failure('NO_DB_NAME')
+	    return reply
 
         gene_arg = content.gets('gene')
 	try:
@@ -378,7 +410,7 @@ class TFTA_Module(KQMLModule):
             for gene in genes:
                 gene_names.append(gene.name)
 	except Exception as e:
-	    reply = make_failure('GENE_NOT_FOUND')
+	    reply = make_failure('NO_GENE_NAME')
 	    return reply
 
         try:
