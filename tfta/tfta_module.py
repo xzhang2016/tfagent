@@ -437,7 +437,12 @@ class TFTA_Module(KQMLModule):
         For a given pathway name, reply the tfs within the pathway"""
         pathway_arg = content.get('pathway')
         #pathway_name = pathway_arg.head()
-	pathway_name = _get_targets(pathway_arg)
+	try:
+	    pathway = _get_target(pathway_arg)
+	    pathway_name = pathway.name
+	except Exception as e:
+	    reply = make_failure('NO_PATHWAY_NAME')
+	    return reply
 
         try:
             pathwayId,pathwayName,tflist = \
@@ -466,8 +471,12 @@ class TFTA_Module(KQMLModule):
         For a given pathway name, reply the genes within the pathway"""
         pathway_arg = content.gets('pathway')
         #pathway_name = pathway_arg.head()
-        target = _get_target(pathway_arg)
-        pathway_name = target.name
+	try:
+            target = _get_target(pathway_arg)
+            pathway_name = target.name
+	except Exception as e:
+	    reply = make_failure('NO_PATHWAY_NAME')
+	    return reply
 
         try:
             pathwayId,pathwayName,genelist = \
@@ -494,8 +503,12 @@ class TFTA_Module(KQMLModule):
         """Response content to FIND_PATHWAY_KEYWORD request
         For a given chemical name, reply the pathways involving the chemical"""
         chemical_arg = content.get('keyword')
-        chemical_name = chemical_arg.head()
-	chemical_name = trim_quotes(chemical_name)
+	try:
+            chemical_name = chemical_arg.head()
+	    chemical_name = trim_quotes(chemical_name)
+	except Exception as e:
+	    reply = make_failure('NO_PATHWAY_NAME')
+	    return reply
 
         try:
             pathwayId, pathwayName, externalId, source, dblink = \
@@ -521,8 +534,12 @@ class TFTA_Module(KQMLModule):
         For a given chemical name, reply the tfs within the pathways
         involving the chemical"""
         chemical_arg = content.get('keyword')
-        chemical_name = chemical_arg.head()
-	chemical_name = trim_quotes(chemical_name)
+	try:
+            chemical_name = chemical_arg.head()
+	    chemical_name = trim_quotes(chemical_name)
+	except Exception as e:
+	    reply = make_failure('NO_PATHWAY_NAME')
+	    return reply
 
         try:
             pathwayId, pathwayName, tflist = \
@@ -550,10 +567,14 @@ class TFTA_Module(KQMLModule):
         For a given target list, reply the tfs regulating these genes
         and the frequency of each TF"""
         target_arg = content.gets('target')
-        targets = _get_targets(target_arg)
-        target_names = []
-        for target in targets:
-            target_names.append(target.name)
+	try:
+            targets = _get_targets(target_arg)
+            target_names = []
+            for target in targets:
+                target_names.append(target.name)
+	except Exception as e:
+	    reply = make_failure('NO_TARGET_NAME')
+	    return reply
 
         tf_names, tf_counts = self.tfta.find_tfs_count(target_names)
         tf_list_str = ''
