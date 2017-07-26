@@ -332,19 +332,19 @@ class TFTA_Module(KQMLModule):
 	    return reply
 
         try:
-            pathwayId, pathwayName, externalId, source,dblink = \
+            pathwayName, dblink = \
                 self.tfta.find_pathways_from_genelist(gene_names)
         except PathwayNotFoundException:
             reply = make_failure('PathwayNotFoundException')
             return reply
 
         pathway_list_str = ''
-        for pn, eid, src, dbl in zip(pathwayName, externalId, source, dblink):
+        for pn, dbl in zip(pathwayName, dblink):
 	    pnslash = '"' + pn + '"'
-	    eidslash = '"' + eid + '"'
+	    #eidslash = '"' + eid + '"'
 	    dbl = '"' + dbl + '"'
             pathway_list_str += \
-                '(:name %s :externalId %s :source %s :dblink %s) ' % (pnslash, eidslash ,src, dbl)
+                '(:name %s :dblink %s) ' % (pnslash, dbl)
 
         reply = KQMLList.from_string(
             '(SUCCESS :pathways (' + pathway_list_str + '))')
