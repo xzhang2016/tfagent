@@ -385,8 +385,8 @@ class TFTA:
  	#query
         pathwayId=[]
         pathwayName=[]
-        externalId=[]
-        source=[]
+        #externalId=[]
+        #source=[]
         dblink=[]
         if self.tfdb is not None:
             pathlist=[]
@@ -400,30 +400,33 @@ class TFTA:
                     raise PathwayNotFoundException
  				
  	    #intersection
-            pathIDs=[]
-            for pth in set(pathlist):
-                if pathlist.count(pth) == len(gene_names):
-                    pathIDs.append(pth)
+	    if len(gene_names)>1:
+                pathIDs=[]
+                for pth in set(pathlist):
+                    if pathlist.count(pth) == len(gene_names):
+                        pathIDs.append(pth)
+	    else:
+		pathIDs = pathlist
  			
             if len(pathIDs):
                 for pth in pathIDs:
                     t = (pth,)
-                    res = self.tfdb.execute("SELECT * FROM pathwayInfo "
+                    res = self.tfdb.execute("SELECT pathwayName,dblink FROM pathwayInfo "
                                             "WHERE Id = ? ", t).fetchall()
  			
-                    pathwayId = pathwayId + [r[0] for r in res]
-                    pathwayName = pathwayName + [r[1] for r in res]
-                    externalId = externalId + [r[2] for r in res]
-                    source = source + [r[3] for r in res]
-                    dblink = dblink + [r[4] for r in res]
+                    #pathwayId = pathwayId + [r[0] for r in res]
+                    pathwayName = pathwayName + [r[0] for r in res]
+                    #externalId = externalId + [r[2] for r in res]
+                    #source = source + [r[3] for r in res]
+                    dblink = dblink + [r[1] for r in res]
 		
 		#sort
-	        pathwayName,pathwayId,externalId,source,dblink = \
-	            zip(*sorted(zip(pathwayName,pathwayId,externalId,source,dblink)))
+	        pathwayName,dblink = \
+	            zip(*sorted(zip(pathwayName,dblink)))
             else:
                 raise PathwayNotFoundException
  			
-        return pathwayId,pathwayName,externalId,source,dblink
+        return pathwayName,dblink
 
     def find_pathways_from_genelist_keyword(self,gene_names, keyword):
         """
