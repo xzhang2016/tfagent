@@ -589,10 +589,14 @@ class TFTA_Module(KQMLModule):
         For a given target list, reply the tfs regulating all these genes
         ,same as find_target_tf"""
         target_arg = content.gets('target')
-        targets = _get_targets(target_arg)
-        target_names = []
-        for target in targets:
-            target_names.append(target.name)
+	try:
+            targets = _get_targets(target_arg)
+            target_names = []
+            for target in targets:
+                target_names.append(target.name)
+	except Exception as e:
+	    reply = make_failure('NO_TARGET_NAME')
+	    return reply
 
 	try:
             tf_names = self.tfta.find_tfs(target_names)
@@ -647,10 +651,14 @@ class TFTA_Module(KQMLModule):
     def respond_find_common_pathway_genes(self, content):
         """response content to FIND-COMMON-PATHWAY-GENES request"""
 	target_arg = content.gets('target')
-	targets = _get_targets(target_arg)
-	target_names = []
-	for tg in targets:
-            target_names.append(tg.name)
+	try:
+	    targets = _get_targets(target_arg)
+	    target_names = []
+	    for tg in targets:
+                target_names.append(tg.name)
+	except Exception as e:
+	    reply = make_failure('NO_GENE_NAME')
+	    return reply
 		
         try:
             pathwayName,externalId,source,dblink,counts = self.tfta.find_pathway_count_genes(target_names)
