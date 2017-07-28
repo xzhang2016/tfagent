@@ -471,12 +471,19 @@ class TFTA_Module(KQMLModule):
         For a given pathway name, reply the genes within the pathway"""
         pathway_arg = content.gets('pathway')
         #pathway_name = pathway_arg.head()
-	try:
-            target = _get_target(pathway_arg)
-            pathway_name = target.name
-	except Exception as e:
-	    reply = make_failure('NO_PATHWAY_NAME')
-	    return reply
+	ekb_type = _get_ekb_type(pathway_arg)
+	if ekb_type == 1:
+	    try:
+                target = _get_target(pathway_arg)
+                pathway_name = target.name
+	    except Exception as e:
+	        reply = make_failure('NO_PATHWAY_NAME')
+	        return reply
+	elif ekb_type == 2:
+	    pathway_name = _get_pathway_name(pathway_arg)
+	    if pathway_name is None:
+	        reply = make_failure('NO_PATHWAY_NAME')
+		return reply
 
         try:
             pathwayId,pathwayName,genelist = \
@@ -788,6 +795,25 @@ def _get_targets(target_arg):
         term_id = term.attrib['id']
         agent.append(tp._get_agent_by_id(term_id, None))
     return agent
+
+def _get_pathway_name(target_str):
+    tree = ET.XML(xml_string, parser=UTB())
+    pathway_name = tree.find('TERM').find('drum-terms').find('drum-term').get('matched-name')
+    print 'pathwayName=' + pathway_name
+    return pathway_name
+    
+def _ekb_type(xml_string, parser=UTB()):
+    """
+    1: 'ONT::GENE-PROTEIN'
+    2: 'ONT::CHEMICAL'
+    """
+    ekb_type = 2
+    tree = ET.XML(xml_string, parser=UTB())
+    et = tree.find('TERM').find('type').text
+    if et == 'ONT::GENE-PROTEIN':
+         ekb_type = 1
+    
+    return ekb_type
 
 def make_failure(reason):
     msg = KQMLList('FAILURE')
