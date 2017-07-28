@@ -803,7 +803,7 @@ def _get_pathway_name(target_str):
     print 'pathwayName=' + pathway_name
     return pathway_name
     
-def _ekb_type(xml_string):
+def _get_ekb_type(xml_string):
     """
     1: 'ONT::GENE-PROTEIN'
     2: 'ONT::CHEMICAL'
