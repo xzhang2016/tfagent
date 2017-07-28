@@ -10,6 +10,7 @@ logger = logging.getLogger('TFTA')
 from kqml import KQMLModule, KQMLPerformative, KQMLList
 from tfta import TFTA, TFNotFoundException, TargetNotFoundException, PathwayNotFoundException, GONotFoundException
 from indra.trips.processor import TripsProcessor
+from indra.util import UnicodeXMLTreeBuilder as UTB
 
 
 class TFTA_Module(KQMLModule):
@@ -798,7 +799,7 @@ def _get_targets(target_arg):
     return agent
 
 def _get_pathway_name(target_str):
-    tree = ET.XML(xml_string)
+    tree = ET.XML(xml_string, parser=UTB())
     pathway_name = tree.find('TERM').find('drum-terms').find('drum-term').get('matched-name')
     print 'pathwayName=' + pathway_name
     return pathway_name
