@@ -798,12 +798,12 @@ def _get_targets(target_arg):
     return agent
 
 def _get_pathway_name(target_str):
-    tree = ET.XML(xml_string, parser=UTB())
+    tree = ET.XML(xml_string)
     pathway_name = tree.find('TERM').find('drum-terms').find('drum-term').get('matched-name')
     print 'pathwayName=' + pathway_name
     return pathway_name
     
-def _ekb_type(xml_string, parser=UTB()):
+def _ekb_type(xml_string):
     """
     1: 'ONT::GENE-PROTEIN'
     2: 'ONT::CHEMICAL'
