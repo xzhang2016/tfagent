@@ -812,7 +812,7 @@ def _ekb_type(xml_string, parser=UTB()):
     et = tree.find('TERM').find('type').text
     if et == 'ONT::GENE-PROTEIN':
          ekb_type = 1
-    
+    print 'ekb_type=' + ekb_type
     return ekb_type
 
 def make_failure(reason):
