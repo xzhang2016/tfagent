@@ -9,7 +9,7 @@ logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
 logger = logging.getLogger('TFTA')
 from kqml import KQMLModule, KQMLPerformative, KQMLList
 from tfta import TFTA, TFNotFoundException, TargetNotFoundException, PathwayNotFoundException, GONotFoundException
-from indra.trips.processor import TripsProcessor
+from indra.sources.trips.processor import TripsProcessor
 from indra.util import UnicodeXMLTreeBuilder as UTB
 
 
