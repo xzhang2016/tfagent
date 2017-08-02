@@ -473,11 +473,13 @@ class TFTA_Module(KQMLModule):
         For a given pathway name, reply the genes within the pathway"""
         pathway_arg = content.gets('pathway')
         #pathway_name = pathway_arg.head()
+	print 'pathway_arg=' + pathway_arg
 	ekb_type = _get_ekb_type(pathway_arg)
 	if ekb_type == 1:
 	    try:
                 target = _get_target(pathway_arg)
                 pathway_name = target.name
+		print 'pathway_name=' + pathway_name
 	    except Exception as e:
 	        reply = make_failure('NO_PATHWAY_NAME')
 	        return reply
@@ -801,6 +803,7 @@ def _get_targets(target_arg):
 def _get_pathway_name(target_str):
     tree = ET.XML(xml_string, parser=UTB())
     pathway_name = tree.find('TERM').find('drum-terms').find('drum-term').get('matched-name')
+    pathway_name = trim_quotes(pathway_name)
     print 'pathwayName=' + pathway_name
     return pathway_name
     
