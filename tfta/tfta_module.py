@@ -801,10 +801,13 @@ def _get_targets(target_arg):
     return agent
 
 def _get_pathway_name(target_str):
+    print 'In _get_pathway_name'
     tree = ET.XML(xml_string, parser=UTB())
-    pathway_name = tree.find('TERM').find('drum-terms').find('drum-term').get('matched-name')
+    root = tree.getroot()
+    print 'root.tag=' + root.tag
+    pathway_name = root.find('TERM').find('drum-terms').find('drum-term').get('matched-name')
     pathway_name = trim_quotes(pathway_name)
-    print 'pathwayName=' + pathway_name
+    print 'pathwayName(_get_pathway_name)=' + pathway_name
     return pathway_name
     
 def _get_ekb_type(xml_string):
@@ -812,12 +815,14 @@ def _get_ekb_type(xml_string):
     1: 'ONT::GENE-PROTEIN'
     2: 'ONT::CHEMICAL'
     """
+    print 'In _get_ekb_type'
     ekb_type = 2
     tree = ET.XML(xml_string, parser=UTB())
-    et = tree.find('TERM').find('type').text
+    root = tree.getroot()
+    et = root.find('TERM').find('type').text
     if et == 'ONT::GENE-PROTEIN':
          ekb_type = 1
-    print 'ekb_type=' + ekb_type
+    print 'ekb_type(_get_ekb_type)=' + ekb_type
     return ekb_type
 
 def make_failure(reason):
