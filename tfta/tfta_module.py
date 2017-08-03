@@ -473,7 +473,7 @@ class TFTA_Module(KQMLModule):
         For a given pathway name, reply the genes within the pathway"""
         pathway_arg = content.gets('pathway')
         #pathway_name = pathway_arg.head()
-	print 'pathway_arg=' + pathway_arg
+	#print 'pathway_arg=' + pathway_arg
 	ekb_type = _get_ekb_type(pathway_arg)
 	if ekb_type == 1:
 	    try:
@@ -801,13 +801,11 @@ def _get_targets(target_arg):
     return agent
 
 def _get_pathway_name(target_str):
-    print 'In _get_pathway_name'
+    #print 'In _get_pathway_name'
     #tree = ET.XML(xml_string, parser=UTB())
     root = ET.fromstring(target_str)
-    print 'root.tag=' + root.tag
     pathway_name = root.find('TERM').find('drum-terms').find('drum-term').get('matched-name')
-    #pathway_name = trim_quotes(pathway_name)
-    print 'pathwayName(_get_pathway_name)=' + pathway_name
+    #print 'pathwayName(_get_pathway_name)=' + pathway_name
     return pathway_name
     
 def _get_ekb_type(xml_string):
@@ -815,18 +813,18 @@ def _get_ekb_type(xml_string):
     1: 'ONT::GENE-PROTEIN'
     2: 'ONT::CHEMICAL'
     """
-    print 'In _get_ekb_type'
+    #print 'In _get_ekb_type'
     ekb_type = 2
     #tree = ET.XML(xml_string, parser=UTB())
     root = ET.fromstring(xml_string)
-    print root
+    #print root
     ekb_onto = root.find('TERM').find('type').text
-    print 'ekb_onto=' + ekb_onto
-    print ekb_onto == 'ONT::GENE-PROTEIN'
+    #print 'ekb_onto=' + ekb_onto
+    #print ekb_onto == 'ONT::GENE-PROTEIN'
    
     if ekb_onto == 'ONT::GENE-PROTEIN':
          ekb_type = 1
-    print 'ekb_type=' + str(ekb_type)
+    #print 'ekb_type=' + str(ekb_type)
     return ekb_type
 
 def make_failure(reason):
