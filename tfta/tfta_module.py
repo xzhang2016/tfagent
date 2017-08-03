@@ -820,9 +820,12 @@ def _get_ekb_type(xml_string):
     #tree = ET.XML(xml_string, parser=UTB())
     tree = ET.fromstring(xml_string)
     print tree
-    root = tree.getroot()
-    print root.tag
-    et = root.find('TERM').find('type').text
+    #root = tree.getroot()
+    #print root.tag
+    try:
+        et = tree.find('TERM').find('type').text
+    except Exception as e:
+	print e
     if et == 'ONT::GENE-PROTEIN':
          ekb_type = 1
     print 'ekb_type(_get_ekb_type)=' + ekb_type
