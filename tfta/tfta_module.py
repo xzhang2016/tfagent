@@ -820,15 +820,13 @@ def _get_ekb_type(xml_string):
     #tree = ET.XML(xml_string, parser=UTB())
     root = ET.fromstring(xml_string)
     print root
-    try:
-        ekb_onto = root.find('TERM').find('type').text
-	print 'ekb_onto=' + ekb_onto
-	print ekb_onto == 'ONT::GENE-PROTEIN'
-    except Exception as e:
-	print e
+    ekb_onto = root.find('TERM').find('type').text
+    print 'ekb_onto=' + ekb_onto
+    print ekb_onto == 'ONT::GENE-PROTEIN'
+   
     if ekb_onto == 'ONT::GENE-PROTEIN':
          ekb_type = 1
-    print 'ekb_type=' + ekb_type
+    print 'ekb_type=' + str(ekb_type)
     return ekb_type
 
 def make_failure(reason):
