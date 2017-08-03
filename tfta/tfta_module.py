@@ -821,10 +821,11 @@ def _get_ekb_type(xml_string):
     root = ET.fromstring(xml_string)
     print root
     try:
-        et = root.find('TERM').find('type').text
+        ekb_onto = root.find('TERM').find('type').text
+	print 'ekb_onto=' + ekb_onto
     except Exception as e:
 	print e
-    if et == 'ONT::GENE-PROTEIN':
+    if ekb_onto == 'ONT::GENE-PROTEIN':
          ekb_type = 1
     print 'ekb_type(_get_ekb_type)=' + ekb_type
     return ekb_type
