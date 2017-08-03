@@ -802,11 +802,11 @@ def _get_targets(target_arg):
 
 def _get_pathway_name(target_str):
     print 'In _get_pathway_name'
-    tree = ET.XML(xml_string, parser=UTB())
-    root = tree.getroot()
+    #tree = ET.XML(xml_string, parser=UTB())
+    root = ET.fromstring(target_str)
     print 'root.tag=' + root.tag
     pathway_name = root.find('TERM').find('drum-terms').find('drum-term').get('matched-name')
-    pathway_name = trim_quotes(pathway_name)
+    #pathway_name = trim_quotes(pathway_name)
     print 'pathwayName(_get_pathway_name)=' + pathway_name
     return pathway_name
     
@@ -818,12 +818,10 @@ def _get_ekb_type(xml_string):
     print 'In _get_ekb_type'
     ekb_type = 2
     #tree = ET.XML(xml_string, parser=UTB())
-    tree = ET.fromstring(xml_string)
-    print tree
-    #root = tree.getroot()
-    #print root.tag
+    root = ET.fromstring(xml_string)
+    print root
     try:
-        et = tree.find('TERM').find('type').text
+        et = root.find('TERM').find('type').text
     except Exception as e:
 	print e
     if et == 'ONT::GENE-PROTEIN':
