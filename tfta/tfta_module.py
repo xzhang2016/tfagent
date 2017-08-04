@@ -488,6 +488,9 @@ class TFTA_Module(KQMLModule):
 	    if pathway_name is None:
 	        reply = make_failure('NO_PATHWAY_NAME')
 		return reply
+	elif ekb_type == 0:
+	    reply = make_failure('NO_PATHWAY_NAME')
+	    return reply
 
         try:
             pathwayId,pathwayName,genelist = \
@@ -815,12 +818,15 @@ def _get_ekb_type(xml_string):
     """
     #print 'In _get_ekb_type'
     ekb_type = 2
+    ekb_onto = ''
     #tree = ET.XML(xml_string, parser=UTB())
     root = ET.fromstring(xml_string)
     #print root
-    ekb_onto = root.find('TERM').find('type').text
-    #print 'ekb_onto=' + ekb_onto
-    #print ekb_onto == 'ONT::GENE-PROTEIN'
+    try:
+        ekb_onto = root.find('TERM').find('type').text
+    except Exception as e:
+	ekb_type = 0
+	return ekb_type
    
     if ekb_onto == 'ONT::GENE-PROTEIN':
          ekb_type = 1
