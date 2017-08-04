@@ -810,8 +810,12 @@ def _get_pathway_name(target_str):
     try:
         pathway_name = root.find('TERM').find('drum-terms').find('drum-term').get('matched-name')
     except Exception as e:
-	pathway_name = None
-	return pathway_name
+	try:
+	    s = root.find('TERM').find('name').text
+	    pathway_name = s.replace('-', ' ').lower()
+	except Exception as e:
+	    pathway_name = None
+	    return pathway_name
     #print 'pathwayName(_get_pathway_name)=' + pathway_name
     return pathway_name
     
