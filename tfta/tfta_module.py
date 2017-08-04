@@ -473,7 +473,7 @@ class TFTA_Module(KQMLModule):
         For a given pathway name, reply the genes within the pathway"""
         pathway_arg = content.gets('pathway')
         #pathway_name = pathway_arg.head()
-	#print 'pathway_arg=' + pathway_arg
+	print 'pathway_arg=' + pathway_arg
 	ekb_type = _get_ekb_type(pathway_arg)
 	if ekb_type == 1:
 	    try:
