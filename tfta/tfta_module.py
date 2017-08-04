@@ -843,6 +843,15 @@ def _get_ekb_type(xml_string):
     #print 'ekb_type=' + str(ekb_type)
     return ekb_type
 
+def _get_pathway_name_list(str1):
+    #consider gene ailas like 'il-12' to 'il12'
+    if not len(filter(str.isspace, str1)) and len(filter(str.isdigit, str1)):
+        s = [str1, '-'.join([filter(str.isalpha, str1),filter(str.isdigit, str1)])]
+    else:
+	s = [str1]
+    return s
+	
+
 def make_failure(reason):
     msg = KQMLList('FAILURE')
     msg.set('reason', reason)
