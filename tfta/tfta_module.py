@@ -493,6 +493,11 @@ class TFTA_Module(KQMLModule):
 	    return reply
 	
 	pathway_name = trim_dash(pathway_name)
+	if not len(filter(str.isspace, pathway_name)) and len(filter(str.isdigit, pathway_name)):
+	    pn2 = '-'.join([filter(str.isalpha, pathway_name),filter(str.isdigit, pathway_name)
+	    pathway_names = [pathway_name, pn2]
+	else:
+            pathway_names = [pathway_name]
 
         try:
             pathwayId,pathwayName,genelist = \
