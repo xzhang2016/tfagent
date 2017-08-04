@@ -492,8 +492,10 @@ class TFTA_Module(KQMLModule):
 	    reply = make_failure('NO_PATHWAY_NAME')
 	    return reply
 	
-	pathway_name = trim_dash(pathway_name)
+	pathway_name = trim_hyphen(pathway_name)
+	print 'pathway_name2=' + pathway_name
 	pathway_names = _get_pathway_name_list(pathway_name)
+	print 'pathway_names=' + pathway_names
 
         try:
             pathwayId,pathwayName,genelist = \
@@ -865,7 +867,7 @@ def trim_quotes(descr):
 	descr = descr[:-1]
     return descr
 
-def trim_dash(descr):
+def trim_hyphen(descr):
     if descr[0] == '-':
 	descr = descr[1:]
     return descr
