@@ -493,9 +493,13 @@ class TFTA_Module(KQMLModule):
 	    return reply
 	
 	pathway_name = trim_hyphen(pathway_name)
-	print 'pathway_name2=' + pathway_name
-	pathway_names = _get_pathway_name_list(pathway_name)
-	print 'pathway_names=' + ','.join(pathway_names)
+	
+	try:
+	    pathway_names = _get_pathway_name_list(pathway_name)
+	    print 'pathway_names=' + ','.join(pathway_names)
+	except Exception as e:
+	    print e
+	    pathway_names = [pathway_name]
 
         try:
             pathwayId,pathwayName,genelist = \
