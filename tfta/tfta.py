@@ -305,22 +305,32 @@ class TFTA:
         return pathwayId,pathwayName,externalId,psource,dblink
  			
  		
-    def find_genes_from_pathwayName(self, pathway_name):
+    def find_genes_from_pathwayName(self, pathway_names):
         """
         return genes related to pathway_name
         """
+	pathwayId = []
+        pathwayName = dict()
+        genelist = dict()
  	#query
         if self.tfdb is not None:
-            regstr = '%' + pathway_name + '%'
-            t = (regstr,)
- 	    #get pathwayId
-            res = self.tfdb.execute("SELECT Id,pathwayName FROM pathwayInfo "
+	    pn = []
+	    pids = []
+	    for pathway_name in pathway_names:
+                regstr = '%' + pathway_name + '%'
+                t = (regstr,)
+ 	        #get pathwayId
+                res = self.tfdb.execute("SELECT Id,pathwayName FROM pathwayInfo "
                                     "WHERE pathwayName LIKE ? ", t).fetchall()
-            if res:
-                pathwayId = [r[0] for r in res]
-                pathwayName = [r[1] for r in res]
+                if res:
+                    pids = pids + [r[0] for r in res]
+		    pn = pn + [r[1] for r in res]
+		    
+	    if len(pids):
+	        pathwayId = list(set(pids))
+	        for i in range(len(pids)):
+                    pathwayName[pids[i]] = pn[i]
  				
-                genelist = dict()
                 for pthID in pathwayId:
                     t = (pthID,)
                     res1 = self.tfdb.execute("SELECT DISTINCT genesymbol FROM pathway2Genes "
@@ -330,11 +340,6 @@ class TFTA:
  					
             else:
                 raise PathwayNotFoundException
- 				
-        else:
-            pathwayId = []
-            pathwayName = []
-            genelist = dict()
  			
         return pathwayId,pathwayName,genelist
  	
