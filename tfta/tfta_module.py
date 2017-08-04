@@ -807,7 +807,11 @@ def _get_pathway_name(target_str):
     #print 'In _get_pathway_name'
     #tree = ET.XML(xml_string, parser=UTB())
     root = ET.fromstring(target_str)
-    pathway_name = root.find('TERM').find('drum-terms').find('drum-term').get('matched-name')
+    try:
+        pathway_name = root.find('TERM').find('drum-terms').find('drum-term').get('matched-name')
+    except Exception as e:
+	pathway_name = None
+	return pathway_name
     #print 'pathwayName(_get_pathway_name)=' + pathway_name
     return pathway_name
     
