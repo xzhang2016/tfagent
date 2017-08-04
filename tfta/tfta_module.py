@@ -493,22 +493,23 @@ class TFTA_Module(KQMLModule):
 	    return reply
 	
 	pathway_name = trim_dash(pathway_name)
+	pathway_names = _get_pathway_name_list(pathway_name)
 
         try:
             pathwayId,pathwayName,genelist = \
-                self.tfta.find_genes_from_pathwayName(pathway_name)
+                self.tfta.find_genes_from_pathwayName(pathway_names)
         except PathwayNotFoundException:
             reply = make_failure('PathwayNotFoundException')
             return reply
 
         pathway_list_str = ''
-        for pid, pn in zip(pathwayId, pathwayName):
+        for pid in pathwayId:
             gene_list_str = ''
             for gene in genelist[pid]:
                 gene_list_str += '(:name %s) ' % gene.encode('ascii', 'ignore')
 
             gene_list_str = '(' + gene_list_str + ')'
-            pnslash = '"' + pn +'"'
+            pnslash = '"' + pathwayName[pid] +'"'
             pathway_list_str += '(:name %s :genes %s) ' % (pnslash, gene_list_str)
 
         reply = KQMLList.from_string(
