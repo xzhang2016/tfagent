@@ -491,6 +491,8 @@ class TFTA_Module(KQMLModule):
 	elif ekb_type == 0:
 	    reply = make_failure('NO_PATHWAY_NAME')
 	    return reply
+	
+	pathway_name = trim_dash(pathway_name)
 
         try:
             pathwayId,pathwayName,genelist = \
@@ -851,6 +853,11 @@ def trim_quotes(descr):
 	descr = descr[1:]
     if descr[-1] == '"':
 	descr = descr[:-1]
+    return descr
+
+def trim_dash(descr):
+    if descr[0] == '-':
+	descr = descr[1:]
     return descr
 
 
