@@ -479,27 +479,22 @@ class TFTA_Module(KQMLModule):
 	    try:
                 target = _get_target(pathway_arg)
                 pathway_name = target.name
-		print 'pathway_name=' + pathway_name
+		pathway_name = trim_hyphen(pathway_name)
+		alias = _get_pathway_alias(pathway_arg)
+		pathway_names = list(set([pathway_name] + alias))
+		#print 'pathway_name=' + pathway_name
 	    except Exception as e:
 	        reply = make_failure('NO_PATHWAY_NAME')
 	        return reply
 	elif ekb_type == 2:
-	    pathway_name = _get_pathway_name(pathway_arg)
-	    if pathway_name is None:
+	    pathway_names = _get_pathway_name(pathway_arg)
+	    if not len(pathway_names):
 	        reply = make_failure('NO_PATHWAY_NAME')
 		return reply
+	    
 	elif ekb_type == 0:
 	    reply = make_failure('NO_PATHWAY_NAME')
 	    return reply
-	
-	pathway_name = trim_hyphen(pathway_name)
-	
-	try:
-	    pathway_names = _get_pathway_name_list(pathway_name)
-	    print 'pathway_names=' + ','.join(pathway_names)
-	except Exception as e:
-	    print e
-	    pathway_names = [pathway_name]
 
         try:
             pathwayId,pathwayName,genelist = \
@@ -823,10 +818,20 @@ def _get_pathway_name(target_str):
 	    s = root.find('TERM').find('name').text
 	    pathway_name = s.replace('-', ' ').lower()
 	except Exception as e:
-	    pathway_name = None
+	    pathway_name = []
 	    return pathway_name
-    #print 'pathwayName(_get_pathway_name)=' + pathway_name
-    return pathway_name
+    
+    return [pathway_name]
+
+def _get_pathway_alias(target_str):
+    root = ET.fromstring(target_str)
+    try:
+        alias = root.find('TERM').find('name').text
+	alias = [alias]
+    except Exception as e:
+	alias = []
+	
+    return alias
     
 def _get_ekb_type(xml_string):
     """
