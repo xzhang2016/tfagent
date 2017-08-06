@@ -468,7 +468,7 @@ class TFTA_Module(KQMLModule):
             '(SUCCESS :pathways (' + pathway_list_str + '))')
         return reply
 
-    def respond_find_gene_pathway(self, content):
+    def respond_find_gene_pathway2(self, content):
         """Response content to FIND-GENE-PATHWAY request
         For a given pathway name, reply the genes within the pathway"""
         pathway_arg = content.gets('pathway')
@@ -516,6 +516,35 @@ class TFTA_Module(KQMLModule):
         reply = KQMLList.from_string(
             '(SUCCESS :pathways (' + pathway_list_str + '))')
         return reply
+
+    def respond_find_gene_pathway(self, content):
+        """
+        Response content to FIND-GENE-PATHWAY request
+	For a given pathway name, reply the genes within the pathway
+	"""
+	pathway_arg = content.gets('pathway')
+	pathway_names = _get_pathway_name(pathway_arg)
+	if not len(pathway_names):
+	    reply = make_failure('NO_PATHWAY_NAME')
+	    return reply
+	try:
+	    pathwayId,pathwayName,genelist = \
+	        self.tfta.find_genes_from_pathwayName(pathway_names)
+	except PathwayNotFoundException:
+	    reply = make_failure('PathwayNotFoundException')
+	    return reply
+	pathway_list_str = ''
+	for pid in pathwayId:
+	    gene_list_str = ''
+	    for gene in genelist[pid]:
+	        gene_list_str += '(:name %s) ' % gene.encode('ascii', 'ignore')
+	    gene_list_str = '(' + gene_list_str + ')'
+	    pnslash = '"' + pathwayName[pid] +'"'
+	    pathway_list_str += '(:name %s :genes %s) ' % (pnslash, gene_list_str)
+	    
+	reply = KQMLList.from_string(
+		'(SUCCESS :pathways (' + pathway_list_str + '))')
+	return reply
 
     def respond_find_pathway_chemical(self, content):
         """Response content to FIND_PATHWAY_KEYWORD request
@@ -811,17 +840,19 @@ def _get_pathway_name(target_str):
     #print 'In _get_pathway_name'
     #tree = ET.XML(xml_string, parser=UTB())
     root = ET.fromstring(target_str)
+    pathway_name = []
     try:
-        pathway_name = root.find('TERM').find('drum-terms').find('drum-term').get('matched-name')
+        for term in root.find('TERM').find('drum-terms').find('drum-term'):
+	    pathway_name = pathway_name + term.get('matched-name')
+	    pathway_name = list(set(pathway_name))
     except Exception as e:
 	try:
 	    s = root.find('TERM').find('name').text
-	    pathway_name = s.replace('-', ' ').lower()
+	    pathway_name = [s.replace('-', ' ').lower()]
 	except Exception as e:
-	    pathway_name = []
 	    return pathway_name
     
-    return [pathway_name]
+    return pathway_name
 
 def _get_pathway_alias(target_str):
     root = ET.fromstring(target_str)
