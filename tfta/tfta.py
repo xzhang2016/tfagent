@@ -437,31 +437,43 @@ class TFTA:
         """
         Return pathways which contain the given genes and whose name contain substring of pathway_name
         """
-        pname = []
-        plink = []
+        pname = dict()
+        plink = dict()
+	upid = []
         if self.tfdb is not None:
-            regstr = '%' + pathway_name + '%'
-            t = (regstr,)
-            res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
+            pids = []
+            pn = []
+            dl = []
+            for pathway_name in pathway_names:
+                regstr = '%' + pathway_name + '%'
+                t = (regstr,)
+                res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
                                     "WHERE pathwayName LIKE ? ", t).fetchall()
-            if res:
-                pids = [r[0] for r in res]
-                pn = [r[1] for r in res]
-                dl = [r[2] for r in res]
+                if res:
+                    pids = pids + [r[0] for r in res]
+                    pn = pn + [r[1] for r in res]
+                    dl = dl + [r[2] for r in res]
+                    
+            if len(pids):
+                for id,n,l in zip(pids,pn,dl):
+                    pname[id] = n
+                    plink[id] = l
             else:
                 raise PathwayNotFoundException
-                
-            for pthID, pn1, pdl in zip(pids, pn, dl):
+                    
+            upid = list(set(pids)) 
+            for pthID in upid:
                 t = (pthID,)
                 res1 = self.tfdb.execute("SELECT DISTINCT genesymbol FROM pathway2Genes "
                                         "WHERE pathwayID = ? ORDER BY genesymbol", t).fetchall()
                 genes = [r[0] for r in res1]
                 overlap_genes = list(set(gene_names) & set(genes))
-                if len(overlap_genes) == len(gene_names):
-                    pname = pname + [pn1]
-                    plink = plink + [pdl]
+                if len(overlap_genes) < len(gene_names):
+                    del pname[pthID]
+                    del plink[pthID]
+                    upid.remove(pthID)
                     
-            return pname, plink
+            return upid, pname, plink
 
     def find_pathways_from_genelist_keyword(self,gene_names, keyword):
         """
