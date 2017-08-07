@@ -30,7 +30,7 @@ class TFTA_Module(KQMLModule):
                       'FIND-COMMON-PATHWAY-GENES','FIND-PATHWAY-GENE-KEYWORD',
 		      'FIND-COMMON-PATHWAY-GENES-KEYWORD', 'FIND-GENE-GO-TF',
                       'IS-TF-TARGET-TISSUE', 'FIND-TF-TARGET-TISSUE',
-                      'FIND-TARGET-TF-TISSUE']
+                      'FIND-TARGET-TF-TISSUE', 'IS-PATHWAY-GENE']
 
         #Send subscribe messages
         for task in self.tasks:
@@ -55,6 +55,8 @@ class TFTA_Module(KQMLModule):
             reply_content = self.respond_find_tf_targets(content)
         elif task_str == 'FIND-TARGET-TF':
             reply_content = self.respond_find_target_tfs(content)
+	elif task_str == 'IS-PATHWAY-GENE':
+	    reply_content = self.respond_is_pathway_gene(content)
         elif task_str == 'FIND-PATHWAY-GENE':
             reply_content = self.respond_find_pathway_gene(content)
 	elif task_str == 'FIND-PATHWAY-GENE-KEYWORD':
@@ -781,6 +783,47 @@ class TFTA_Module(KQMLModule):
 
 	reply = KQMLList.from_string(
                '(SUCCESS :pathways (' + path_list_str + '))')
+        return reply
+
+     def respond_is_pathway_gene(self, content):
+        """
+        Respond to IS-PATHWAY-GENE request
+        query like: Does the mTor pathway utilize SGK1? 
+        """
+        pathway_arg = content.gets('pathway')
+        pathway_names = _get_pathway_name(pathway_arg)
+        if not len(pathway_names):
+            reply = make_failure('NO_PATHWAY_NAME')
+            return reply
+            
+        pathway_names = trim_word(pathway_names, 'pathway')
+        
+        gene_arg = content.gets('gene')
+        try:
+            genes = _get_targets(gene_arg)
+            gene_names = []
+            for gene in genes:
+                gene_names.append(gene.name)
+        except Exception as e:
+            reply = make_failure('NO_GENE_NAME')
+            return reply
+            
+        try:
+            pids, pathwayName, dblink = \
+                self.Is_pathway_gene(pathway_names, gene_names)
+        except PathwayNotFoundException:
+            reply = make_failure('PathwayNotFoundException')
+            return reply
+            
+        pathway_list_str = ''
+        for pid in pids:
+            pn = '"' + pathwayName[pid] + '"'
+            dbl = '"' + dblink[pid] + '"'
+            pathway_list_str += \
+                '(:name %s :dblink %s) ' % (pn, dbl)
+                
+        reply = KQMLList.from_string(
+            '(SUCCESS :pathways (' + pathway_list_str + '))')
         return reply
 
     def respond_find_genes_go_tf(self, content):
