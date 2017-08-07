@@ -125,8 +125,7 @@ class TFTA:
         """
         Return TFs regulating the given target list as well as the frequency (count)
 	of each TF
-	"""
- 			
+	"""		
  	#query
 	tf_counts = []
 	tf_names = []
@@ -140,13 +139,15 @@ class TFTA:
                     tf_names = tf_names + [r[0] for r in res]
  	    
 	    #count for each TF
-            unique_tfs = list(set(tf_names))
-	    if len(unique_tfs):
+	    if len(tf_names):
+                unique_tfs = list(set(tf_names))
                 for i in range(len(unique_tfs)):
                     tf_counts.append(tf_names.count(unique_tfs[i]))
  				
  	        #sort
                 tf_counts,unique_tfs = zip(*sorted(zip(tf_counts, unique_tfs),reverse=True))
+	    else:
+		raise TFNotFoundException
  			
         return unique_tfs, tf_counts
  		
@@ -617,13 +618,15 @@ class TFTA:
  				
  	    #pathway frequency
             uniq_path = list(set(pathlist))
-	    if len(uniq_path):
+	    if len(uniq_path) and len(gene_names)>1:
 	        uniq_path2 = []
                 for pth in uniq_path:
                     ct = pathlist.count(pth)
 		    if ct > 1:
                         counts.append(ct)
 		        uniq_path2.append(pth)
+	    else:
+		uniq_path2 = uniq_path
  			
             if len(uniq_path2):
                 for pth in uniq_path2:
