@@ -846,8 +846,9 @@ def _get_pathway_name(target_str):
     try:
         for term in root.find('TERM').find('drum-terms').findall('drum-term'):
 	    pathway_name = pathway_name + [term.get('matched-name')]
-	    pathway_name = list(set(pathway_name))
-	    print 'pathway_name=' + ','.join(pathway_name)
+	
+	pathway_name = list(set(pathway_name))
+	print 'pathway_name=' + ','.join(pathway_name)
     except Exception as e:
 	try:
 	    s = root.find('TERM').find('name').text
