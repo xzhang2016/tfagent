@@ -527,6 +527,8 @@ class TFTA_Module(KQMLModule):
 	if not len(pathway_names):
 	    reply = make_failure('NO_PATHWAY_NAME')
 	    return reply
+	
+	pathway_names = trim_word(pathway_names, 'pathway')
 	try:
 	    pathwayId,pathwayName,genelist = \
 	        self.tfta.find_genes_from_pathwayName(pathway_names)
@@ -912,6 +914,16 @@ def trim_hyphen(descr):
     if descr[0] == '-':
 	descr = descr[1:]
     return descr
+
+def trim_word(descr, word):
+    #descr is a list
+    ds = []
+    for d in descr:
+        if d[-len(word):] == word:
+            ds.append(d[:-len(word)-1])
+	else:
+	    ds.append(d)
+    return ds
 
 
 if __name__ == "__main__":
