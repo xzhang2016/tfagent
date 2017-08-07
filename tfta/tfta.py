@@ -433,7 +433,7 @@ class TFTA:
  			
         return pathwayName,dblink
 
-    def Is_pathway_gene(self, pathway_name, gene_names):
+    def Is_pathway_gene(self, pathway_names, gene_names):
         """
         Return pathways which contain the given genes and whose name contain substring of pathway_name
         """
