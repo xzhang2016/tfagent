@@ -626,8 +626,12 @@ class TFTA_Module(KQMLModule):
 	except Exception as e:
 	    reply = make_failure('NO_TARGET_NAME')
 	    return reply
-
-        tf_names, tf_counts = self.tfta.find_tfs_count(target_names)
+        try:
+            tf_names, tf_counts = self.tfta.find_tfs_count(target_names)
+	except TFNotFoundException:
+	    reply = make_failure('TF_NOT_FOUND')
+	    return reply
+	
         tf_list_str = ''
         for tf,ct in zip(tf_names, tf_counts):
             tf_list_str += '(:name %s :count %s) ' % (tf, ct)
@@ -670,16 +674,24 @@ class TFTA_Module(KQMLModule):
         by all of them; then return the overlap between the targets
         and the given gene list"""
         tf_arg = content.gets('tf')
-        tfs = _get_targets(tf_arg)
-        tf_names = []
-        for tf in tfs:
-            tf_names.append(tf.name)
+	try:
+            tfs = _get_targets(tf_arg)
+            tf_names = []
+            for tf in tfs:
+                tf_names.append(tf.name)
+	except Exception as e:
+	    reply = make_failure('NO_TF_NAME')
+	    return reply
 
         target_arg = content.gets('target')
-        targets = _get_targets(target_arg)
-        target_names = []
-        for tg in targets:
-            target_names.append(tg.name)
+	try:
+            targets = _get_targets(target_arg)
+            target_names = []
+            for tg in targets:
+                target_names.append(tg.name)
+	except Exception as e:
+	    reply = make_failure('NO_TARGET_NAME')
+	    return reply
         
         try:
             overlap_targets = \
@@ -700,7 +712,9 @@ class TFTA_Module(KQMLModule):
         return reply
         
     def respond_find_common_pathway_genes(self, content):
-        """response content to FIND-COMMON-PATHWAY-GENES request"""
+        """
+	response content to FIND-COMMON-PATHWAY-GENES request
+	"""
 	target_arg = content.gets('target')
 	try:
 	    targets = _get_targets(target_arg)
@@ -759,14 +773,22 @@ class TFTA_Module(KQMLModule):
     def respond_find_common_pathway_genes_keyword(self, content):
         """response content to FIND-COMMON-PATHWAY-GENES-KEYWORD request"""
 	keyword_arg = content.get('keyword')
-        keyword_name = keyword_arg.head()
-        keyword = trim_quotes(keyword_name)
+	try:
+            keyword_name = keyword_arg.head()
+            keyword = trim_quotes(keyword_name)
+	except Exception as e:
+	    reply = make_failure('NO_KEYWORD')
+	    return reply
 	
-	target_arg = content.gets('target')
-	targets = _get_targets(target_arg)
-	target_names = []
-	for tg in targets:
-            target_names.append(tg.name)
+	target_arg = content.gets('gene')
+	try:
+	    targets = _get_targets(target_arg)
+	    target_names = []
+	    for tg in targets:
+                target_names.append(tg.name)
+	except Exception as e:
+	    reply = make_failure('NO_GENE_NAME')
+	    return reply
 		
         try:
             pathwayName,externalId,source,dblink,counts = self.tfta.find_pathway_count_genes_keyword(target_names, keyword)
