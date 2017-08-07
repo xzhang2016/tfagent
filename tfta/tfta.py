@@ -870,13 +870,14 @@ class TFTA:
             if not res:
                 raise GONotFoundException
             else:
-                go_ids = [r[0] for r in res]
-                go_types = [r[1] for r in res]
+                record_ids = [r[0] for r in res]
+		go_ids = [r[1] for r in res]
+                go_types = [r[3] for r in res]
                 go_names = [r[2] for r in res]
                 
                 #search genes
-                for i in range(len(go_ids)):
-                    t = (go_ids[i],)
+                for i in range(len(record_ids)):
+                    t = (record_ids[i],)
                     res1 = self.tfdb.execute("SELECT DISTINCT geneSymbol FROM go2Genes "
                                     "WHERE termId = ? ", t).fetchall()
                    
