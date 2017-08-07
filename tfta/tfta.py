@@ -433,6 +433,36 @@ class TFTA:
  			
         return pathwayName,dblink
 
+    def Is_pathway_gene(self, pathway_name, gene_names):
+        """
+        Return pathways which contain the given genes and whose name contain substring of pathway_name
+        """
+        pname = []
+        plink = []
+        if self.tfdb is not None:
+            regstr = '%' + pathway_name + '%'
+            t = (regstr,)
+            res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
+                                    "WHERE pathwayName LIKE ? ", t).fetchall()
+            if res:
+                pids = [r[0] for r in res]
+                pn = [r[1] for r in res]
+                dl = [r[2] for r in res]
+            else:
+                raise PathwayNotFoundException
+                
+            for pthID, pn1, pdl in zip(pids, pn, dl):
+                t = (pthID,)
+                res1 = self.tfdb.execute("SELECT DISTINCT genesymbol FROM pathway2Genes "
+                                        "WHERE pathwayID = ? ORDER BY genesymbol", t).fetchall()
+                genes = [r[0] for r in res1]
+                overlap_genes = list(set(gene_names) & set(genes))
+                if len(overlap_genes):
+                    pname = pname + [pn1]
+                    plink = plink + [pdl]
+                    
+            return pname, plink
+
     def find_pathways_from_genelist_keyword(self,gene_names, keyword):
         """
         return pathways having given genes and some information in pathway name
