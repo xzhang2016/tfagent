@@ -457,7 +457,7 @@ class TFTA:
                                         "WHERE pathwayID = ? ORDER BY genesymbol", t).fetchall()
                 genes = [r[0] for r in res1]
                 overlap_genes = list(set(gene_names) & set(genes))
-                if len(overlap_genes):
+                if len(overlap_genes) == len(gene_names):
                     pname = pname + [pn1]
                     plink = plink + [pdl]
                     
