@@ -807,7 +807,7 @@ class TFTA_Module(KQMLModule):
                '(SUCCESS :pathways (' + path_list_str + '))')
         return reply
 
-     def respond_is_pathway_gene(self, content):
+    def respond_is_pathway_gene(self, content):
         """
         Respond to IS-PATHWAY-GENE request
         query like: Does the mTor pathway utilize SGK1? 
