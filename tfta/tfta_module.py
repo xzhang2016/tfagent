@@ -175,7 +175,7 @@ class TFTA_Module(KQMLModule):
 
         reply = KQMLList('SUCCESS')
         is_target_str = 'TRUE' if is_target else 'FALSE'
-        reply.set('is-tf-target', is_target_str)
+        reply.set('is-tf-target-tissue', is_target_str)
         return reply
 
     def respond_find_tf_targets(self, content):
@@ -851,17 +851,26 @@ class TFTA_Module(KQMLModule):
     def respond_find_genes_go_tf(self, content):
 	"""
         Respond content to FIND-GENE-GO-TF request
+	The inputs here are keyword from GO names and tf list
         """
         keyword_arg = content.get('keyword')
-        keyword_name = keyword_arg.head()
-        keyword = trim_quotes(keyword_name)
-        keyword = keyword.lower()
+	try:
+            keyword_name = keyword_arg.head()
+            keyword = trim_quotes(keyword_name)
+            keyword = keyword.lower()
+	except Exception as e:
+	    reply = make_failure('NO_GO_NAME')
+	    return reply
         
         tf_arg = content.gets('tf')
-        tfs = _get_targets(tf_arg)
-        tf_names = []
-        for tf in tfs:
-            tf_names.append(tf.name)
+	try:
+            tfs = _get_targets(tf_arg)
+            tf_names = []
+            for tf in tfs:
+                tf_names.append(tf.name)
+	except Exception as e:
+	    reply = make_failure('NO_TF_NAME')
+	    return reply
             
         try:
             go_ids,go_types,go_names,go_genes = \
@@ -881,10 +890,60 @@ class TFTA_Module(KQMLModule):
                 
             gene_list_str = '(' + gene_list_str + ')'
             gn_str = '"' + gn + '"'
-            go_list_str += '(:name %s :genes %s) ' % (gn_str, gene_list_str)
+	    gid_str = '"' + gid + '"'
+            go_list_str += '(:id %s :name %s :genes %s) ' % (gid_str, gn_str, gene_list_str)
             
         reply = KQMLList.from_string(
-            '(SUCCESS :GOTERMs (' + go_list_str + '))')
+            '(SUCCESS :go-terms (' + go_list_str + '))')
+            
+        return reply
+
+    def respond_find_genes_go_tf2(self, content):
+	"""
+        Respond content to FIND-GENE-GO-TF request
+	The inputs here are GO id and tf list
+        """
+	go_arg = content.get('go-id')
+	try:
+            goid = go_arg.head()
+            goid = trim_quotes(goid)
+	except Exception as e:
+	    reply = make_failure('NO_GO_ID')
+	    return reply
+        
+        tf_arg = content.gets('tf')
+	try:
+            tfs = _get_targets(tf_arg)
+            tf_names = []
+            for tf in tfs:
+                tf_names.append(tf.name)
+	except Exception as e:
+	    reply = make_failure('NO_TF_NAME')
+	    return reply
+            
+        try:
+            go_ids,go_types,go_names,go_genes = \
+                self.tfta.find_genes_GO_tf2(goid, tf_names)
+        except TFNotFoundException:
+            reply = make_failure('TF_NOT_FOUND')
+            return reply
+        except GONotFoundException:
+            reply = make_failure('GOTERM_NOT_FOUND')
+            return reply
+            
+        go_list_str = ''
+        for gid,gn in zip(go_ids, go_names):
+            gene_list_str = ''
+            for gene in go_genes[gid]:
+                gene_list_str += '(:name %s) ' % gene.encode('ascii', 'ignore')
+                
+            gene_list_str = '(' + gene_list_str + ')'
+            gn_str = '"' + gn + '"'
+	    gid_str = '"' + gid + '"'
+            go_list_str += '(:id %s :name %s :genes %s) ' % (gid_str, gn_str, gene_list_str)
+            
+        reply = KQMLList.from_string(
+            '(SUCCESS :go-terms (' + go_list_str + '))')
             
         return reply
 
