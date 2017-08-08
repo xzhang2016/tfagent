@@ -361,6 +361,7 @@ class TFTA_Module(KQMLModule):
 	try:
             keyword_name = keyword_arg.head()
             keyword = trim_quotes(keyword_name)
+	    keyword = trim_word(keyword, 'pathway')
 	except Exception as e:
 	    reply = make_failure('NO_KEYWORD')
 	    return reply
@@ -557,6 +558,7 @@ class TFTA_Module(KQMLModule):
 	try:
             chemical_name = chemical_arg.head()
 	    chemical_name = trim_quotes(chemical_name)
+	    chemical_name = trim_word(chemical_name, 'pathway')
 	except Exception as e:
 	    reply = make_failure('NO_PATHWAY_NAME')
 	    return reply
@@ -588,6 +590,7 @@ class TFTA_Module(KQMLModule):
 	try:
             chemical_name = chemical_arg.head()
 	    chemical_name = trim_quotes(chemical_name)
+	    chemical_name = trim_word(chemical_name, 'pathway') 
 	except Exception as e:
 	    reply = make_failure('NO_PATHWAY_NAME')
 	    return reply
@@ -776,6 +779,7 @@ class TFTA_Module(KQMLModule):
 	try:
             keyword_name = keyword_arg.head()
             keyword = trim_quotes(keyword_name)
+	    keyword = trim_word(keyword, 'pathway')
 	except Exception as e:
 	    reply = make_failure('NO_KEYWORD')
 	    return reply
