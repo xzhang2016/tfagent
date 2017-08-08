@@ -80,7 +80,7 @@ class TFTA_Module(KQMLModule):
 	elif task_str == 'FIND-COMMON-PATHWAY-GENES-KEYWORD':
 	    reply_content = self.respond_find_common_pathway_genes_keyword(content)
 	elif task_str == 'FIND-GENE-GO-TF':
-            reply_content = self.respond_find_genes_go_tf(content)
+            reply_content = self.respond_find_genes_go_tf2(content)
         elif task_str == 'IS-TF-TARGET-TISSUE':
             reply_content = self.respond_is_tf_target_tissue(content)
         elif task_str == 'FIND-TF-TARGET-TISSUE':
