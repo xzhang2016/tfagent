@@ -558,14 +558,14 @@ class TFTA_Module(KQMLModule):
 	try:
             chemical_name = chemical_arg.head()
 	    chemical_name = trim_quotes(chemical_name)
-	    chemical_name = trim_word(chemical_name, 'pathway')
+	    chemical_name = trim_word([chemical_name], 'pathway')
 	except Exception as e:
 	    reply = make_failure('NO_PATHWAY_NAME')
 	    return reply
 
         try:
             pathwayId, pathwayName, externalId, source, dblink = \
-                self.tfta.find_pathways_from_chemical(chemical_name)
+                self.tfta.find_pathways_from_chemical(chemical_name[0])
         except PathwayNotFoundException:
             reply = make_failure('PathwayNotFoundException')
             return reply
@@ -590,14 +590,14 @@ class TFTA_Module(KQMLModule):
 	try:
             chemical_name = chemical_arg.head()
 	    chemical_name = trim_quotes(chemical_name)
-	    chemical_name = trim_word(chemical_name, 'pathway') 
+	    chemical_name = trim_word([chemical_name], 'pathway') 
 	except Exception as e:
 	    reply = make_failure('NO_PATHWAY_NAME')
 	    return reply
 
         try:
             pathwayId, pathwayName, tflist = \
-                self.tfta.find_tfs_from_pathwaysWithChemical(chemical_name)
+                self.tfta.find_tfs_from_pathwaysWithChemical(chemical_name[0])
         except PathwayNotFoundException:
             reply = make_failure('PathwayNotFoundException')
             return reply
@@ -749,10 +749,14 @@ class TFTA_Module(KQMLModule):
         """response content to FIND-COMMON-PATHWAY-GENES request,same as find-pathway-gene
 	For a given gene list, reply the related pathways information"""
         gene_arg = content.gets('target')
-        genes = _get_targets(gene_arg)
-        gene_names = []
-        for gene in genes:
-            gene_names.append(gene.name)
+	try:
+            genes = _get_targets(gene_arg)
+            gene_names = []
+            for gene in genes:
+                gene_names.append(gene.name)
+	except Exception as e:
+	    reply = make_failure('NO_GENE_NAME')
+	    return reply
 
         try:
             pathwayId, pathwayName, externalId, source,dblink = \
@@ -779,7 +783,7 @@ class TFTA_Module(KQMLModule):
 	try:
             keyword_name = keyword_arg.head()
             keyword = trim_quotes(keyword_name)
-	    keyword = trim_word(keyword, 'pathway')
+	    keyword = trim_word([keyword], 'pathway')
 	except Exception as e:
 	    reply = make_failure('NO_KEYWORD')
 	    return reply
@@ -795,7 +799,7 @@ class TFTA_Module(KQMLModule):
 	    return reply
 		
         try:
-            pathwayName,externalId,source,dblink,counts = self.tfta.find_pathway_count_genes_keyword(target_names, keyword)
+            pathwayName,externalId,source,dblink,counts = self.tfta.find_pathway_count_genes_keyword(target_names, keyword[0])
 	except PathwayNotFoundException:
             reply = make_failure('PathwayNotFoundException')
             return reply
