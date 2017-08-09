@@ -979,8 +979,12 @@ def _get_pathway_name(target_str):
 	print 'pathway_name=' + ','.join(pathway_name)
     except Exception as e:
 	try:
-	    s = root.find('TERM').find('name').text
-	    pathway_name = [s.replace('-', ' ').lower()]
+	    for term in root.findall('TERM')
+	        s = term.find('name')
+	        if s is not None:
+		    s1 = s.text 
+	            pathway_name = pathway_name + [s1.replace('-', ' ').lower()]
+	    pathway_name = list(set(pathway_name))
 	except Exception as e:
 	    return pathway_name
     
