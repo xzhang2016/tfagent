@@ -1039,7 +1039,7 @@ def make_failure(reason):
 def trim_quotes(descr):
     if descr[0] == '(':
 	descr = descr[1:]
-    if descr[-1] == ')'
+    if descr[-1] == ')':
         descr = descr[:-1]
     if descr[0] == '"':
 	descr = descr[1:]
