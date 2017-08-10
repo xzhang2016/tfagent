@@ -979,6 +979,8 @@ def _get_pathway_name(target_str):
         for term in root.find('TERM').find('drum-terms').findall('drum-term'):
 	    if term.get('matched-name') is not None:
 	        pathway_name = pathway_name + [term.get('matched-name')]
+	    if term.get('name') is not None:
+		pathway_name = pathway_name + [term.get('name')]
 	
 	pathway_name = list(set(pathway_name))
 	print 'pathway_name=' + ','.join(pathway_name)
