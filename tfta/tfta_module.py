@@ -8,9 +8,10 @@ logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
 		    level=logging.INFO)
 logger = logging.getLogger('TFTA')
 from kqml import KQMLModule, KQMLPerformative, KQMLList
-from tfta import TFTA, TFNotFoundException, TargetNotFoundException, PathwayNotFoundException, GONotFoundException
+from tfta import TFTA, TFNotFoundException, TargetNotFoundException, PathwayNotFoundException 
+from tfta import GONotFoundException, miRNANotFoundException
 from indra.sources.trips.processor import TripsProcessor
-from indra.util import UnicodeXMLTreeBuilder as UTB
+#from indra.util import UnicodeXMLTreeBuilder as UTB
 
 
 class TFTA_Module(KQMLModule):
@@ -30,7 +31,8 @@ class TFTA_Module(KQMLModule):
                       'FIND-COMMON-PATHWAY-GENES','FIND-PATHWAY-GENE-KEYWORD',
 		      'FIND-COMMON-PATHWAY-GENES-KEYWORD', 'FIND-GENE-GO-TF',
                       'IS-TF-TARGET-TISSUE', 'FIND-TF-TARGET-TISSUE',
-                      'FIND-TARGET-TF-TISSUE', 'IS-PATHWAY-GENE']
+                      'FIND-TARGET-TF-TISSUE', 'IS-PATHWAY-GENE','IS-MIRNA-TARGET', 
+		      'FIND-MIRNA-TARGET', 'FIND-TARGET-MIRNA', 'FIND-EVIDENCE-MIRNA-TARGET']
 
         #Send subscribe messages
         for task in self.tasks:
@@ -87,6 +89,14 @@ class TFTA_Module(KQMLModule):
             reply_content = self.respond_find_tf_targets_tissue(content)
         elif task_str == 'FIND-TARGET-TF-TISSUE':
             reply_content = self.respond_find_target_tfs_tissue(content)
+	elif task_str == 'IS-MIRNA-TARGET':
+            reply_content = self.respond_is_miRNA_target(content)
+        elif task_str == 'FIND-MIRNA-TARGET':
+            reply_content = self.respond_find_miRNA_target(content)
+        elif task_str == 'FIND-TARGET-MIRNA':
+            reply_content = self.respond_find_target_miRNA(content)
+        elif task_str == 'FIND-EVIDENCE-MIRNA-TARGET':
+            reply_content = self.respond_find_evidence_miRNA_target(content)
         else:
             self.error_reply(msg, 'unknown request task ' + task_str)
             return
@@ -997,6 +1007,21 @@ def _get_pathway_name(target_str):
 	    return pathway_name
     
     return pathway_name
+
+def _get_miRNA_name(xml_string):
+    root = ET.fromstring(xml_string)
+    miRNA_names = []
+    try:
+        for term in root.findall('TERM'):
+            if term is not None:
+                dts = term.find('drum-terms').findall('drum-term')
+                    for dt in dts:
+                        if dt.get('matched-name') is not None:
+                            miRNA_names = miRNA_names + [dt.get('matched-name')]
+        miRNA_names = list(set(miRNA_names))
+    except Exception as e:
+        return miRNA_names
+    return miRNA_names
 
 def _get_pathway_alias(target_str):
     root = ET.fromstring(target_str)
