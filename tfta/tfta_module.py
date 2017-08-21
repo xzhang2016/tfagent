@@ -1015,7 +1015,7 @@ def _get_miRNA_name(xml_string):
         for term in root.findall('TERM'):
             if term is not None:
                 dts = term.find('drum-terms').findall('drum-term')
-                    for dt in dts:
+		    for dt in dts:
                         if dt.get('matched-name') is not None:
                             miRNA_names = miRNA_names + [dt.get('matched-name')]
         miRNA_names = list(set(miRNA_names))
