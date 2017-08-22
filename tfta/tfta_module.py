@@ -965,6 +965,117 @@ class TFTA_Module(KQMLModule):
             
         return reply
 
+    def Is_miRNA_target(self, miRNA_name, target_name):
+        """
+        Return True if the miRNA regulates the target, and False if not
+        query example: Does miR-20b-5p target STAT3? miRNANotFoundException
+        """
+        if self.tfdb is not None:
+             t = (miRNA_name,)
+             res = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo WHERE mirna = ? ", t).fetchall()
+             if not res:
+                 raise miRNANotFoundException
+             for r in res:
+                 if r[0].upper() == target_name.upper():
+                     return True
+             
+             #check if target_name in the database
+             t = (target_name,)
+             res = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo WHERE target = ? ", t).fetchall()
+             if not res:
+                 raise TargetNotFoundException
+                
+        return False
+        
+    def find_miRNA_target(self, target_names):
+        """
+        Return miRNAs regulating all the given targets
+        example: What microRNAs target STAT3?
+        """
+        miRNAs = []
+        if self.tfdb is not None:
+            t = (target_names[0],)
+            res = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo "
+                                    "WHERE target = ? ", t).fetchall()
+            if res:
+                miRNAs = [r[0] for r in res]
+            else:
+                raise TargetNotFoundException
+            
+            if len(target_names)>1:
+                for i in range(1,len(target_names)):
+                    t = (target_names[i],)
+                    res = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo "
+                                    "WHERE target = ? ", t).fetchall()
+                    if res:
+                        miRNAs = list(set(miRNAs) & set([r[0] for r in res]))
+                    else:
+                        raise TargetNotFoundException
+            if len(miRNAs):
+                miRNAs.sort()
+        return miRNAs
+        
+    def find_target_miRNA(self, miRNA_names):
+        """
+        Return Targets regulated by the given miRNAs
+        example: What genes does miR-20b-5p target?
+        """
+        target_names = []
+        if self.tfdb is not None:
+            t = (miRNA_names[0],)
+            res = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo "
+                                    "WHERE mirna = ? ", t).fetchall()
+            if res:
+                target_names = [r[0] for r in res]
+            else:
+                raise miRNANotFoundException
+            if len(miRNA_names)>1:
+                for i in range(1, len(miRNA_names)):
+                    t = (miRNA_names[i],)
+                    res = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo "
+                                    "WHERE mirna = ? ", t).fetchall()
+                    if res:
+                        target_names = list(set(target_names) & set([r[0] for r in res]))
+                    else:
+                        raise miRNANotFoundException
+            if len(target_names):
+                target_names.sort()
+                
+        return target_names
+        
+    def find_evidence_miRNA_target(self, miRNA_name, target_name):
+        """
+        Return experimental evidence that the given miRNA regulates the target
+        example: What is the evidence that miR-148a-3p targets DNMT1?
+        """
+        experiments = []
+        support_types = []
+        pmid_link = []
+        if self.tfdb is not None:
+            t = (miRNA_name, target_name)
+            res = self.tfdb.execute("SELECT * FROM mirnaInfo "
+                                    "WHERE mirna = ? AND target = ? ", t).fetchall()
+            if res:
+                experiments = [r[3] for r in res]
+                support_types = [r[4] for r in res]
+                pmid_link = [pmid_sublink+str(r[5]) for r in res]
+            else:
+                #check if miRNA_name in the database
+                t = (miRNA_name, )
+                res = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo "
+                                        "WHERE mirna = ? ", t).fetchall()
+                if not res:
+                    raise miRNANotFoundException
+                else:
+                    #check if target_name in the database
+                    t = (target_name,)
+                    res = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo "
+                                            "WHERE target = ? ", t).fetchall()
+                    if not res:
+                        raise TargetNotFoundException
+                        
+        return experiments, support_types, pmid_link
+
 def _get_target(target_str):
     tp = TripsProcessor(target_str)
     terms = tp.tree.findall('TERM')
