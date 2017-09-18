@@ -1065,6 +1065,40 @@ class TFTA:
                         raise TargetNotFoundException
                         
         return experiments, support_types, pmid_link
+
+    def find_miRNA_count_gene(self, gene_names):
+        """
+        For a given gene list, find the miRNAs regulate one of the genes, and the
+        frequency of the miRNAs
+        What mirs most frequently or commonly regulate a list of genes
+        """
+        mirna = []
+        counts = []
+        temp = []
+        if self.tfdb is not None:
+            for gene_name in gene_names:
+                t = (gene_name,)
+                res1 = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo "
+                                         "WHERE target = ? ", t).fetchall()
+                if res1:
+                    temp = temp + [r[0] for r in res1]
+                            
+            #miRNA count
+            um = list(set(temp))
+            if len(um) and len(gene_names)>1:
+                for u in um:
+                    ct = temp.count(u)
+                    if ct > 1:
+                        mirna.append(u)
+                        counts.append(ct)
+                #sort
+                if len(mirna) > 1:
+                    counts,mirna = zip(*sorted(zip(counts,mirna), reverse=True))
+            else:
+                mirna = um
+                counts = np.ones(len(um), dtype=np.int)
+                 
+        return mirna,counts
 		 							 
 
 #test functions
