@@ -4,6 +4,7 @@ import re
 import os
 import logging
 import sqlite3
+import numpy as np
 
  
 logger = logging.getLogger('TFTA')
@@ -633,6 +634,7 @@ class TFTA:
 		        uniq_path2.append(pth)
 	    else:
 		uniq_path2 = uniq_path
+		counts = np.ones(len(uniq_path2), dtype=np.int)
  			
             if len(uniq_path2):
                 for pth in uniq_path2:
@@ -1066,105 +1068,5 @@ class TFTA:
 		 							 
 
 #test functions
-if __name__ == "__main__":
-	a=TFTA()
-	"""
-	ss2 = a.Is_tf_target('FOS','ELF3');
-	if ss2 is not None:
-		print 'ss2='+str(ss2)
-	else:
-		print 'ss2 is none'
-	
-	ss3 = a.find_tfs(['KRAS','USP1']) 
-	if ss3 is not None:
-		print 'lenth(ss3)='+str(len(ss3))
-		print 'ss3='+','.join(ss3)
-		
-	ss4 = a.find_targets(['FOS','STAT3'])
-        print 'length(ss4)='+str(len(ss4))
-        print 'ss4='+','.join(ss4)
-		
-	ss6=a.Is_tf_target_tissue('BSAP','USP1','bladder')
-        print 'ss6='+str(ss6)
-		
-	ss7=a.find_tfs_tissue(['MAPK14','SYPL1'],'bladder')
-        print 'lenth(ss7)='+str(len(ss7))
-        print 'ss7='+','.join(ss7)
-	
-	ss8=a.find_targets_tissue(['SREBP-1','USF'],'bladder')
-        print 'length(ss8)=', len(ss8)
-        print 'ss8='+','.join(ss8)
- 	
- 	pathId,pathName,extId,pathsource,pathlink=a.find_pathways_from_name('MAPK signaling pathway')
- 	print 'pathId='+','.join(str(i) for i in pathId)
- 	#imap
- 	print 'pathId='+','.join(map(str,pathId))
- 	print 'pathName='+','.join(pathName)
- 	print 'extId='+','.join(extId)
- 	print 'pathsource='+','.join(pathsource)
- 	print 'pathlink='+','.join(pathlink)
- 	
- 	pathId,pathName,genes=a.find_tfs_from_pathwayName('MAPK signaling pathway')
- 	print 'pathId='+','.join(map(str,pathId))
- 	print 'pathName='+','.join(pathName)
- 	print genes
- 	print genes.keys()
- 	
- 	pathId,pathName,extId,pathsource,pathlink=a.find_pathways_from_dbsource_geneName('reactome','SRF')
- 	print 'pathId='+','.join(map(str,pathId))
- 	print 'pathName='+','.join(pathName)
- 	print 'extId='+','.join(extId)
- 	print 'pathsource='+','.join(pathsource)
- 	print 'pathlink='+','.join(pathlink)
- 	
- 	pathId,pathName,genelist=a.find_genes_from_pathwayName('MAPK signaling pathway')
- 	print 'pathId='+','.join(map(str,pathId))
- 	print genelist
- 	print genelist.keys()
- 	
- 	pathId,pathName,extId,pathsource,pathlink=a.find_pathways_from_genelist(['KRAS','ELK1'])
- 	print 'pathId='+','.join(map(str,pathId))
- 	print 'pathName='+','.join(pathName)
- 	print 'extId='+','.join(extId)
- 	print 'pathsource='+','.join(pathsource)
- 	print 'pathlink='+','.join(pathlink)
- 	
- 	pathId,pathName,extId,pathsource,pathlink=a.find_pathways_from_chemical('calcium')
- 	print 'pathId='+','.join(map(str,pathId))
- 	print 'pathName='+','.join(pathName)
- 	print 'extId='+','.join(extId)
- 	print 'pathsource='+','.join(pathsource)
- 	print 'pathlink='+','.join(pathlink)
- 	
- 	pathId,pathName,genes=a.find_tfs_from_pathwaysWithChemical('calcium')
- 	print 'pathId='+','.join(map(str,pathId))
- 	print 'pathName='+','.join(pathName)
- 	print genes
- 	print genes.keys()
- 	
- 	
- 	targets=['AK5','ALDH1L2','ALPK2','ATOH8','BEGAIN','C14orf37','CCDC858','CCL28','CD2A',
- 			'CEMP','COL1A1','COL1A2','COL5A1','COL5A2','COL8A1','CPA4','CRYAB','CTGF','CYP181',
- 			'ELFN2','EMILIN2','EPHX1','F2R','F2RL2','FBN1','FBX032','FIBCD1','GALNT5','GREM1',
- 			'HHIPL2','HSP86','IGFBP3','IGFBP4','IGFBP7','KIF268','LOX','LOXLl','LOXL3','LRRC15',
- 			'LYPD1','MAGED1','MDGA1','MFAP4','MOK','MYLK','NI02','OLFML3','PADI2','PAMR1',
- 			'PCOLCE2','PLXDC1','PLXNA4','PTK7','PTPRS','RASD2','SAMD11','SIPA1L2','SLC30A4',
- 			'SLC7A8','SMADG','SPARC','SSC50','STAC2','STC2','SYNC','TENM2','TGFBI','THBS1',
- 			'TNFRSF21','TNFRSF9','TUBA1A']
- 	
- 	tfs,counts=a.find_tfs_count(targets)
- 	for i in range(len(tfs)):
- 		print tfs[i]+'('+str(counts[i])+')'
- 	print 'lenth(count)='+str(len(counts))
- 	print 'length(tfs)='+str(len(tfs))
- 	
- 	targetlist=a.find_overlap_targets_tfs_genes(['IRF3','MAX'],targets)
- 	print 'targetlist='+','.join(targetlist)
- 	print 'length(targetlist)='+str(len(targetlist))
- 	
- 	pathwayName,externalId,source,dblink,counts=a.find_pathway_count_genes(targets)
- 	for pn, ct in zip(pathwayName, counts):
- 	    print pn, '(',ct,')'
-	"""
- 	
- 	
+#if __name__ == "__main__":
+    #a=TFTA()	
