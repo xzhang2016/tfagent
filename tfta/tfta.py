@@ -1099,6 +1099,41 @@ class TFTA:
                 counts = np.ones(len(um), dtype=np.int)
                  
         return mirna,counts
+
+    def find_gene_count_miRNA(self, miRNA_names):
+        """
+        For a given miRNA list, find the genes regulated by one of the miRNAs, and the
+        frequency of the genes
+        What genes are most frequently (or commonly) regulated by a list of mIRs?
+        """
+        genes = []
+        counts = []
+        temp = []
+        if self.tfdb is not None:
+            for mir in miRNA_names:
+                t = (mir,)
+                res1 = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo "
+                                         "WHERE mirna = ? ", t).fetchall()
+                if res1:
+                    temp = temp + [r[0] for r in res1]
+                    
+            #gene count
+            ug = list(set(temp))
+            if len(ug) and len(miRNA_names)>1:
+                for u in ug:
+                    ct = temp.count(u)
+                    if ct > 1:
+                        genes.append(u)
+                        counts.append(ct)
+                #sort
+                if len(genes) > 1:
+                    counts,genes = zip(*sorted(zip(counts,genes), reverse=True))
+                    
+            else:
+                genes = ug
+                counts = np.ones(len(ug), dtype=np.int)
+                
+        return genes,counts
 		 							 
 
 #test functions
