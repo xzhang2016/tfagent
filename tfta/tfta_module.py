@@ -965,116 +965,143 @@ class TFTA_Module(KQMLModule):
             
         return reply
 
-    def Is_miRNA_target(self, miRNA_name, target_name):
+    def respond_is_miRNA_target(self, content):
         """
-        Return True if the miRNA regulates the target, and False if not
-        query example: Does miR-20b-5p target STAT3? miRNANotFoundException
+        Respond to IS-MIRNA-TARGET request
         """
-        if self.tfdb is not None:
-             t = (miRNA_name,)
-             res = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo WHERE mirna = ? ", t).fetchall()
-             if not res:
-                 raise miRNANotFoundException
-             for r in res:
-                 if r[0].upper() == target_name.upper():
-                     return True
-             
-             #check if target_name in the database
-             t = (target_name,)
-             res = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo WHERE target = ? ", t).fetchall()
-             if not res:
-                 raise TargetNotFoundException
-                
-        return False
+        #assume the miRNA is also in EKB XML format
+        miRNA_arg = content.gets('miRNA')
+        miRNA_name = _get_miRNA_name(miRNA_arg)
+        if not len(miRNA_name):
+            reply = make_failure('NO_MIRNA_NAME')
+            return reply
         
-    def find_miRNA_target(self, target_names):
-        """
-        Return miRNAs regulating all the given targets
-        example: What microRNAs target STAT3?
-        """
-        miRNAs = []
-        if self.tfdb is not None:
-            t = (target_names[0],)
-            res = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo "
-                                    "WHERE target = ? ", t).fetchall()
-            if res:
-                miRNAs = [r[0] for r in res]
-            else:
-                raise TargetNotFoundException
+        target_arg = content.gets('target')
+        try:
+            target = _get_target(target_arg)
+            target_name = target.name
+        except Exception as e:
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
+        
+        try:
+            is_target = self.tfta.Is_miRNA_target(miRNA_name[0], target_name)
+        except miRNANotFoundException:
+            reply = make_failure('MIRNA_NOT_FOUND')
+            return reply
+        except TargetNotFoundException:
+            reply = make_failure('TARGET_NOT_FOUND')
+            return reply
             
-            if len(target_names)>1:
-                for i in range(1,len(target_names)):
-                    t = (target_names[i],)
-                    res = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo "
-                                    "WHERE target = ? ", t).fetchall()
-                    if res:
-                        miRNAs = list(set(miRNAs) & set([r[0] for r in res]))
-                    else:
-                        raise TargetNotFoundException
-            if len(miRNAs):
-                miRNAs.sort()
-        return miRNAs
+        reply = KQMLList('SUCCESS')
+        is_target_str = 'TRUE' if is_target else 'FALSE'
+        reply.set('is-miRNA-target', is_target_str)
+        return reply
         
-    def find_target_miRNA(self, miRNA_names):
+    def respond_find_miRNA_target(self, content):
         """
-        Return Targets regulated by the given miRNAs
-        example: What genes does miR-20b-5p target?
+        Respond to FIND-MIRNA-TARGET request
         """
-        target_names = []
-        if self.tfdb is not None:
-            t = (miRNA_names[0],)
-            res = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo "
-                                    "WHERE mirna = ? ", t).fetchall()
-            if res:
-                target_names = [r[0] for r in res]
-            else:
-                raise miRNANotFoundException
-            if len(miRNA_names)>1:
-                for i in range(1, len(miRNA_names)):
-                    t = (miRNA_names[i],)
-                    res = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo "
-                                    "WHERE mirna = ? ", t).fetchall()
-                    if res:
-                        target_names = list(set(target_names) & set([r[0] for r in res]))
-                    else:
-                        raise miRNANotFoundException
-            if len(target_names):
-                target_names.sort()
+        target_arg = content.gets('target')
+        try:
+            targets = _get_targets(target_arg)
+            target_names = []
+            for target in targets:
+            target_names.append(target.name)
+        except Exception as e:
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
+        
+        try:
+            miRNA_names = self.tfta.find_miRNA_target(target_names)
+        except TargetNotFoundException:
+            reply = make_failure('TARGET_NOT_FOUND')
+            return reply
+            
+        if len(miRNA_names):
+            miRNA_list_str = ''
+            for m in miRNA_names:
+                miRNA_list_str += '(:name %s ) ' % m.encode('ascii', 'ignore')
                 
-        return target_names
+            reply = KQMLList.from_string(
+                '(SUCCESS :miRNAs (' + miRNA_list_str + '))')
+        else:
+            reply = make_failure('NO_MIRNA_FOUND')
+            
+        return reply
         
-    def find_evidence_miRNA_target(self, miRNA_name, target_name):
+    def respond_find_target_miRNA(self, content):
         """
-        Return experimental evidence that the given miRNA regulates the target
-        example: What is the evidence that miR-148a-3p targets DNMT1?
+        Respond to FIND-TARGET-MIRNA request
         """
-        experiments = []
-        support_types = []
-        pmid_link = []
-        if self.tfdb is not None:
-            t = (miRNA_name, target_name)
-            res = self.tfdb.execute("SELECT * FROM mirnaInfo "
-                                    "WHERE mirna = ? AND target = ? ", t).fetchall()
-            if res:
-                experiments = [r[3] for r in res]
-                support_types = [r[4] for r in res]
-                pmid_link = [pmid_sublink+str(r[5]) for r in res]
-            else:
-                #check if miRNA_name in the database
-                t = (miRNA_name, )
-                res = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo "
-                                        "WHERE mirna = ? ", t).fetchall()
-                if not res:
-                    raise miRNANotFoundException
-                else:
-                    #check if target_name in the database
-                    t = (target_name,)
-                    res = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo "
-                                            "WHERE target = ? ", t).fetchall()
-                    if not res:
-                        raise TargetNotFoundException
-                        
-        return experiments, support_types, pmid_link
+        #assume the miRNA is also in EKB XML format
+        miRNA_arg = content.gets('miRNA')
+        miRNA_names = _get_miRNA_name(miRNA_arg)
+        if not len(miRNA_names):
+            reply = make_failure('NO_MIRNA_NAME')
+            return reply
+            
+        try:
+            target_names = self.tfta.find_target_miRNA(miRNA_names)
+        except miRNANotFoundException:
+            reply = make_failure('MIRNA_NOT_FOUND')
+            return reply
+            
+        if len(target_names):
+            target_list_str = ''
+            for tg in target_names:
+                target_list_str += '(:name %s ) ' % tg.encode('ascii', 'ignore')
+                
+            reply = KQMLList.from_string(
+                '(SUCCESS :targets (' + target_list_str + '))')
+        else:
+            reply = make_failure('NO_TARGET_FOUND')
+            
+        return reply
+        
+    def respond_find_evidence_miRNA_target(self, content):
+        """
+        Respond to FIND-EVIDENCE-MIRNA-TARGET request
+        """
+        #assume the miRNA is also in EKB XML format
+        miRNA_arg = content.gets('miRNA')
+        miRNA_name = _get_miRNA_name(miRNA_arg)
+        if not len(miRNA_name):
+            reply = make_failure('NO_MIRNA_NAME')
+            return reply
+        
+        target_arg = content.gets('target')
+        try:
+            target = _get_target(target_arg)
+            target_name = target.name
+        except Exception as e:
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
+            
+        try:
+            experiments,supportType,pmlink = \
+                self.tfta.find_evidence_miRNA_target(miRNA_name[0], target_name)
+        except miRNANotFoundException:
+            reply = make_failure('MIRNA_NOT_FOUND')
+            return reply
+        except TargetNotFoundException:
+            reply = make_failure('TARGET_NOT_FOUND')
+            return reply
+            
+        if len(experiments):
+            evidence_list_str = ''
+            for e,s,l in zip(experiments,supportType,pmlink):
+                en = '"' + e + '"'
+                sn = '"' + s + '"'
+                ln = '"' + l + '"'
+                evidence_list_str += \
+                    '(:experiment %s :supportType %s :pubmedLink %s) ' % (en, sn, ln)
+            reply = KQMLList.from_string(
+                '(SUCCESS :evidence (' + evidence_list_str + '))')
+        else:
+            reply = make_failure('NO_EVIDENCE_FOUND')
+    
+        return reply
 
 def _get_target(target_str):
     tp = TripsProcessor(target_str)
