@@ -32,7 +32,8 @@ class TFTA_Module(KQMLModule):
 		      'FIND-COMMON-PATHWAY-GENES-KEYWORD', 'FIND-GENE-GO-TF',
                       'IS-TF-TARGET-TISSUE', 'FIND-TF-TARGET-TISSUE',
                       'FIND-TARGET-TF-TISSUE', 'IS-PATHWAY-GENE','IS-MIRNA-TARGET', 
-		      'FIND-MIRNA-TARGET', 'FIND-TARGET-MIRNA', 'FIND-EVIDENCE-MIRNA-TARGET']
+		      'FIND-MIRNA-TARGET', 'FIND-TARGET-MIRNA', 'FIND-EVIDENCE-MIRNA-TARGET',
+		      'FIND-MIRNA-COUNT-GENE','FIND-GENE-COUNT-MIRNA']
 
         #Send subscribe messages
         for task in self.tasks:
@@ -97,6 +98,10 @@ class TFTA_Module(KQMLModule):
             reply_content = self.respond_find_target_miRNA(content)
         elif task_str == 'FIND-EVIDENCE-MIRNA-TARGET':
             reply_content = self.respond_find_evidence_miRNA_target(content)
+	elif task_str == 'FIND-MIRNA-COUNT-GENE':
+            reply_content = self.respond_find_miRNA_count_target(content)
+        elif task_str == 'FIND-GENE-COUNT-MIRNA':
+            reply_content = self.respond_find_target_count_miRNA(content)
         else:
             self.error_reply(msg, 'unknown request task ' + task_str)
             return
@@ -1101,6 +1106,62 @@ class TFTA_Module(KQMLModule):
         else:
             reply = make_failure('NO_EVIDENCE_FOUND')
     
+        return reply
+
+    def respond_find_target_count_miRNA(self, content):
+        """
+        Respond to FIND-GENE-COUNT-MIRNA request
+        """
+        #assume the miRNA is also in EKB XML format
+        miRNA_arg = content.gets('miRNA')
+        miRNA_names = _get_miRNA_name(miRNA_arg)
+        if not len(miRNA_names):
+            reply = make_failure('NO_MIRNA_NAME')
+            return reply
+        try:
+            targets,counts = self.tfta.find_gene_count_miRNA(miRNA_names)
+        except miRNANotFoundException:
+            reply = make_failure('MIRNA_NOT_FOUND')
+            return reply
+        except TargetNotFoundException:
+            reply = make_failure('NO_TARGET_FOUND')
+            return reply
+            
+        target_str = ''
+        for t,ct in zip(targets,counts):
+            target_str += '(:name %s :count %s) ' % (t, ct)
+        reply = KQMLList.from_string(
+            '(SUCCESS :targets (' + target_str + '))')
+        return reply
+        
+         
+    def respond_find_miRNA_count_target(self, content):
+        """
+        Respond to FIND-MIRNA-COUNT-GENE request
+        """
+        target_arg = content.gets('target')
+        targets = _get_targets(target_arg)
+        target_names = []
+        for tg in targets:
+            target_names.append(tg.name)
+            
+        if not len(target_names):
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
+        try:
+            mirnas,counts = self.tfta.find_miRNA_count_gene(target_names)
+        except miRNANotFoundException:
+            reply = make_failure('NO_MIRNA_FOUND')
+            return reply
+        except TargetNotFoundException:
+            reply = make_failure('TARGET_NOT_FOUND')
+            return reply
+            
+        mirna_str = ''
+        for m,ct in zip(mirnas,counts):
+            mirna_str += '(:name %s :count %s) ' % (m, ct)
+        reply = KQMLList.from_string(
+            '(SUCCESS :miRNAs (' + mirna_str + '))')
         return reply
 
 def _get_target(target_str):
