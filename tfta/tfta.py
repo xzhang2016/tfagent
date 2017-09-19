@@ -1082,24 +1082,28 @@ class TFTA:
                                          "WHERE target = ? ", t).fetchall()
                 if res1:
                     temp = temp + [r[0] for r in res1]
-                            
-            #miRNA count
-            um = list(set(temp))
-            if len(um) and len(gene_names)>1:
-                for u in um:
-                    ct = temp.count(u)
-                    if ct > 1:
-                        mirna.append(u)
-                        counts.append(ct)
-                #sort
-                if len(mirna) > 1:
-                    counts,mirna = zip(*sorted(zip(counts,mirna), reverse=True))
-            else:
-                mirna = um
-                counts = np.ones(len(um), dtype=np.int)
-                 
+            #handle the case that all input targets are not in the database
+            if not len(temp):
+                raise TargetNotFoundException 
+            else:               
+                #miRNA count
+                um = list(set(temp))
+                if len(gene_names)>1:
+                    for u in um:
+                        ct = temp.count(u)
+                        if ct > 1:
+                            mirna.append(u)
+                            counts.append(ct)
+                    #sort
+                    if len(mirna) > 1:
+                        counts,mirna = zip(*sorted(zip(counts,mirna), reverse=True))
+                else:
+                    mirna = um
+                    counts = np.ones(len(um), dtype=np.int)
+            if not len(mirna):
+                raise miRNANotFoundException
         return mirna,counts
-
+                         
     def find_gene_count_miRNA(self, miRNA_names):
         """
         For a given miRNA list, find the genes regulated by one of the miRNAs, and the
@@ -1116,23 +1120,27 @@ class TFTA:
                                          "WHERE mirna = ? ", t).fetchall()
                 if res1:
                     temp = temp + [r[0] for r in res1]
+            #handle the case that all input miRNAs are not in the database
+            if not len(temp):
+                raise miRNANotFoundException
+            else:        
+                #gene count
+                ug = list(set(temp))
+                if len(miRNA_names)>1:
+                    for u in ug:
+                        ct = temp.count(u)
+                        if ct > 1:
+                            genes.append(u)
+                            counts.append(ct)
+                    #sort
+                    if len(genes) > 1:
+                        counts,genes = zip(*sorted(zip(counts,genes), reverse=True))  
+                else:
+                    genes = ug
+                    counts = np.ones(len(ug), dtype=np.int)
                     
-            #gene count
-            ug = list(set(temp))
-            if len(ug) and len(miRNA_names)>1:
-                for u in ug:
-                    ct = temp.count(u)
-                    if ct > 1:
-                        genes.append(u)
-                        counts.append(ct)
-                #sort
-                if len(genes) > 1:
-                    counts,genes = zip(*sorted(zip(counts,genes), reverse=True))
-                    
-            else:
-                genes = ug
-                counts = np.ones(len(ug), dtype=np.int)
-                
+            if not len(genes):
+                raise TargetNotFoundException     
         return genes,counts
 		 							 
 
