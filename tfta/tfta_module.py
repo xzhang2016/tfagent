@@ -548,7 +548,7 @@ class TFTA_Module(KQMLModule):
 	
 	pathway_names = trim_word(pathway_names, 'pathway')
 	try:
-	    pathwayId,pathwayName,genelist = \
+	    pathwayId,pathwayName,genelist,plink = \
 	        self.tfta.find_genes_from_pathwayName(pathway_names)
 	except PathwayNotFoundException:
 	    reply = make_failure('PathwayNotFoundException')
@@ -560,7 +560,8 @@ class TFTA_Module(KQMLModule):
 	        gene_list_str += '(:name %s) ' % gene.encode('ascii', 'ignore')
 	    gene_list_str = '(' + gene_list_str + ')'
 	    pnslash = '"' + pathwayName[pid] +'"'
-	    pathway_list_str += '(:name %s :genes %s) ' % (pnslash, gene_list_str)
+	    pwlink = '"' + plink[pid] + '"'
+	    pathway_list_str += '(:name %s :dblink %s :genes %s) ' % (pnslash, pwlink, gene_list_str)
 	    
 	reply = KQMLList.from_string(
 		'(SUCCESS :pathways (' + pathway_list_str + '))')
