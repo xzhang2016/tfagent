@@ -1012,7 +1012,7 @@ class TFTA_Module(KQMLModule):
             targets = _get_targets(target_arg)
             target_names = []
             for target in targets:
-            target_names.append(target.name)
+                target_names.append(target.name)
         except Exception as e:
             reply = make_failure('NO_TARGET_NAME')
             return reply
