@@ -301,25 +301,27 @@ class TFTA:
 	pathwayId = []
         pathwayName = dict()
         genelist = dict()
+	pw_link = dict()
  	#query
         if self.tfdb is not None:
 	    pn = []
 	    pids = []
+	    plink = []
 	    for pathway_name in pathway_names:
                 regstr = '%' + pathway_name + '%'
                 t = (regstr,)
  	        #get pathwayId
-                res = self.tfdb.execute("SELECT Id,pathwayName FROM pathwayInfo "
+                res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
                                     "WHERE pathwayName LIKE ? ", t).fetchall()
                 if res:
                     pids = pids + [r[0] for r in res]
 		    pn = pn + [r[1] for r in res]
-		    
+		    plink = plink + [r[2] for r in res]    
 	    if len(pids):
 	        pathwayId = list(set(pids))
 	        for i in range(len(pids)):
                     pathwayName[pids[i]] = pn[i]
- 				
+ 		    pw_link[pids[i]] = plink[i]	
                 for pthID in pathwayId:
                     t = (pthID,)
                     res1 = self.tfdb.execute("SELECT DISTINCT genesymbol FROM pathway2Genes "
@@ -328,7 +330,7 @@ class TFTA:
                     genelist[pthID] = genes			
             else:
                 raise PathwayNotFoundException	
-        return pathwayId,pathwayName,genelist
+        return pathwayId,pathwayName,genelist,pw_link
  	
     def find_tfs_from_pathwayName(self,pathway_name):
         """
