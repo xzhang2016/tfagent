@@ -1072,6 +1072,35 @@ class TFTA:
             if not len(genes):
                 raise TargetNotFoundException     
         return genes,counts
+
+    def find_pathway_db_keyword(self, db_source, pathway_names):
+        """
+        Return a list of pathways which come from given db and whose name containing the given keywords
+        Which reactome pathways involve immune signaling?
+        """
+        pathwayName = dict()
+        pw_link = dict()
+        if self.tfdb is not None:
+            pn = []
+            pids = []
+            plink = []
+            for pathway_name in pathway_names:
+                regstr = '%' + pathway_name + '%'
+                t = (regstr, db_source)
+                res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
+                                        "WHERE pathwayName LIKE ? AND source LIKE ?", t).fetchall()
+                if res:
+                    pids = pids + [r[0] for r in res]
+                    pn = pn + [r[1] for r in res]
+                    plink = plink + [r[2] for r in res]
+            if len(pids):
+                pathwayId = list(set(pids))
+                for i in range(len(pids)):
+                    pathwayName[pids[i]] = pn[i]
+                    pw_link[pids[i]] = plink[i]
+            else:
+                raise PathwayNotFoundException
+        return pathwayId,pathwayName,pw_link
 		 							 
 
 #test functions
