@@ -458,32 +458,29 @@ class TFTA_Module(KQMLModule):
     def respond_find_tf_pathway(self, content):
         """Response content to FIND_TF_PATHWAY request
         For a given pathway name, reply the tfs within the pathway"""
-        pathway_arg = content.get('pathway')
-        #pathway_name = pathway_arg.head()
-	try:
-	    pathway = _get_target(pathway_arg)
-	    pathway_name = pathway.name
-	except Exception as e:
+	pathway_arg = content.gets('pathway')
+	pathway_names = _get_pathway_name(pathway_arg)
+	if not len(pathway_names):
 	    reply = make_failure('NO_PATHWAY_NAME')
-	    return reply
-
+	    return reply	
+        pathway_names = trim_word(pathway_names, 'pathway')
         try:
-            pathwayId,pathwayName,tflist = \
-                self.tfta.find_tfs_from_pathwayName(pathway_name)
+            pathwayId,pathwayName,tflist,dblink = \
+                self.tfta.find_tfs_from_pathwayName(pathway_names)
         except PathwayNotFoundException:
             reply = make_failure('PathwayNotFoundException')
             return reply
 
         pathway_list_str = ''
-        for pid, pn in zip(pathwayId, pathwayName):
+        for pid in pathwayId:
             tf_list_str = ''
             for tf in tflist[pid]:
                 tf_list_str += '(:name %s) ' % tf.encode('ascii', 'ignore')
 
             tf_list_str = '(' + tf_list_str + ')'
-	    pnslash = '"' + pn +'"'
-	    #eidslash= '"' + eid +'"'
-            pathway_list_str += '(:name %s :tfs %s) ' % (pnslash, tf_list_str)
+	    pn = '"' + pathwayName[pid] + '"'
+	    dl = '"' + dblink[pid] + '"'
+            pathway_list_str += '(:name %s :dblink %s :tfs %s) ' % (pn, dl, tf_list_str)
 
         reply = KQMLList.from_string(
             '(SUCCESS :pathways (' + pathway_list_str + '))')
