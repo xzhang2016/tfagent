@@ -332,40 +332,46 @@ class TFTA:
                 raise PathwayNotFoundException	
         return pathwayId,pathwayName,genelist,pw_link
  	
-    def find_tfs_from_pathwayName(self,pathway_name):
+    def find_tfs_from_pathwayName(self,pathway_names):
         """
         Return TFs within the given pathway
         """		
- 	#query
+ 	pathwayId = []
+	pathwayName = dict()
+	dblink = dict()
+	tflist = dict()
         if self.tfdb is not None:
-            regstr = '%' + pathway_name + '%'
-            t = (regstr,)
- 	    #get pathwayId and TF symbols
-            res = self.tfdb.execute("SELECT Id,pathwayName FROM pathwayInfo "
-                                    "WHERE pathwayName LIKE ? ", t).fetchall()	
-            if res:
-                pathwayId = [r[0] for r in res]
-                pathwayName = [r[1] for r in res]
- 			
-                tflist = dict()
-                newpathwayId = []
-                newpathwayName = []
-                for pn,pthID in zip(pathwayName,pathwayId):
+	    pids = []
+	    pn = []
+	    dl = []
+	    for pathway_name in pathway_names:
+                regstr = '%' + pathway_name + '%'
+                t = (regstr,)
+                res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
+                                        "WHERE pathwayName LIKE ? ", t).fetchall()	
+                if res:
+                    pids += [r[0] for r in res]
+                    pn += [r[1] for r in res]
+		    dl += [r[2] for r in res]
+ 	    if len(pids):	
+                pathwayId = list(set(pids))
+		for i in range(len(pids)):
+		    pathwayName[pids[i]] = pn[i]
+		    dblink[pids[i]] = dl[i]
+                for pthID in pathwayId:
                     t = (pthID,)
                     res1 = self.tfdb.execute("SELECT DISTINCT genesymbol FROM pathway2Genes "
                                              "WHERE pathwayID = ? AND isTF = 1 ORDER BY genesymbol", t).fetchall()
                     if res1:
                         tfs = [r[0] for r in res1]
                         tflist[pthID] = tfs
-                        newpathwayId.append(pthID)
-                        newpathwayName.append(pn)			
+                    else:
+			del pathwayName[pthID]
+			del dblink[pthID]
+			pathwayId.remove(pthID)
             else:
-                raise PathwayNotFoundException		
-        else:
-            newpathwayId = []
-            newpathwayName = []
-            tflist = dict()		
-        return newpathwayId,newpathwayName,tflist
+                raise PathwayNotFoundException				
+        return pathwayId,pathwayName,tflist,dblink
  		
     def find_pathways_from_genelist(self,gene_names):
         """
