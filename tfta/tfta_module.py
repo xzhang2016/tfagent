@@ -1165,6 +1165,40 @@ class TFTA_Module(KQMLModule):
             '(SUCCESS :miRNAs (' + mirna_str + '))')
         return reply
 
+    def respond_find_pathway_db_keyword(self, content):
+        """
+        Respond to FIND-PATHWAY-DB-KEYWORD request
+        """
+        db_arg = content.get('database')
+	try:
+            db_name = db_arg.head()
+	    db_name = trim_quotes(db_name)
+	except Exception as e:
+	    reply = make_failure('NO_DB_NAME')
+            return reply
+        pathway_arg = content.gets('pathway')
+	pathway_names = _get_pathway_name(pathway_arg)
+	if not len(pathway_names):
+	    reply = make_failure('NO_PATHWAY_NAME')
+            return reply
+        pathway_names = trim_word(pathway_names, 'pathway')
+        try:
+            pathwayId,pathwayName,dblink = \
+	            self.tfta.find_genes_from_pathwayName(db_name, pathway_names)
+	except PathwayNotFoundException:
+	    reply = make_failure('PathwayNotFoundException')
+            return reply
+            
+        pathway_list_str = ''
+        for id in pathwayId:
+            pn = '"' + pathwayName[id] + '"'
+	    dbl = '"' + dblink[id] + '"'
+            pathway_list_str += \
+                '(:name %s :dblink %s) ' % (pn, dbl)
+        reply = KQMLList.from_string(
+            '(SUCCESS :pathways (' + pathway_list_str + '))')
+        return reply
+
 def _get_target(target_str):
     tp = TripsProcessor(target_str)
     terms = tp.tree.findall('TERM')
