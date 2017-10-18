@@ -1120,7 +1120,7 @@ class TFTA_Module(KQMLModule):
             reply = make_failure('NO_MIRNA_NAME')
             return reply
         try:
-            targets,counts = self.tfta.find_gene_count_miRNA(miRNA_names)
+            targets,counts,mrna = self.tfta.find_gene_count_miRNA(miRNA_names)
         except miRNANotFoundException:
             reply = make_failure('MIRNA_NOT_FOUND')
             return reply
@@ -1130,7 +1130,12 @@ class TFTA_Module(KQMLModule):
             
         target_str = ''
         for t,ct in zip(targets,counts):
-            target_str += '(:name %s :count %s) ' % (t, ct)
+	    ms = mrna[t]
+	    m_str = ''
+	    for m in ms:
+	        m_str += '(:name %s)' % m.encode('ascii', 'ignore')
+	    m_str = '(' + m_str + ')'
+            target_str += '(:name %s :count %s :miRNA %s) ' % (t, ct, m_str)
         reply = KQMLList.from_string(
             '(SUCCESS :targets (' + target_str + '))')
         return reply
