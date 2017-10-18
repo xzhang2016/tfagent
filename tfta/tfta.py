@@ -1053,6 +1053,7 @@ class TFTA:
         genes = []
         counts = []
         temp = []
+	mrna = defaultdict(list)
         if self.tfdb is not None:
             for mir in miRNA_names:
                 t = (mir,)
@@ -1060,6 +1061,8 @@ class TFTA:
                                          "WHERE mirna = ? ", t).fetchall()
                 if res1:
                     temp = temp + [r[0] for r in res1]
+		    for m in [r[0] for r in res1]:
+		        mrna[m].append(mir)
             #handle the case that all input miRNAs are not in the database
             if not len(temp):
                 raise miRNANotFoundException
@@ -1081,7 +1084,7 @@ class TFTA:
                     
             if not len(genes):
                 raise TargetNotFoundException     
-        return genes,counts
+        return genes,counts,mrna
 
     def find_pathway_db_keyword(self, db_source, pathway_names):
         """
