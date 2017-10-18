@@ -5,6 +5,7 @@ import os
 import logging
 import sqlite3
 import numpy as np
+from collections import defaultdict
 
  
 logger = logging.getLogger('TFTA')
@@ -1011,6 +1012,7 @@ class TFTA:
         mirna = []
         counts = []
         temp = []
+	targets = defaultdict(list)
         if self.tfdb is not None:
             for gene_name in gene_names:
                 t = (gene_name,)
@@ -1018,6 +1020,8 @@ class TFTA:
                                          "WHERE target = ? ", t).fetchall()
                 if res1:
                     temp = temp + [r[0] for r in res1]
+		    for m in [r[0] for r in res1]:
+		        targets[m].append(gene_name)
             #handle the case that all input targets are not in the database
             if not len(temp):
                 raise TargetNotFoundException 
@@ -1038,7 +1042,7 @@ class TFTA:
                     counts = np.ones(len(um), dtype=np.int)
             if not len(mirna):
                 raise miRNANotFoundException
-        return mirna,counts
+        return mirna,counts,targets
                          
     def find_gene_count_miRNA(self, miRNA_names):
         """
