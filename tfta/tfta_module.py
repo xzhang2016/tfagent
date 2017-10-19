@@ -1227,8 +1227,11 @@ def _get_targets(target_arg):
 def _get_pathway_name(target_str):
     #print 'In _get_pathway_name'
     #tree = ET.XML(xml_string, parser=UTB())
-    root = ET.fromstring(target_str)
     pathway_name = []
+    try:
+        root = ET.fromstring(target_str)
+    except Exception as e:
+	return pathway_name
     try:
         for term in root.find('TERM').find('drum-terms').findall('drum-term'):
 	    if term.get('matched-name') is not None:
