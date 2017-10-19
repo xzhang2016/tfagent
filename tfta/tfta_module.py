@@ -1337,7 +1337,8 @@ def trim_word(descr, word):
     ds = []
     for d in descr:
         if d[-len(word):] == word:
-            ds.append(d[:-len(word)-1])
+	    if len(d[:-len(word)-1]):
+                ds.append(d[:-len(word)-1])
 	else:
 	    ds.append(d)
     return ds
