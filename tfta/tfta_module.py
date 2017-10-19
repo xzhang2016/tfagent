@@ -460,10 +460,10 @@ class TFTA_Module(KQMLModule):
         For a given pathway name, reply the tfs within the pathway"""
 	pathway_arg = content.gets('pathway')
 	pathway_names = _get_pathway_name(pathway_arg)
+	pathway_names = trim_word(pathway_names, 'pathway')
 	if not len(pathway_names):
 	    reply = make_failure('NO_PATHWAY_NAME')
 	    return reply	
-        pathway_names = trim_word(pathway_names, 'pathway')
         try:
             pathwayId,pathwayName,tflist,dblink = \
                 self.tfta.find_tfs_from_pathwayName(pathway_names)
@@ -542,11 +542,10 @@ class TFTA_Module(KQMLModule):
 	"""
 	pathway_arg = content.gets('pathway')
 	pathway_names = _get_pathway_name(pathway_arg)
+	pathway_names = trim_word(pathway_names, 'pathway')
 	if not len(pathway_names):
 	    reply = make_failure('NO_PATHWAY_NAME')
 	    return reply
-	
-	pathway_names = trim_word(pathway_names, 'pathway')
 	try:
 	    pathwayId,pathwayName,genelist,plink = \
 	        self.tfta.find_genes_from_pathwayName(pathway_names)
@@ -838,12 +837,10 @@ class TFTA_Module(KQMLModule):
         """
         pathway_arg = content.gets('pathway')
         pathway_names = _get_pathway_name(pathway_arg)
+	pathway_names = trim_word(pathway_names, 'pathway')
         if not len(pathway_names):
             reply = make_failure('NO_PATHWAY_NAME')
             return reply
-            
-        pathway_names = trim_word(pathway_names, 'pathway')
-        
         gene_arg = content.gets('gene')
         try:
             genes = _get_targets(gene_arg)
@@ -852,8 +849,7 @@ class TFTA_Module(KQMLModule):
                 gene_names.append(gene.name)
         except Exception as e:
             reply = make_failure('NO_GENE_NAME')
-            return reply
-            
+            return reply  
         try:
             pids, pathwayName, dblink = \
                 self.Is_pathway_gene(pathway_names, gene_names)
@@ -1188,10 +1184,10 @@ class TFTA_Module(KQMLModule):
             return reply
         pathway_arg = content.gets('pathway')
 	pathway_names = _get_pathway_name(pathway_arg)
+	pathway_names = trim_word(pathway_names, 'pathway')
 	if not len(pathway_names):
 	    reply = make_failure('NO_PATHWAY_NAME')
             return reply
-        pathway_names = trim_word(pathway_names, 'pathway')
         try:
             pathwayId,pathwayName,dblink = \
 	            self.tfta.find_genes_from_pathwayName(db_name, pathway_names)
