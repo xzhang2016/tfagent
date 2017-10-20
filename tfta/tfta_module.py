@@ -1225,6 +1225,11 @@ def _get_pathway_name(target_str):
     #tree = ET.XML(xml_string, parser=UTB())
     pathway_name = []
     try:
+        #test the ekb xml format
+	f = open('TFTA-test-pathway-ekb.txt', 'a')
+	f.write(target_str)
+	f.write('===============================\n')
+	f.close()
         root = ET.fromstring(target_str)
     except Exception as e:
 	return pathway_name
