@@ -1344,6 +1344,12 @@ def trim_word(descr, word):
 	    ds.append(d)
     return ds
 
+def rtrim_hyphen(str1, plist):
+    s = str1
+    for p in plist:
+        s = s.replace(p, p[:-1])
+    return s
+
 
 if __name__ == "__main__":
     TFTA_Module(['-name', 'TFTA'] + sys.argv[1:])
