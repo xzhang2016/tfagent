@@ -1268,7 +1268,7 @@ def _get_miRNA_name(xml_string):
                     if dt.get('matched-name') is not None:
 			#change miRNA name to standard name
 			s1 = dt.get('matched-name')
-			matched_pattern = re.findall('([0-9]+-)', s1)
+			matched_pattern = re.findall('([0-9]+-)[a-zA-Z]', s1)
 			s1 = rtrim_hypen(s1, matched_pattern)
                         miRNA_names.append(s1)
         miRNA_names = list(set(miRNA_names))
@@ -1279,7 +1279,7 @@ def _get_miRNA_name(xml_string):
 		if s is not None:
 		    s1 = s.text
 		    #change miRNA name to standard name
-		    matched_pattern = re.findall('([0-9]+-)', s1)
+		    matched_pattern = re.findall('([0-9]+-)[a-zA-Z]', s1)
 		    s1 = rtrim_hypen(s1, matched_pattern)
 		    miRNA_names.append(s1)
 	except Exception as e:
