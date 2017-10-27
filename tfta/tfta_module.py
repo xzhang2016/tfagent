@@ -1265,10 +1265,24 @@ def _get_miRNA_name(xml_string):
                 dts = term.find('drum-terms').findall('drum-term')
 		for dt in dts:
                     if dt.get('matched-name') is not None:
-                        miRNA_names = miRNA_names + [dt.get('matched-name')]
+			#change miRNA name to standard name
+			s1 = dt.get('matched-name')
+			matched_pattern = re.findall('([0-9]+-)', s1)
+			s1 = rtrim_hypen(s1, matched_pattern)
+                        miRNA_names.append(s1)
         miRNA_names = list(set(miRNA_names))
     except Exception as e:
-        return miRNA_names
+	try:
+            for term in root.findall('TERM'):
+	        s = term.find('name')
+		if s is not None:
+		    s1 = s.text
+		    #change miRNA name to standard name
+		    matched_pattern = re.findall('([0-9]+-)', s1)
+		    s1 = rtrim_hypen(s1, matched_pattern)
+		    miRNA_names.append(s1)
+	except Exception as e:
+            return miRNA_names
     return miRNA_names
 
 def _get_pathway_alias(target_str):
