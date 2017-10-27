@@ -1258,8 +1258,11 @@ def _get_pathway_name(target_str):
     return pathway_name
 
 def _get_miRNA_name(xml_string):
-    root = ET.fromstring(xml_string)
     miRNA_names = []
+    try:
+        root = ET.fromstring(xml_string)
+    except Exception as e:
+	return miRNA_names
     try:
         for term in root.findall('TERM'):
             if term is not None:
@@ -1282,6 +1285,7 @@ def _get_miRNA_name(xml_string):
 		    matched_pattern = re.findall('([0-9]+-)[a-zA-Z]', s1)
 		    s1 = rtrim_hyphen(s1, matched_pattern)
 		    miRNA_names.append(s1)
+	    miRNA_names = list(set(miRNA_names))
 	except Exception as e:
             return miRNA_names
     return miRNA_names
