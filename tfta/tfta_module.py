@@ -2,6 +2,7 @@
 and to other agents in the system"""
 
 import sys
+import re
 import xml.etree.ElementTree as ET
 import logging
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
