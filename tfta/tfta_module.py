@@ -853,7 +853,7 @@ class TFTA_Module(KQMLModule):
             return reply  
         try:
             pids, pathwayName, dblink = \
-                self.Is_pathway_gene(pathway_names, gene_names)
+                self.tfta.Is_pathway_gene(pathway_names, gene_names)
         except PathwayNotFoundException:
             reply = make_failure('PathwayNotFoundException')
             return reply
