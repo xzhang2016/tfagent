@@ -903,7 +903,7 @@ class TFTA:
         """
         if self.tfdb is not None:
              t = (miRNA_name,)
-             res = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo WHERE mirna = ? ", t).fetchall()
+             res = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo WHERE mirna LIKE ? ", t).fetchall()
              if not res:
                  raise miRNANotFoundException
              for r in res:
@@ -953,7 +953,7 @@ class TFTA:
         if self.tfdb is not None:
             t = (miRNA_names[0],)
             res = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo "
-                                    "WHERE mirna = ? ", t).fetchall()
+                                    "WHERE mirna LIKE ? ", t).fetchall()
             if res:
                 target_names = [r[0] for r in res]
             else:
@@ -962,7 +962,7 @@ class TFTA:
                 for i in range(1, len(miRNA_names)):
                     t = (miRNA_names[i],)
                     res = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo "
-                                    "WHERE mirna = ? ", t).fetchall()
+                                    "WHERE mirna LIKE ? ", t).fetchall()
                     if res:
                         target_names = list(set(target_names) & set([r[0] for r in res]))
                     else:
@@ -982,7 +982,7 @@ class TFTA:
         if self.tfdb is not None:
             t = (miRNA_name, target_name)
             res = self.tfdb.execute("SELECT * FROM mirnaInfo "
-                                    "WHERE mirna = ? AND target = ? ", t).fetchall()
+                                    "WHERE mirna LIKE ? AND target = ? ", t).fetchall()
             if res:
                 experiments = [r[3] for r in res]
                 support_types = [r[4] for r in res]
@@ -991,7 +991,7 @@ class TFTA:
                 #check if miRNA_name in the database
                 t = (miRNA_name, )
                 res = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo "
-                                        "WHERE mirna = ? ", t).fetchall()
+                                        "WHERE mirna LIKE ? ", t).fetchall()
                 if not res:
                     raise miRNANotFoundException
                 else:
@@ -1058,7 +1058,7 @@ class TFTA:
             for mir in miRNA_names:
                 t = (mir,)
                 res1 = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo "
-                                         "WHERE mirna = ? ", t).fetchall()
+                                         "WHERE mirna LIKE ? ", t).fetchall()
                 if res1:
                     temp = temp + [r[0] for r in res1]
 		    for m in [r[0] for r in res1]:
