@@ -1271,8 +1271,8 @@ def _get_miRNA_name(xml_string):
                     if dt.get('matched-name') is not None:
 			#change miRNA name to standard name
 			s1 = dt.get('matched-name')
-			matched_pattern = re.findall('([0-9]+-)[a-zA-Z]', s1)
-			s1 = rtrim_hyphen(s1, matched_pattern)
+			#matched_pattern = re.findall('([0-9]+-)[a-zA-Z]', s1)
+			s1 = rtrim_hyphen(s1)
                         miRNA_names.append(s1)
         miRNA_names = list(set(miRNA_names))
     except Exception as e:
@@ -1282,8 +1282,8 @@ def _get_miRNA_name(xml_string):
 		if s is not None:
 		    s1 = s.text
 		    #change miRNA name to standard name
-		    matched_pattern = re.findall('([0-9]+-)[a-zA-Z]', s1)
-		    s1 = rtrim_hyphen(s1, matched_pattern)
+		    #matched_pattern = re.findall('([0-9]+-)[a-zA-Z]', s1)
+		    s1 = rtrim_hyphen(s1)
 		    miRNA_names.append(s1)
 	    miRNA_names = list(set(miRNA_names))
 	except Exception as e:
@@ -1363,10 +1363,12 @@ def trim_word(descr, word):
 	    ds.append(d)
     return ds
 
-def rtrim_hyphen(str1, plist):
+def rtrim_hyphen(str1):
+    plist = re.findall('([0-9]+-[a-zA-Z])', str1)
     s = str1
     for p in plist:
-        s = s.replace(p, p[:-1])
+	p1 = p.replace('-','')
+        s = s.replace(p, p1)
     return s
 
 
