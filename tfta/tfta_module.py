@@ -234,7 +234,7 @@ class TFTA_Module(KQMLModule):
 	t1 = time.clock()
 	f = open('time-test.txt','a')
 	t01 = t1 - t0
-	f.write('t01=' + str(t01))
+	f.write('This query used time(s):' + str(t01) + '\n')
 	f.write('=============test end==================\n')
 	f.close()
         return reply
