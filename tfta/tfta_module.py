@@ -235,6 +235,7 @@ class TFTA_Module(KQMLModule):
 	f = open('time-test.txt','a')
 	t01 = t1 - t0
 	f.write('t01=' + str(t01))
+	f.write('=============test end==================\n')
 	f.close()
         return reply
 
