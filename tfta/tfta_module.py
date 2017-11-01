@@ -3,6 +3,7 @@ and to other agents in the system"""
 
 import sys
 import re
+import time
 import xml.etree.ElementTree as ET
 import logging
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
@@ -201,6 +202,7 @@ class TFTA_Module(KQMLModule):
         """Response content to find-tf-target request
         For a tf list, reply with the targets found
         """
+	t0 = time.clock()
         tf_arg = content.gets('tf')
 	try:
             tfs = _get_targets(tf_arg)
@@ -228,7 +230,12 @@ class TFTA_Module(KQMLModule):
         else:
             reply = make_failure('NO_TARGET_FOUND')
 	
-	print "reply=",reply
+	#print "reply=",reply
+	t1 = time.clock()
+	f = open('time-test.txt','a')
+	t01 = t1 - t0
+	f.write('t01=' + str(t01))
+	f.close()
         return reply
 
     def respond_find_tf_targets_tissue(self, content):
