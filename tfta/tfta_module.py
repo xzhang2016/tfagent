@@ -175,7 +175,8 @@ class TFTA_Module(KQMLModule):
 	    return reply
         try:
             tissue_arg = content.get('tissue')
-            tissue_name = tissue_arg.head()
+            #tissue_name = tissue_arg.head()
+	    tissue_name = tissue_arg.data
 	    tissue_name = trim_quotes(tissue_name)
 	    tissue_name = tissue_name.lower()
 	    tissue_name = tissue_name.replace(' ', '_')
@@ -257,7 +258,8 @@ class TFTA_Module(KQMLModule):
 	    return reply
         try:
             tissue_arg = content.get('tissue')
-            tissue_name = tissue_arg.head()
+            #tissue_name = tissue_arg.head()
+	    tissue_name = tissue_arg.data
 	    tissue_name = trim_quotes(tissue_name)
 	    tissue_name = tissue_name.lower()
 	    tissue_name = tissue_name.replace(' ', '_')
@@ -329,7 +331,8 @@ class TFTA_Module(KQMLModule):
 	    return reply
         try:
             tissue_arg = content.get('tissue')
-            tissue_name = tissue_arg.head()
+            #tissue_name = tissue_arg.head()
+	    tissue_name = tissue_arg.data
 	    tissue_name = trim_quotes(tissue_name)
 	    tissue_name = tissue_name.lower()
 	    tissue_name = tissue_name.replace(' ', '_')
