@@ -173,12 +173,15 @@ class TFTA_Module(KQMLModule):
 	except Exception as e:
 	    reply = make_failure('NO_TARGET_NAME')
 	    return reply
-
-        tissue_arg = content.get('tissue')
-        tissue_name = tissue_arg.head()
-	tissue_name = trim_quotes(tissue_name)
-	tissue_name = tissue_name.lower()
-	tissue_name = tissue_name.replace(' ', '_')
+        try:
+            tissue_arg = content.get('tissue')
+            tissue_name = tissue_arg.head()
+	    tissue_name = trim_quotes(tissue_name)
+	    tissue_name = tissue_name.lower()
+	    tissue_name = tissue_name.replace(' ', '_')
+	except Exception as e:
+	    reply = make_failure('INVALID_TISSUE')
+	    return reply
 
         if tissue_name not in tissue_list:
             reply = make_failure('INVALID_TISSUE')
