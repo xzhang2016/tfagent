@@ -1196,19 +1196,26 @@ class TFTA_Module(KQMLModule):
         """
         Respond to FIND-PATHWAY-DB-KEYWORD request
         """
-        db_arg = content.get('database')
-	try:
+        try:
+	    db_arg = content.get('database')
             db_name = db_arg.head()
 	    db_name = trim_quotes(db_name)
 	except Exception as e:
 	    reply = make_failure('NO_DB_NAME')
             return reply
-        pathway_arg = content.gets('pathway')
-	pathway_names = _get_pathway_name(pathway_arg)
-	pathway_names = trim_word(pathway_names, 'pathway')
-	if not len(pathway_names):
+        #pathway_arg = content.gets('pathway')
+	#pathway_names = _get_pathway_name(pathway_arg)
+	#pathway_names = trim_word(pathway_names, 'pathway')
+	try:
+	    pathway_arg = content.get('keyword')
+	    pathway_names = pathway_arg.data
+	    pathway_names = trim_word([pathway_names], 'pathway')
+	except Exception as e:
 	    reply = make_failure('NO_PATHWAY_NAME')
-            return reply
+	    return reply
+	#if not len(pathway_names):
+	#    reply = make_failure('NO_PATHWAY_NAME')
+        #    return reply
         try:
             pathwayId,pathwayName,dblink = \
 	            self.tfta.find_genes_from_pathwayName(db_name, pathway_names)
