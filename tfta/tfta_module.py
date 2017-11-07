@@ -1198,8 +1198,9 @@ class TFTA_Module(KQMLModule):
         """
         try:
 	    db_arg = content.get('database')
-            db_name = db_arg.head()
-	    db_name = trim_quotes(db_name)
+            #db_name = db_arg.head()
+	    db_name = db_arg.data
+	    #db_name = trim_quotes(db_name)
 	except Exception as e:
 	    reply = make_failure('NO_DB_NAME')
             return reply
