@@ -1364,6 +1364,12 @@ def make_failure(reason):
     msg.set('reason', reason)
     return msg
 
+def make_failure_clarification(reason, clarification):
+    msg = KQMLList('FAILURE')
+    msg.set('reason', reason)
+    msg.set('clarification', clarification)
+    return msg
+
 def trim_quotes(descr):
     if descr[0] == '(':
 	descr = descr[1:]
