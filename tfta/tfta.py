@@ -7,7 +7,6 @@ import sqlite3
 import numpy as np
 from collections import defaultdict
 
- 
 logger = logging.getLogger('TFTA')
  
 _resource_dir = os.path.dirname(os.path.realpath(__file__)) + '/../resources/'
@@ -45,12 +44,10 @@ class TFTA:
         else:
             logger.error('TFTA could not load TF-target database.')
             self.tfdb = None;
-		
- 			
+				
     def __del__(self):
         self.tfdb.close()
- 				
- 		
+ 					
     def Is_tf_target(self,tf_name,target_name):
         """
         Return True if the tf regulates the target, and False if not
@@ -92,7 +89,6 @@ class TFTA:
                 raise TargetNotFoundException
         return False
  		
-
     def find_tfs(self,target_names):
         """
         Return TFs regulating all the given targets
@@ -293,8 +289,7 @@ class TFTA:
 	    pathwayName,pathwayId,externalId,psource,dblink = \
 	            zip(*sorted(zip(pathwayName,pathwayId,externalId,psource,dblink)))				
         return pathwayId,pathwayName,externalId,psource,dblink
- 			
- 		
+ 				
     def find_genes_from_pathwayName(self, pathway_names):
         """
         return genes related to pathway_name
@@ -639,8 +634,7 @@ class TFTA:
                 res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
                                          "WHERE genesymbol = ? ", t).fetchall()
                 if res1:
-                    pathlist = pathlist + [r[0] for r in res1]
- 				
+                    pathlist = pathlist + [r[0] for r in res1]			
  	    #pathway frequency
             uniq_path = list(set(pathlist))
 	    if len(uniq_path):
@@ -649,8 +643,7 @@ class TFTA:
                     ct = pathlist.count(pth)
 		    if ct > 1:
                         #counts.append(ct)
-		        uniq_path2.append(pth)
- 			
+		        uniq_path2.append(pth)	
             if len(uniq_path2):
 		regstr = '%' + keyword + '%'
                 for pth in uniq_path2:
@@ -1116,6 +1109,45 @@ class TFTA:
             else:
                 raise PathwayNotFoundException
         return pathwayId,pathwayName,pw_link
+
+    def gets_similar_miRNAs(self, miRNA_names):
+        """
+        return a list of miRNAs beginning with the given miRNA which 
+        is not in the database, for user clarification purpose
+        miRNA_names is a list
+        """
+        clari_miRNA = dict()
+        if self.tfdb is not None:
+            for miRNA_name in miRNA_names:
+                t = (miRNA_name,)
+                res = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo "
+                                         "WHERE mirna LIKE ? ", t).fetchall()
+                if not res:
+                    regstr = miRNA_name + '%'
+                    t = (regstr,)
+                    res = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo "
+                                            "WHERE mirna LIKE ? ", t).fetchall()
+                    if res:
+                        clari_miRNA[miRNA_name] = [r[0] for r in res]
+        return clari_miRNA
+        
+    def get_similar_miRNAs(self, miRNA_name):
+        """
+        return a list of miRNAs beginning with the given miRNA which 
+        is not in the database, for user clarification purpose
+        miRNA_name is the given miRNA name
+        """
+        clari_miRNA = []
+        if self.tfdb is not None:
+            regstr = miRNA_name + '%'
+            t = (regstr,)
+            res = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo "
+                                    "WHERE mirna LIKE ? ", t).fetchall()
+            if res:
+                clari_miRNA = [r[0] for r in res]
+            else:
+                raise miRNANotFoundException
+        return clari_miRNA
 		 							 
 
 #test functions
