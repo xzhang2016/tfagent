@@ -184,7 +184,7 @@ class TFTA_Module(KQMLModule):
 	    reply = make_failure('NO_TISSUE_NAME')
 	    return reply
 
-        if tissue_name not in tissue_list:
+        if tissue_name not in self.tissue_list:
             reply = make_failure('INVALID_TISSUE')
             return reply
 
@@ -267,7 +267,7 @@ class TFTA_Module(KQMLModule):
 	    reply = make_failure('NO_TISSUE_NAME')
 	    return reply
 
-        if tissue_name not in tissue_list:
+        if tissue_name not in self.tissue_list:
             reply = make_failure('INVALID_TISSUE')
             return reply
         
@@ -340,7 +340,7 @@ class TFTA_Module(KQMLModule):
 	    reply = make_failure('NO_TISSUE_NAME')
 	    return reply
 
-        if tissue_name not in tissue_list:
+        if tissue_name not in self.tissue_list:
             reply = make_failure('INVALID_TISSUE')
             return reply
         
