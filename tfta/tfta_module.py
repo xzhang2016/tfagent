@@ -1062,24 +1062,30 @@ class TFTA_Module(KQMLModule):
         miRNA_names = _get_miRNA_name(miRNA_arg)
         if not len(miRNA_names):
             reply = make_failure('NO_MIRNA_NAME')
-            return reply
-            
+            return reply 
         try:
             target_names = self.tfta.find_target_miRNA(miRNA_names)
         except miRNANotFoundException:
-            reply = make_failure('MIRNA_NOT_FOUND')
-            return reply
-            
+	    #for user clarification
+            if len(miRNA_names) == 1:
+	        try:
+		    clari_mirna = self.tfta.get_similar_miRNAs(miRNA_names[0])
+		    c_str = ''
+                    for c in clari_mirna:
+                        c_str += '(:name %s) ' % c.encode('ascii', 'ignore')
+                    reply = make_failure_clarification('MIRNA_NOT_FOUND', c_str)
+                    return reply
+                except miRNANotFoundException:
+                    reply = make_failure('NO_SIMILAR_MIRNA')
+                    return reply  
         if len(target_names):
             target_list_str = ''
             for tg in target_names:
-                target_list_str += '(:name %s ) ' % tg.encode('ascii', 'ignore')
-                
+                target_list_str += '(:name %s ) ' % tg.encode('ascii', 'ignore')   
             reply = KQMLList.from_string(
                 '(SUCCESS :targets (' + target_list_str + '))')
         else:
-            reply = make_failure('NO_TARGET_FOUND')
-            
+            reply = make_failure('NO_TARGET_FOUND')  
         return reply
         
     def respond_find_evidence_miRNA_target(self, content):
