@@ -73,20 +73,25 @@ class TFTA:
         Return True if the tf regulates the target in a given tissue, and False if not
         """
         if self.tfdb is not None:
-            t = (tf_name, tissue_name)
+	    regstr = '%' + tissue_name + '%'
+            t = (tf_name, target_name, regstr)
             res = self.tfdb.execute("SELECT DISTINCT Target FROM Target2TF2Tissue "
-                                    "WHERE TF = ? AND Tissue LIKE ? ", t).fetchall()
-            if not res:
-                raise TFNotFoundException
-            for r in res:
-                if r[0].upper() == target_name.upper():
-                    return True   
-            #check if target_name in database
-            t = (target_name, tissue_name)
-            res = self.tfdb.execute("SELECT DISTINCT TF FROM Target2TF2Tissue "
-                                    "WHERE Target = ? AND Tissue LIKE ? ", t).fetchall()
-            if not res:
-                raise TargetNotFoundException
+                                    "WHERE TF = ? AND Target = ? AND Tissue LIKE ? ", t).fetchall()
+            if res:
+                return True
+	    else:
+		#check if tf_name in the database
+		t = (tf_name,)
+		res = self.tfdb.execute("SELECT DISTINCT Target FROM Target2TF2Tissue "
+                                    "WHERE TF = ? ", t).fetchall()
+		if not res:
+		    raise TFNotFoundException  
+                #check if target_name in database
+                t = (target_name,)
+                res = self.tfdb.execute("SELECT DISTINCT TF FROM Target2TF2Tissue "
+                                    "WHERE Target = ? ", t).fetchall()
+                if not res:
+                    raise TargetNotFoundException
         return False
  		
     def find_tfs(self,target_names):
@@ -151,7 +156,8 @@ class TFTA:
         """		
  	#query
         if self.tfdb is not None:
-            t = (target_names[0],tissue_name)
+	    regstr = '%' + tissue_name + '%'
+            t = (target_names[0],regstr)
             res = self.tfdb.execute("SELECT DISTINCT TF FROM Target2TF2Tissue "
                                     "WHERE Target = ? AND Tissue LIKE ? ", t).fetchall()
             if res:
@@ -161,7 +167,7 @@ class TFTA:
  			
             if len(target_names) > 1:
                 for i in range(1,len(target_names)):
-                    t = (target_names[i],tissue_name)
+                    t = (target_names[i],regstr)
                     res = self.tfdb.execute("SELECT DISTINCT TF FROM Target2TF2Tissue "
                                             "WHERE Target = ? AND Tissue LIKE ? ", t).fetchall()
                     if res:
@@ -733,7 +739,8 @@ class TFTA:
         """	
  	#query
         if self.tfdb is not None:
-            t = (tf_names[0],tissue_name)
+	    regstr = '%' + tissue_name + '%'
+            t = (tf_names[0], regstr)
             res = self.tfdb.execute("SELECT DISTINCT Target FROM Target2TF2Tissue "
                                     "WHERE TF = ? AND Tissue LIKE ? ", t).fetchall()
             if res:
@@ -743,14 +750,15 @@ class TFTA:
                 
             if len(tf_names) > 1:
                 for i in range(1,len(tf_names)):
-                    t = (tf_names[i],tissue_name)
+                    t = (tf_names[i],regstr)
                     res = self.tfdb.execute("SELECT DISTINCT Target FROM Target2TF2Tissue "
                                             "WHERE TF = ? AND Tissue LIKE ? ", t).fetchall()
                     if res:
                         target_names = list(set(target_names) & set([r[0] for r in res]))
                     else:
                         raise TFNotFoundException	
-            target_names.sort()		
+            if len(target_names):
+	        target_names.sort()		
         else:
             target_names = []		
         return target_names
