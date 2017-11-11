@@ -440,9 +440,10 @@ class TFTA_Module(KQMLModule):
         pathways information"""
         db_arg = content.get('database')
 	try:
-            db_name = db_arg.head()
-	    print db_name
-	    db_name = trim_quotes(db_name)
+            ＃db_name = db_arg.head()
+	    db_name = db_arg.data
+	    #print db_name
+	    #db_name = trim_quotes(db_name)
 	except Exception as e:
 	    reply = make_failure('NO_DB_NAME')
 	    return reply
