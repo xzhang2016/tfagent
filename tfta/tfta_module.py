@@ -1277,7 +1277,7 @@ def _get_pathway_name(target_str):
 	            if t.get('matched-name') is not None:
 	                pathway_name = pathway_name + [t.get('matched-name')]
 	            if t.get('name') is not None:
-		        pathway_name = pathway_name + [term.get('name')]
+		        pathway_name = pathway_name + [t.get('name')]
 	pathway_name = list(set(pathway_name))
 	#print 'pathway_name=' + ','.join(pathway_name)
     except Exception as e:
@@ -1399,12 +1399,13 @@ def trim_hyphen(descr):
 def trim_word(descr, word):
     #descr is a list
     ds = []
-    for d in descr:
-        if d[-len(word):] == word:
-	    if len(d[:-len(word)-1]):
-                ds.append(d[:-len(word)-1])
-	else:
-	    ds.append(d)
+    if len(descr):
+        for d in descr:
+            if d[-len(word):] == word:
+	        if len(d[:-len(word)-1]):
+                    ds.append(d[:-len(word)-1])
+	    else:
+	        ds.append(d)
     return ds
 
 def rtrim_hyphen(str1):
