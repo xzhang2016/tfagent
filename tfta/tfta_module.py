@@ -1271,22 +1271,24 @@ def _get_pathway_name(target_str):
     except Exception as e:
 	return pathway_name
     try:
-        for term in root.find('TERM').find('drum-terms').findall('drum-term'):
-	    if term.get('matched-name') is not None:
-	        pathway_name = pathway_name + [term.get('matched-name')]
-	    if term.get('name') is not None:
-		pathway_name = pathway_name + [term.get('name')]
-	
+        for term in root.findall('TERM'):
+	    if term.find('type').text != 'ONT::SIGNALING-PATHWAY':
+	        for t in term.find('drum-terms').findall('drum-term'):
+	            if t.get('matched-name') is not None:
+	                pathway_name = pathway_name + [t.get('matched-name')]
+	            if t.get('name') is not None:
+		        pathway_name = pathway_name + [term.get('name')]
 	pathway_name = list(set(pathway_name))
-	print 'pathway_name=' + ','.join(pathway_name)
+	#print 'pathway_name=' + ','.join(pathway_name)
     except Exception as e:
 	try:
 	    for term in root.findall('TERM'):
-	        s = term.find('name')
-	        if s is not None:
-	            s1 = s.text
-		    if not s1 == 'PATHWAY':
-	                pathway_name = pathway_name + [s1.replace('-', ' ').lower()]
+		if term.find('type').text != 'ONT::SIGNALING-PATHWAY':
+	            s = term.find('name')
+	            if s is not None:
+	                s1 = s.text
+		        if not s1 == 'PATHWAY':
+	                    pathway_name = pathway_name + [s1.replace('-', ' ').lower()]
 	    pathway_name = list(set(pathway_name))
 	except Exception as e:
 	    return pathway_name
