@@ -177,7 +177,7 @@ class TFTA_Module(KQMLModule):
             tissue_arg = content.get('tissue')
             #tissue_name = tissue_arg.head()
 	    tissue_name = tissue_arg.data
-	    tissue_name = trim_quotes(tissue_name)
+	    #tissue_name = trim_quotes(tissue_name)
 	    tissue_name = tissue_name.lower()
 	    tissue_name = tissue_name.replace(' ', '_')
 	except Exception as e:
@@ -214,7 +214,7 @@ class TFTA_Module(KQMLModule):
             for tf in tfs:
                 tf_names.append(tf.name)
 	except Exception as e:
-	    print 'received message:' + content
+	    #print 'received message:' + content
 	    reply = make_failure('NO_TF_NAME')
 	    return reply
             
@@ -260,7 +260,7 @@ class TFTA_Module(KQMLModule):
             tissue_arg = content.get('tissue')
             #tissue_name = tissue_arg.head()
 	    tissue_name = tissue_arg.data
-	    tissue_name = trim_quotes(tissue_name)
+	    #tissue_name = trim_quotes(tissue_name)
 	    tissue_name = tissue_name.lower()
 	    tissue_name = tissue_name.replace(' ', '_')
 	except Exception as e:
@@ -333,7 +333,7 @@ class TFTA_Module(KQMLModule):
             tissue_arg = content.get('tissue')
             #tissue_name = tissue_arg.head()
 	    tissue_name = tissue_arg.data
-	    tissue_name = trim_quotes(tissue_name)
+	    #tissue_name = trim_quotes(tissue_name)
 	    tissue_name = tissue_name.lower()
 	    tissue_name = tissue_name.replace(' ', '_')
 	except Exception as e:
@@ -398,9 +398,10 @@ class TFTA_Module(KQMLModule):
         For a given gene list and keyword, reply the related pathways information"""
         keyword_arg = content.get('keyword')
 	try:
-            keyword_name = keyword_arg.head()
-            keyword = trim_quotes(keyword_name)
-	    keyword = trim_word([keyword], 'pathway')
+            #keyword_name = keyword_arg.head()
+	    keyword_name = keyword_arg.data
+            #keyword = trim_quotes(keyword_name)
+	    #keyword = trim_word([keyword], 'pathway')
 	except Exception as e:
 	    reply = make_failure('NO_KEYWORD')
 	    return reply
@@ -425,10 +426,10 @@ class TFTA_Module(KQMLModule):
         pathway_list_str = ''
         for pn, eid, src, dbl in zip(pathwayName, externalId, source, dblink):
 	    pnslash = '"' + pn +'"'
-	    eidslash= '"' + eid +'"'
+	    #eidslash= '"' + eid +'"'
 	    dbl = '"' + dbl +'"'
             pathway_list_str += \
-                '(:name %s :externalId %s :source %s :dblink %s) ' % (pnslash, eidslash ,src, dbl)
+                '(:name %s :dblink %s) ' % (pnslash, dbl)
 
         reply = KQMLList.from_string(
             '(SUCCESS :pathways (' + pathway_list_str + '))')
@@ -468,10 +469,10 @@ class TFTA_Module(KQMLModule):
         pathway_list_str = ''
         for pn, eid, src, dbl in zip(pathwayName, externalId, source, dblink):
             pnslash = '"' + pn + '"'
-	    eidslash= '"' + eid + '"'
+	    #eidslash= '"' + eid + '"'
 	    dbl = '"' + dbl + '"'
             pathway_list_str += \
-                '(:name %s :externalId %s :source %s :dblink %s) ' % (pnslash, eidslash ,src, dbl)
+                '(:name %s :dblink %s) ' % (pnslash, dbl)
 
         reply = KQMLList.from_string(
             '(SUCCESS :pathways (' + pathway_list_str + '))')
@@ -774,9 +775,9 @@ class TFTA_Module(KQMLModule):
         path_list_str = ''
 	for pn,eid,src,dbl,ct in zip(pathwayName,externalId,source,dblink,counts):
             pnslash = '"' + pn +'"'
-	    eidslash= '"' + eid +'"'
+	    #eidslash= '"' + eid +'"'
 	    dbl = '"' + dbl +'"'
-            path_list_str += '(:name %s :externalId %s :source %s :dblink %s :count %s) ' % (pnslash, eidslash ,src, dbl, ct)
+            path_list_str += '(:name %s :dblink %s :count %s) ' % (pnslash, dbl, ct)
 
 	reply = KQMLList.from_string(
                '(SUCCESS :pathways (' + path_list_str + '))')
@@ -818,8 +819,9 @@ class TFTA_Module(KQMLModule):
         """response content to FIND-COMMON-PATHWAY-GENES-KEYWORD request"""
 	keyword_arg = content.get('keyword')
 	try:
-            keyword_name = keyword_arg.head()
-            keyword = trim_quotes(keyword_name)
+            #keyword_name = keyword_arg.head()
+	    keyword_name = keyword_arg.data
+            #keyword = trim_quotes(keyword_name)
 	    keyword = trim_word([keyword], 'pathway')
 	except Exception as e:
 	    reply = make_failure('NO_KEYWORD')
@@ -844,9 +846,9 @@ class TFTA_Module(KQMLModule):
         path_list_str = ''
 	for pn,eid,src,dbl,ct in zip(pathwayName,externalId,source,dblink,counts):
             pnslash = '"' + pn +'"'
-	    eidslash= '"' + eid +'"'
+	    #eidslash= '"' + eid +'"'
 	    dbl = '"' + dbl +'"'
-            path_list_str += '(:name %s :externalId %s :source %s :dblink %s :count %s) ' % (pnslash, eidslash ,src, dbl, ct)
+            path_list_str += '(:name %s :dblink %s :count %s) ' % (pnslash, dbl, ct)
 
 	reply = KQMLList.from_string(
                '(SUCCESS :pathways (' + path_list_str + '))')
@@ -897,8 +899,9 @@ class TFTA_Module(KQMLModule):
         """
         keyword_arg = content.get('keyword')
 	try:
-            keyword_name = keyword_arg.head()
-            keyword = trim_quotes(keyword_name)
+            #keyword_name = keyword_arg.head()
+	    keyword_name = keyword_arg.data
+            #keyword = trim_quotes(keyword_name)
             keyword = keyword.lower()
 	except Exception as e:
 	    reply = make_failure('NO_GO_NAME')
@@ -947,8 +950,9 @@ class TFTA_Module(KQMLModule):
         """
 	go_arg = content.get('go-id')
 	try:
-            goid = go_arg.head()
-            goid = trim_quotes(goid)
+            #goid = go_arg.head()
+	    goid = go_arg.data
+            #goid = trim_quotes(goid)
 	except Exception as e:
 	    reply = make_failure('NO_GO_ID')
 	    return reply
