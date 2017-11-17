@@ -738,6 +738,7 @@ class TFTA:
         Return Targets regulated by the tf list in a given tissue
         """	
  	#query
+	target_names = []
         if self.tfdb is not None:
 	    regstr = '%' + tissue_name + '%'
             t = (tf_names[0], regstr)
@@ -746,7 +747,14 @@ class TFTA:
             if res:
                 target_names = [r[0] for r in res]
             else:
-                raise TFNotFoundException
+	        #check if the TF is in the database
+		t = (tf_names[0],)
+		res = self.tfdb.execute("SELECT DISTINCT Target FROM Target2TF2Tissue "
+                                    "WHERE TF = ? ", t).fetchall()
+		if res:
+		    return target_names
+	        else:
+                    raise TFNotFoundException
                 
             if len(tf_names) > 1:
                 for i in range(1,len(tf_names)):
@@ -756,11 +764,16 @@ class TFTA:
                     if res:
                         target_names = list(set(target_names) & set([r[0] for r in res]))
                     else:
-                        raise TFNotFoundException	
+			#check if the TF is in the database
+			t = (tf_names[i],)
+			res = self.tfdb.execute("SELECT DISTINCT Target FROM Target2TF2Tissue "
+                                                "WHERE TF = ? ", t).fetchall()
+			if res:
+			    return target_names
+		        else:
+                            raise TFNotFoundException	
             if len(target_names):
 	        target_names.sort()		
-        else:
-            target_names = []		
         return target_names
  			
     def find_targets_1(self,tf_name):
