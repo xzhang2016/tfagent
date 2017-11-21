@@ -670,7 +670,7 @@ class TFTA_Module(KQMLModule):
         try:
             tf_names, tf_counts = self.tfta.find_tfs_count(target_names)
 	except TFNotFoundException:
-	    reply = make_failure('TF_NOT_FOUND')
+	    reply = make_failure('NO_TF_FOUND')
 	    return reply
 	
         tf_list_str = ''
