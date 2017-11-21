@@ -199,7 +199,7 @@ class TFTA_Module(KQMLModule):
 
         reply = KQMLList('SUCCESS')
         is_target_str = 'TRUE' if is_target else 'FALSE'
-        reply.set('is-tf-target-tissue', is_target_str)
+        reply.set('is-tf-target', is_target_str)
         return reply
 
     def respond_find_tf_targets(self, content):
