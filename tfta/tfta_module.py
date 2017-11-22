@@ -486,7 +486,7 @@ class TFTA_Module(KQMLModule):
 	pathway_names = trim_word(pathway_names, 'pathway')
 	if not len(pathway_names):
 	    reply = make_failure('NO_PATHWAY_NAME')
-	    return reply	
+	    return reply    
         try:
             pathwayId,pathwayName,tflist,dblink = \
                 self.tfta.find_tfs_from_pathwayName(pathway_names)
@@ -626,16 +626,16 @@ class TFTA_Module(KQMLModule):
         involving the chemical"""
         chemical_arg = content.get('keyword')
 	try:
-            chemical_name = chemical_arg.head()
-	    chemical_name = trim_quotes(chemical_name)
-	    chemical_name = trim_word([chemical_name], 'pathway') 
+            chemical_name = chemical_arg.data
+	    #chemical_name = trim_quotes(chemical_name)
+	    #chemical_name = trim_word([chemical_name], 'pathway') 
 	except Exception as e:
 	    reply = make_failure('NO_PATHWAY_NAME')
 	    return reply
 
         try:
             pathwayId, pathwayName, tflist = \
-                self.tfta.find_tfs_from_pathwaysWithChemical(chemical_name[0])
+                self.tfta.find_tfs_from_pathwaysWithChemical(chemical_name)
         except PathwayNotFoundException:
             reply = make_failure('PathwayNotFoundException')
             return reply
@@ -1296,7 +1296,6 @@ def _get_pathway_name(target_str):
 	    pathway_name = list(set(pathway_name))
 	except Exception as e:
 	    return pathway_name
-    
     return pathway_name
 
 def _get_miRNA_name(xml_string):
