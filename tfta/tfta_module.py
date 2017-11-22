@@ -594,9 +594,9 @@ class TFTA_Module(KQMLModule):
         For a given chemical name, reply the pathways involving the chemical"""
         chemical_arg = content.get('keyword')
 	try:
-            chemical_name = chemical_arg.head()
-	    chemical_name = trim_quotes(chemical_name)
-	    chemical_name = trim_word([chemical_name], 'pathway')
+            chemical_name = chemical_arg.data
+	    #chemical_name = trim_quotes(chemical_name)
+	    #chemical_name = trim_word([chemical_name], 'pathway')
 	except Exception as e:
 	    reply = make_failure('NO_PATHWAY_NAME')
 	    return reply
@@ -609,12 +609,12 @@ class TFTA_Module(KQMLModule):
             return reply
 
         pathway_list_str = ''
-        for pn, eid, src, dbl in zip(pathwayName,externalId,source,dblink):
+        for pn, dbl in zip(pathwayName,dblink):
             pnslash = '"' + pn +'"'
-	    eidslash= '"' + eid +'"'
+	    #eidslash= '"' + eid +'"'
 	    dbl = '"' + dbl +'"'
             pathway_list_str += \
-                '(:name %s :externalId %s :source %s :dblink %s) ' % (pnslash, eidslash ,src, dbl)
+                '(:name %s :dblink %s) ' % (pnslash, dbl)
 
         reply = KQMLList.from_string(
             '(SUCCESS :pathways (' + pathway_list_str + '))')
