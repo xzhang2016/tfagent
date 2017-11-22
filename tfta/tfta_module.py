@@ -495,16 +495,20 @@ class TFTA_Module(KQMLModule):
             return reply
         pathway_list_str = ''
 	keys = tflist.keys()
-        for key in keys:
-            tf_list_str = ''
-            for tf in tflist[key]:
-                tf_list_str += '(:name %s) ' % tf.encode('ascii', 'ignore')
-            tf_list_str = '(' + tf_list_str + ')'
-	    pn = '"' + pathwayName[key] + '"'
-	    dl = '"' + dblink[key] + '"'
-            pathway_list_str += '(:name %s :dblink %s :tfs %s) ' % (pn, dl, tf_list_str)
-        reply = KQMLList.from_string(
-            '(SUCCESS :pathways (' + pathway_list_str + '))')
+	if len(keys):
+            for key in keys:
+                tf_list_str = ''
+                for tf in tflist[key]:
+                    tf_list_str += '(:name %s) ' % tf.encode('ascii', 'ignore')
+                tf_list_str = '(' + tf_list_str + ')'
+	        pn = '"' + pathwayName[key] + '"'
+	        dl = '"' + dblink[key] + '"'
+                pathway_list_str += '(:name %s :dblink %s :tfs %s) ' % (pn, dl, tf_list_str)
+            reply = KQMLList.from_string(
+                    '(SUCCESS :pathways (' + pathway_list_str + '))')
+	else:
+	    reply = make_failure('PathwayNotFoundException')
+	    return reply
         return reply
 
     def respond_find_gene_pathway2(self, content):
