@@ -603,7 +603,7 @@ class TFTA_Module(KQMLModule):
 
         try:
             pathwayId, pathwayName, externalId, source, dblink = \
-                self.tfta.find_pathways_from_chemical(chemical_name[0])
+                self.tfta.find_pathways_from_chemical(chemical_name)
         except PathwayNotFoundException:
             reply = make_failure('PathwayNotFoundException')
             return reply
