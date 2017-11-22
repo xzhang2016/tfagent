@@ -418,7 +418,7 @@ class TFTA_Module(KQMLModule):
 
         try:
             pathwayId, pathwayName, externalId, source,dblink = \
-                self.tfta.find_pathways_from_genelist_keyword(gene_names, keyword[0])
+                self.tfta.find_pathways_from_genelist_keyword(gene_names, keyword_name)
         except PathwayNotFoundException:
             reply = make_failure('PathwayNotFoundException')
             return reply
