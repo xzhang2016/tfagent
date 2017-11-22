@@ -493,18 +493,16 @@ class TFTA_Module(KQMLModule):
         except PathwayNotFoundException:
             reply = make_failure('PathwayNotFoundException')
             return reply
-
         pathway_list_str = ''
-        for pid in pathwayId:
+	keys = tflist.keys()
+        for key in keys:
             tf_list_str = ''
-            for tf in tflist[pid]:
+            for tf in tflist[key]:
                 tf_list_str += '(:name %s) ' % tf.encode('ascii', 'ignore')
-
             tf_list_str = '(' + tf_list_str + ')'
-	    pn = '"' + pathwayName[pid] + '"'
-	    dl = '"' + dblink[pid] + '"'
+	    pn = '"' + pathwayName[key] + '"'
+	    dl = '"' + dblink[key] + '"'
             pathway_list_str += '(:name %s :dblink %s :tfs %s) ' % (pn, dl, tf_list_str)
-
         reply = KQMLList.from_string(
             '(SUCCESS :pathways (' + pathway_list_str + '))')
         return reply
