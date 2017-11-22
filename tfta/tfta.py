@@ -198,7 +198,7 @@ class TFTA:
         """
  	#query
         if self.tfdb is not None:
-            regstr = '%' + pathway_name + '%'
+            regstr = '%' + pathway_name + ' %'
             t = (regstr,)
  	    #get pathwayId
             res = self.tfdb.execute("SELECT * FROM pathwayInfo "
@@ -322,7 +322,7 @@ class TFTA:
 	    pids = []
 	    plink = []
 	    for pathway_name in pathway_names:
-                regstr = '%' + pathway_name + '%'
+                regstr = '%' + pathway_name + ' %'
                 t = (regstr,)
  	        #get pathwayId
                 res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
@@ -444,7 +444,7 @@ class TFTA:
             pn = []
             dl = []
             for pathway_name in pathway_names:
-                regstr = '%' + pathway_name + '%'
+                regstr = '%' + pathway_name + ' %'
                 t = (regstr,)
                 res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
                                     "WHERE pathwayName LIKE ? ", t).fetchall()
@@ -501,7 +501,7 @@ class TFTA:
                     pathIDs.append(pth)
  			
             if len(pathIDs)>0:
-                regstr = '%' + keyword + '%'
+                regstr = '%' + keyword + ' %'
                 for pth in pathIDs:
                     t = (pth, regstr)
                     res = self.tfdb.execute("SELECT * FROM pathwayInfo "
@@ -528,7 +528,7 @@ class TFTA:
         """
  	#query
         if self.tfdb is not None:
-            regstr = '%' + chemical_name + '%'
+            regstr = '%' + chemical_name + ' %'
             t = (regstr,)
             res = self.tfdb.execute("SELECT * FROM pathwayInfo "
                                     "WHERE pathwayName LIKE ? ORDER BY pathwayName", t).fetchall()
@@ -554,7 +554,7 @@ class TFTA:
         """
  	#query
         if self.tfdb is not None:
-            regstr = '%' + chemical_name + '%'
+            regstr = '%' + chemical_name + ' %'
             t = (regstr,)
             res = self.tfdb.execute("SELECT Id,pathwayName FROM pathwayInfo "
                                     "WHERE pathwayName LIKE ? ", t).fetchall()
@@ -663,7 +663,7 @@ class TFTA:
                         #counts.append(ct)
 		        uniq_path2.append(pth)	
             if len(uniq_path2):
-		regstr = '%' + keyword + '%'
+		regstr = '%' + keyword + ' %'
                 for pth in uniq_path2:
                     t = (pth, regstr)
                     res = self.tfdb.execute("SELECT * FROM pathwayInfo "
@@ -1126,7 +1126,7 @@ class TFTA:
             pids = []
             plink = []
             for pathway_name in pathway_names:
-                regstr = '%' + pathway_name + '%'
+                regstr = '%' + pathway_name + ' %'
                 t = (regstr, db_source)
                 res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
                                         "WHERE pathwayName LIKE ? AND source LIKE ?", t).fetchall()
