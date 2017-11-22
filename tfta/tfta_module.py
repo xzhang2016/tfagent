@@ -1231,7 +1231,7 @@ class TFTA_Module(KQMLModule):
         #    return reply
         try:
             pathwayId,pathwayName,dblink = \
-	            self.tfta.find_genes_from_pathwayName(db_name, pathway_names)
+	            self.tfta.find_pathway_db_keyword(db_name, pathway_names)
 	except PathwayNotFoundException:
 	    reply = make_failure('PathwayNotFoundException')
             return reply
