@@ -824,7 +824,7 @@ class TFTA_Module(KQMLModule):
             #keyword_name = keyword_arg.head()
 	    keyword_name = keyword_arg.data
             #keyword = trim_quotes(keyword_name)
-	    keyword = trim_word([keyword], 'pathway')
+	    keyword = trim_word([keyword_name], 'pathway')
 	except Exception as e:
 	    reply = make_failure('NO_KEYWORD')
 	    return reply
@@ -835,6 +835,7 @@ class TFTA_Module(KQMLModule):
 	    target_names = []
 	    for tg in targets:
                 target_names.append(tg.name)
+	    target_names = list(set(target_names))
 	except Exception as e:
 	    reply = make_failure('NO_GENE_NAME')
 	    return reply
