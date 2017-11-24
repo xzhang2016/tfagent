@@ -1280,12 +1280,13 @@ def _get_pathway_name(target_str):
 	return pathway_name
     try:
         for term in root.findall('TERM'):
-	    if term.find('name') and term.find('name').text not in ['PATHWAY', 'SIGNALING-PATHWAY']:
-	        for t in term.find('drum-terms').findall('drum-term'):
-	            if t.get('matched-name') is not None:
-	                pathway_name = pathway_name + [t.get('matched-name')]
-	            if t.get('name') is not None:
-		        pathway_name = pathway_name + [t.get('name')]
+	    for t in term.find('drum-terms').findall('drum-term'):
+		s = t.get('matched-name')
+	        if s and s not in ['PATHWAY', 'SIGNALING-PATHWAY']:
+	            pathway_name = pathway_name + [t.get('matched-name')]
+		s = t.get('name')
+	        if s and s not in ['PATHWAY', 'SIGNALING-PATHWAY']:
+		    pathway_name = pathway_name + [t.get('name')]
 	pathway_name = list(set(pathway_name))
 	#print 'pathway_name=' + ','.join(pathway_name)
     except Exception as e:
