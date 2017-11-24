@@ -636,21 +636,22 @@ class TFTA_Module(KQMLModule):
 	    return reply
 
         try:
-            pathwayId, pathwayName, tflist = \
+            pathwayId, pathwayName, tflist, dblink = \
                 self.tfta.find_tfs_from_pathwaysWithChemical(chemical_name)
         except PathwayNotFoundException:
             reply = make_failure('PathwayNotFoundException')
             return reply
 
         pathway_list_str = ''
-        for pid, pn in zip(pathwayId, pathwayName):
+        for pid, pn, dl in zip(pathwayId, pathwayName, dblink):
             tf_list_str = ''
             for tf in tflist[pid]:
                 tf_list_str += '(:name %s) ' % tf.encode('ascii', 'ignore')
 
             tf_list_str = '(' + tf_list_str + ')'
             pnslash = '"' + pn + '"'
-            pathway_list_str += '(:name %s :tfs %s) ' % (pnslash, tf_list_str)
+	    dl = '"' + dl + '"'
+            pathway_list_str += '(:name %s :dblink %s :tfs %s) ' % (pnslash, dl, tf_list_str)
 
         reply = KQMLList.from_string(
             '(SUCCESS :pathways (' + pathway_list_str + '))')
