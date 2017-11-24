@@ -1272,7 +1272,7 @@ def _get_pathway_name(target_str):
     try:
         #test the ekb xml format
 	f = open('TFTA-test-pathway-ekb.txt', 'a')
-	f.write(target_str)
+	f.write(target_str + '\n')
 	f.write('===============================\n')
 	f.close()
         root = ET.fromstring(target_str)
