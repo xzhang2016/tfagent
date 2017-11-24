@@ -556,17 +556,19 @@ class TFTA:
         if self.tfdb is not None:
             regstr = '%' + chemical_name + ' %'
             t = (regstr,)
-            res = self.tfdb.execute("SELECT Id,pathwayName FROM pathwayInfo "
+            res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
                                     "WHERE pathwayName LIKE ? ", t).fetchall()
             if res:
                 pathwayId = [r[0] for r in res]
                 pathwayName = [r[1] for r in res]
+		dblink = [r[2] for r in res]
  				
  		#search tfs
                 tflist = dict()
                 newpathwayName = []
                 newpathwayId = []
-                for pn,pthID in zip(pathwayName,pathwayId):
+		newdblink = []
+                for pn,pthID,lk in zip(pathwayName,pathwayId,dblink):
                     t = (pthID,)
                     res1 = self.tfdb.execute("SELECT DISTINCT genesymbol FROM pathway2Genes "
                                              "WHERE pathwayID = ? AND isTF = 1 ORDER BY genesymbol", t).fetchall()
@@ -574,14 +576,18 @@ class TFTA:
                         tfs = [r[0] for r in res1]
                         tflist[pthID] = tfs
                         newpathwayId.append(pthID)
-                        newpathwayName.append(pn)     		
+                        newpathwayName.append(pn)
+			newdblink.append(lk)
             else:
                 raise PathwayNotFoundException		
         else:
             newpathwayId = []
             newpathwayName = []
-            tflist = dict()		
-        return newpathwayId,newpathwayName,tflist
+            tflist = dict()
+	    newdblink = []
+	if not len(newdblink):
+	    raise PathwayNotFoundException
+        return newpathwayId,newpathwayName,tflist,newdblink
  		
     def find_pathway_count_genes(self, gene_names):
         """
