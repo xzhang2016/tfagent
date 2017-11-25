@@ -671,13 +671,13 @@ class TFTA_Module(KQMLModule):
 	    reply = make_failure('NO_TARGET_NAME')
 	    return reply
         try:
-            tf_names, tf_counts = self.tfta.find_tfs_count(target_names)
+            tf_counts = self.tfta.find_tfs_count(target_names)
 	except TFNotFoundException:
 	    reply = make_failure('NO_TF_FOUND')
 	    return reply
 	
         tf_list_str = ''
-        for tf,ct in zip(tf_names, tf_counts):
+        for tf,ct in tf_counts:
             tf_list_str += '(:name %s :count %s) ' % (tf, ct)
         reply = KQMLList.from_string(
             '(SUCCESS :tfs (' + tf_list_str + '))')
