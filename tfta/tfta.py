@@ -2,6 +2,7 @@
 
 import re
 import os
+import operator
 import logging
 import sqlite3
 import numpy as np
@@ -129,10 +130,10 @@ class TFTA:
 	of each TF
 	"""		
  	#query
-	tf_counts = []
+	tf_counts = dict()
 	tf_names = []
-	unique_tfs = []
         if self.tfdb is not None:
+	    target_names = list(set(target_names))
             for target_name in target_names:
                 t = (target_name,)
                 res = self.tfdb.execute("SELECT DISTINCT TF FROM CombinedDB "
@@ -143,12 +144,19 @@ class TFTA:
 	    if len(tf_names):
                 unique_tfs = list(set(tf_names))
                 for i in range(len(unique_tfs)):
-                    tf_counts.append(tf_names.count(unique_tfs[i]))		
- 	        #sort
-                tf_counts,unique_tfs = zip(*sorted(zip(tf_counts, unique_tfs),reverse=True))
+		    ct = tf_names.count(unique_tfs[i])
+		    if len(target_names) > 1:
+		        if ct > 1:
+                            tf_counts[unique_tfs[i]] = ct
+		    else:
+		        tf_counts[unique_tfs[i]] = ct
+ 	    if len(tf_counts):
+		tf_counts = sorted(tf_counts.items(), key=operator.itemgetter(1))
+		tf_counts.reverse()
+                #tf_counts,unique_tfs = zip(*sorted(zip(tf_counts, unique_tfs),reverse=True))
 	    else:
 		raise TFNotFoundException	
-        return unique_tfs, tf_counts
+        return tf_counts
  		
     def find_tfs_tissue(self,target_names,tissue_name):
         """
