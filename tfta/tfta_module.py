@@ -825,7 +825,7 @@ class TFTA_Module(KQMLModule):
             #keyword_name = keyword_arg.head()
 	    keyword_name = keyword_arg.data
             #keyword = trim_quotes(keyword_name)
-	    keyword = trim_word([keyword_name], 'pathway')
+	    #keyword = trim_word([keyword_name], 'pathway')
 	except Exception as e:
 	    reply = make_failure('NO_KEYWORD')
 	    return reply
@@ -842,7 +842,8 @@ class TFTA_Module(KQMLModule):
 	    return reply
 		
         try:
-            pathwayName,externalId,source,dblink,counts = self.tfta.find_pathway_count_genes_keyword(target_names, keyword[0])
+            pathwayName,externalId,source,dblink,counts = \
+	        self.tfta.find_pathway_count_genes_keyword(target_names, keyword_name)
 	except PathwayNotFoundException:
             reply = make_failure('PathwayNotFoundException')
             return reply
@@ -906,7 +907,7 @@ class TFTA_Module(KQMLModule):
             #keyword_name = keyword_arg.head()
 	    keyword_name = keyword_arg.data
             #keyword = trim_quotes(keyword_name)
-            keyword = keyword.lower()
+            keyword = keyword_name.lower()
 	except Exception as e:
 	    reply = make_failure('NO_GO_NAME')
 	    return reply
