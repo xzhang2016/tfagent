@@ -1083,7 +1083,7 @@ class TFTA_Module(KQMLModule):
 		    c_str = ''
                     for c in clari_mirna:
                         c_str += '(:name %s) ' % c.encode('ascii', 'ignore')
-                    reply = make_failure_clarification('MIRNA_NOT_FOUND', c_str)
+                    reply = make_failure_clarification('MIRNA_NOT_FOUND', '(' + c_str + ')')
                     return reply
                 except miRNANotFoundException:
                     reply = make_failure('NO_SIMILAR_MIRNA')
