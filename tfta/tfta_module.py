@@ -13,6 +13,7 @@ from kqml import KQMLModule, KQMLPerformative, KQMLList
 from tfta import TFTA, TFNotFoundException, TargetNotFoundException, PathwayNotFoundException 
 from tfta import GONotFoundException, miRNANotFoundException
 from indra.sources.trips.processor import TripsProcessor
+from collections import defaultdict
 #from indra.util import UnicodeXMLTreeBuilder as UTB
 
 
