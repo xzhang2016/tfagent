@@ -688,7 +688,7 @@ class TFTA_Module(KQMLModule):
 	    for tf in tf_clustered[ct]:
                 tf_list += '(:name %s) ' % tf.encode('ascii', 'ignore')
 	    tf_list = ':tf-list (' + tf_list + ')'
-	    tf_list += ':count %s' % ct.encode('ascii', 'ignore')
+	    tf_list += ' :count %s' % ct.encode('ascii', 'ignore')
 	    tf_list_str += '(' + tf_list + ')'
         reply = KQMLList.from_string(
             '(SUCCESS :tfs (' + tf_list_str + '))')
