@@ -675,10 +675,17 @@ class TFTA_Module(KQMLModule):
 	except TFNotFoundException:
 	    reply = make_failure('NO_TF_FOUND')
 	    return reply
-	
+	#cluster the tfs according to the count
+	tf_clustered = cluster_dict_by_value(tf_counts)
         tf_list_str = ''
-        for tf,ct in tf_counts:
-            tf_list_str += '(:name %s :count %s) ' % (tf, ct)
+	counts = tf_clustered.keys()
+        for ct in counts:
+	    tf_list = ''
+	    for tf in tf_clustered[ct]:
+                tf_list += '(:name %s) ' % tf.encode('ascii', 'ignore')
+	    tf_list = '(:tf-list (' + tf_list + '))'
+	    tf_list += '(:count %s)' % ct.encode('ascii', 'ignore')
+	    tf_list_str += '(' + tf_list + ')'
         reply = KQMLList.from_string(
             '(SUCCESS :tfs (' + tf_list_str + '))')
         return reply
@@ -1423,6 +1430,12 @@ def rtrim_hyphen(str1):
 	p1 = p.replace('-','')
         s = s.replace(p, p1)
     return s
+
+def cluster_dict_by_value(d):
+    clusters = defaultdict(list)
+    for key, val in d.iteritems():
+        clusters[val].append(key)
+    return clusters
 
 
 if __name__ == "__main__":
