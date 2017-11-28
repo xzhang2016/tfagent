@@ -1437,8 +1437,9 @@ def rtrim_hyphen(str1):
     return s
 
 def cluster_dict_by_value(d):
+    #d is a list with tuple pair
     clusters = defaultdict(list)
-    for key, val in d.iteritems():
+    for key, val in d:
         clusters[val].append(key)
     return clusters
 
