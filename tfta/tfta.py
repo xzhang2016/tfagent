@@ -132,6 +132,7 @@ class TFTA:
  	#query
 	tf_counts = dict()
 	tf_names = []
+	targets = defaultdict(list)
         if self.tfdb is not None:
 	    target_names = list(set(target_names))
             for target_name in target_names:
@@ -139,7 +140,10 @@ class TFTA:
                 res = self.tfdb.execute("SELECT DISTINCT TF FROM CombinedDB "
                                         "WHERE Target = ? ", t).fetchall()
                 if res:
-                    tf_names = tf_names + [r[0] for r in res]
+		    tfs = [r[0] for r in res]
+                    tf_names = tf_names + tfs
+		    for tf in tfs:
+		        targets[tf].append(target_name)
 	    #count for each TF
 	    if len(tf_names):
                 unique_tfs = list(set(tf_names))
