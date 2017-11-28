@@ -264,6 +264,7 @@ class TFTA_Module(KQMLModule):
 	    #tissue_name = trim_quotes(tissue_name)
 	    tissue_name = tissue_name.lower()
 	    tissue_name = tissue_name.replace(' ', '_')
+	    tissue_name = tissue_name.replace('-', '_')
 	except Exception as e:
 	    reply = make_failure('NO_TISSUE_NAME')
 	    return reply
@@ -337,6 +338,7 @@ class TFTA_Module(KQMLModule):
 	    #tissue_name = trim_quotes(tissue_name)
 	    tissue_name = tissue_name.lower()
 	    tissue_name = tissue_name.replace(' ', '_')
+	    tissue_name = tissue_name.replace('-', '_')
 	except Exception as e:
 	    reply = make_failure('NO_TISSUE_NAME')
 	    return reply
