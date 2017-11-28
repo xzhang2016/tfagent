@@ -679,6 +679,7 @@ class TFTA_Module(KQMLModule):
 	tf_clustered = cluster_dict_by_value(tf_counts)
         tf_list_str = ''
 	counts = tf_clustered.keys()
+	counts.reverse()
         for ct in counts:
 	    tf_list = ''
 	    for tf in tf_clustered[ct]:
