@@ -792,7 +792,7 @@ class TFTA_Module(KQMLModule):
             pnslash = '"' + pn +'"'
 	    #eidslash= '"' + eid +'"'
 	    dbl = '"' + dbl +'"'
-            path_list_str += '(:name %s :dblink %s :count %s) ' % (pnslash, dbl, ct)
+            path_list_str += '(:name %s :dblink %s :count %d) ' % (pnslash, dbl, ct)
 
 	reply = KQMLList.from_string(
                '(SUCCESS :pathways (' + path_list_str + '))')
@@ -865,7 +865,7 @@ class TFTA_Module(KQMLModule):
             pnslash = '"' + pn +'"'
 	    #eidslash= '"' + eid +'"'
 	    dbl = '"' + dbl +'"'
-            path_list_str += '(:name %s :dblink %s :count %s) ' % (pnslash, dbl, ct)
+            path_list_str += '(:name %s :dblink %s :count %d) ' % (pnslash, dbl, ct)
 
 	reply = KQMLList.from_string(
                '(SUCCESS :pathways (' + path_list_str + '))')
@@ -1180,7 +1180,7 @@ class TFTA_Module(KQMLModule):
 	    for m in ms:
 	        m_str += '(:name %s)' % m.encode('ascii', 'ignore')
 	    m_str = '(' + m_str + ')'
-            target_str += '(:name %s :count %s :miRNA %s) ' % (t, ct, m_str)
+            target_str += '(:name %s :count %d :miRNA %s) ' % (t, ct, m_str)
         reply = KQMLList.from_string(
             '(SUCCESS :targets (' + target_str + '))')
         return reply
@@ -1215,7 +1215,7 @@ class TFTA_Module(KQMLModule):
 	    for g in gs:
 	        g_str += '(:name %s) ' % g.encode('ascii', 'ignore')
 	    g_str = '(' + g_str + ')'
-            mirna_str += '(:name %s :count %s :targets %s) ' % (m, ct, g_str)
+            mirna_str += '(:name %s :count %d :targets %s) ' % (m, ct, g_str)
         reply = KQMLList.from_string(
             '(SUCCESS :miRNAs (' + mirna_str + '))')
         return reply
