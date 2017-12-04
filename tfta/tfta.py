@@ -33,6 +33,10 @@ class GONotFoundException(Exception):
 class miRNANotFoundException(Exception):
     def __init__(self, *args, **kwargs):
         Exception.__init__(self, *args, **kwargs)
+	
+class TissueNotFoundException(Exception):
+    def __init__(self, *args, **kwargs):
+        Exception.__init__(self, *args, **kwargs)
  	
 class TFTA:
     def __init__(self):
@@ -1199,6 +1203,22 @@ class TFTA:
             else:
                 raise miRNANotFoundException
         return clari_miRNA
+
+    def find_tissue_gene(self, gene_name):
+        """
+        For a given gene, return a list of tissue names it's expressed in
+        What tissues is STAT3 expressed in?
+        """
+        tissue_names = []
+        if self.tfdb is not None:
+            t = (gene_name,)
+            res = self.tfdb.execute("SELECT DISTINCT tissue FROM geneTissue "
+                                    "WHERE genesymbol = ? ", t).fetchall()
+            if res:
+                tissue_names = [r[0] for r in res]
+            else:
+                raise TissueNotFoundException
+        return tissue_names
 		 							 
 
 #test functions
