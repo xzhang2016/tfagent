@@ -11,7 +11,7 @@ logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
 logger = logging.getLogger('TFTA')
 from kqml import KQMLModule, KQMLPerformative, KQMLList
 from tfta import TFTA, TFNotFoundException, TargetNotFoundException, PathwayNotFoundException 
-from tfta import GONotFoundException, miRNANotFoundException
+from tfta import GONotFoundException, miRNANotFoundException, TissueNotFoundException
 from indra.sources.trips.processor import TripsProcessor
 from collections import defaultdict
 #from indra.util import UnicodeXMLTreeBuilder as UTB
@@ -37,7 +37,7 @@ class TFTA_Module(KQMLModule):
                       'FIND-TARGET-TF-TISSUE', 'IS-PATHWAY-GENE','IS-MIRNA-TARGET', 
 		      'FIND-MIRNA-TARGET', 'FIND-TARGET-MIRNA', 'FIND-EVIDENCE-MIRNA-TARGET',
 		      'FIND-MIRNA-COUNT-GENE','FIND-GENE-COUNT-MIRNA',
-		      'FIND-PATHWAY-DB-KEYWORD']
+		      'FIND-PATHWAY-DB-KEYWORD', 'FIND-TISSUE-GENE']
 
         #Send subscribe messages
         for task in self.tasks:
@@ -108,6 +108,8 @@ class TFTA_Module(KQMLModule):
             reply_content = self.respond_find_target_count_miRNA(content)
 	elif task_str == 'FIND-PATHWAY-DB-KEYWORD':
             reply_content = self.respond_find_pathway_db_keyword(content)
+	elif task_str == 'FIND-TISSUE-GENE':
+            reply_content = self.respond_find_tissue_gene(content)
         else:
             self.error_reply(msg, 'unknown request task ' + task_str)
             return
@@ -1261,6 +1263,29 @@ class TFTA_Module(KQMLModule):
                 '(:name %s :dblink %s) ' % (pn, dbl)
         reply = KQMLList.from_string(
             '(SUCCESS :pathways (' + pathway_list_str + '))')
+        return reply
+
+    def respond_find_tissue_gene(self, content):
+        """
+        Response to FIND-TISSUE-GENE task
+        """
+        try:
+            gene_arg = content.gets('gene')
+            gene = _get_target(gene_arg)
+            gene_name = gene.name
+        except Exception as e:
+            reply = make_failure('NO_GENE_NAME')
+            return reply
+        try:
+            tissues = self.tfta.find_tissue_gene(gene_name)
+	except TissueNotFoundException:
+	    reply = make_failure('NO_TISSUE_FOUND')
+            return reply    
+        tissue_str = ''
+        for ts in tissues:
+            tissue_str += '(:name %s) ' % ts.encode('ascii', 'ignore')
+        reply = KQMLList.from_string(
+            '(SUCCESS :tissue (' + tissue_str + '))')
         return reply
 
 def _get_target(target_str):
