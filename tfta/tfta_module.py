@@ -179,7 +179,7 @@ class TFTA_Module(KQMLModule):
             tissue_name = tissue_name.lower()
             tissue_name = tissue_name.replace(' ', '_')
             tissue_name = tissue_name.replace('-', '_')
-         except Exception as e:
+        except Exception as e:
             reply = make_failure('NO_TISSUE_NAME')
             return reply
 
