@@ -35,7 +35,7 @@ class TFTA_Module(KQMLModule):
                       'FIND-TARGET-TF-TISSUE', 'IS-PATHWAY-GENE','IS-MIRNA-TARGET', 
                       'FIND-MIRNA-TARGET', 'FIND-TARGET-MIRNA', 'FIND-EVIDENCE-MIRNA-TARGET',
                       'FIND-MIRNA-COUNT-GENE','FIND-GENE-COUNT-MIRNA',
-                      'FIND-PATHWAY-DB-KEYWORD', 'FIND-TISSUE-GENE']
+                      'FIND-PATHWAY-DB-KEYWORD', 'FIND-TISSUE-GENE', 'IS-REGULATION']
 
         #Send subscribe messages
         for task in self.tasks:
@@ -105,6 +105,8 @@ class TFTA_Module(KQMLModule):
             reply_content = self.respond_find_pathway_db_keyword(content)
         elif task_str == 'FIND-TISSUE-GENE':
             reply_content = self.respond_find_tissue_gene(content)
+        elif task_str == 'IS-REGULATION':
+            reply_content = self.respond_is_regulation(content)
         else:
             self.error_reply(msg, 'unknown request task ' + task_str)
             return
@@ -112,6 +114,27 @@ class TFTA_Module(KQMLModule):
         reply_msg = KQMLPerformative('reply')
         reply_msg.set('content', reply_content)
         self.reply(msg, reply_msg)
+        
+    def respond_is_regulation(self, content):
+        """
+        Response content to is-regulation request which includes:
+        is-tf-target
+        is-tf-target-tissue
+        is-mirna-target
+        """
+        tf_arg = content.gets('tf')
+        target_arg = content.gets('target')
+        tissue_arg = content.gets('tissue')
+        mirna_arg = content.gets('mirna')
+        if all([tf_arg,target_arg,tissue_arg]):
+            reply = self.respond_is_tf_target_tissue(content)
+        elif all([tf_arg,target_arg]):
+            reply = self.respond_is_tf_target(content)
+        elif all([mirna_arg,target_arg]):
+            reply = self.respond_is_miRNA_target(content)
+        else:
+            reply = self.make_failure('UNKNOW_TASK')
+        return reply
 
     def respond_is_tf_target(self, content):
         """Response content to is-tf-target request."""
