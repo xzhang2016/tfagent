@@ -124,7 +124,7 @@ class TFTA_Module(KQMLModule):
         """
         tf_arg = content.gets('tf')
         target_arg = content.gets('target')
-        tissue_arg = content.gets('tissue')
+        tissue_arg = content.get('tissue')
         mirna_arg = content.gets('mirna')
         if all([tf_arg,target_arg,tissue_arg]):
             reply = self.respond_is_tf_target_tissue(content)
@@ -265,7 +265,7 @@ class TFTA_Module(KQMLModule):
         return reply
 
     def respond_find_tf_targets_tissue(self, content):
-        """Response content to find-tf-target request
+        """Response content to find-tf-target-tissue request
         For tf list, reply with the targets found within given tissue
         """
         tf_arg = content.gets('tf')
@@ -340,7 +340,7 @@ class TFTA_Module(KQMLModule):
         return reply
 
     def respond_find_target_tfs_tissue(self, content):
-        """Response content to find-target-tf request
+        """Response content to find-target-tf-tissue request
         For a target list, reply the tfs found within a given tissue"""
         target_arg = content.gets('target')
         try:
