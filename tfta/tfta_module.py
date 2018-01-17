@@ -142,14 +142,14 @@ class TFTA_Module(KQMLModule):
     def respond_find_tf(self, content):
         """
         Response content to find-tf request which includes:
-        find-tf-target-tissue, find-tf-keyword, find-tf-pathway,
+        find-tf-keyword, find-tf-pathway,
         find-common-tf-genes, find-target-tf, find-target-tf-tissue
         """
         target_arg = content.gets('target')
         pathway_arg = content.gets('pathway')
         keyword_arg = content.get('keyword')
         tissue_arg = content.get('tissue')
-        count_arg = content.get('with')
+        count_arg = content.get('count')
         if all([target_arg,tissue_arg]):
             reply = self.respond_find_target_tfs_tissue(content)
         elif all([target_arg,count_arg]):
