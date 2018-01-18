@@ -36,7 +36,7 @@ class TFTA_Module(KQMLModule):
                       'FIND-MIRNA-TARGET', 'FIND-TARGET-MIRNA', 'FIND-EVIDENCE-MIRNA-TARGET',
                       'FIND-MIRNA-COUNT-GENE','FIND-GENE-COUNT-MIRNA',
                       'FIND-PATHWAY-DB-KEYWORD', 'FIND-TISSUE-GENE', 'IS-REGULATION',
-                      'FIND-TF', 'FIND-PATHWAY']
+                      'FIND-TF', 'FIND-PATHWAY', 'FIND-TARGET']
 
         #Send subscribe messages
         for task in self.tasks:
@@ -112,6 +112,8 @@ class TFTA_Module(KQMLModule):
             reply_content = self.respond_find_tf(content)
         elif task_str == 'FIND-PATHWAY':
             reply_content = self.respond_find_pathway(content)
+        elif task_str == 'FIND-TARGET':
+            reply_content = self.respond_find_target(content)
         else:
             self.error_reply(msg, 'unknown request task ' + task_str)
             return
@@ -194,6 +196,28 @@ class TFTA_Module(KQMLModule):
             reply = self.respond_find_common_pathway_genes(content)
         elif gene_arg:
             reply = self.respond_find_pathway_gene(content)
+        else:
+            reply = make_failure('UNKNOWN_TASK')
+        return reply
+    
+    def respond_find_target(self, content):
+        """
+        Response content to find-target request, which includes these cases:
+        find-target-miran, find-tf-target, find-tf-target-tissue,
+        find-overlap-targets-tf-genes
+        """
+        tf_arg = content.gets('tf')
+        target_arg = content.gets('target')
+        miRNA_arg = content.gets('miRNA')
+        tissue_arg = content.get('tissue')
+        if all([tf_arg,tissue_arg]):
+            reply = self.respond_find_tf_targets_tissue(content)
+        elif all([tf_arg,target_arg]):
+            reply = self.respond_find_overlap_targets_tf_genes(content)
+        elif tf_arg:
+            reply = self.respond_find_tf_targets(content)
+        elif miRNA_arg:
+            reply = self.respond_find_target_miRNA(content)
         else:
             reply = make_failure('UNKNOWN_TASK')
         return reply
