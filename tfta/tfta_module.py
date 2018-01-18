@@ -175,19 +175,19 @@ class TFTA_Module(KQMLModule):
         """
         gene_arg = content.gets('gene')
         pathway_arg = content.gets('pathway')
-        db_arg = content.get('db')
+        db_arg = content.get('database')
         keyword_arg = content.get('keyword')
         count_arg = content.get('count')
         if all([keyword_arg,gene_arg,count_arg]):
             reply = self.respond_find_common_pathway_genes_keyword(content)
         elif all([keyword_arg,gene_arg]):
             reply = self.respond_find_pathway_gene_keyword(content)
+        elif all([keyword_arg,db_arg]):
+            reply = self.respond_find_pathway_db_keyword(content)
         elif keyword_arg:
             reply = self.respond_find_pathway_chemical(content)
         elif all([pathway_arg,gene_arg]):
             reply = self.respond_is_pathway_gene(content)
-        elif all([pathway_arg,db_arg]):
-            reply = self.respond_find_pathway_db_keyword(content)
         elif all([gene_arg,db_arg]):
             reply = self.respond_find_pathway_db_gene(content)
         elif all([gene_arg,count_arg]):
