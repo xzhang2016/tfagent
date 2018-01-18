@@ -36,7 +36,7 @@ class TFTA_Module(KQMLModule):
                       'FIND-MIRNA-TARGET', 'FIND-TARGET-MIRNA', 'FIND-EVIDENCE-MIRNA-TARGET',
                       'FIND-MIRNA-COUNT-GENE','FIND-GENE-COUNT-MIRNA',
                       'FIND-PATHWAY-DB-KEYWORD', 'FIND-TISSUE-GENE', 'IS-REGULATION',
-                      'FIND-TF']
+                      'FIND-TF', 'FIND-PATHWAY']
 
         #Send subscribe messages
         for task in self.tasks:
@@ -110,6 +110,8 @@ class TFTA_Module(KQMLModule):
             reply_content = self.respond_is_regulation(content)
         elif task_str == 'FIND-TF':
             reply_content = self.respond_find_tf(content)
+        elif task_str == 'FIND-PATHWAY':
+            reply_content = self.respond_find_pathway(content)
         else:
             self.error_reply(msg, 'unknown request task ' + task_str)
             return
@@ -163,7 +165,39 @@ class TFTA_Module(KQMLModule):
         else:
             reply = make_failure('UNKNOW_TASK')
         return reply
-      
+    
+    def respond_find_pathway(self, content):
+        """
+        Response content to find-pathway request, which includes:
+        find-pathway-gene, find-pathway-db-gene, find-pathway-gene-keyword,
+        find-pathway-keyword, find-common-pathway-genes, is-pathway-gene,
+        find-common-pathway-genes-keyword, find-pathway-db-keyword.
+        """
+        gene_arg = content.gets('gene')
+        pathway_arg = content.gets('pathway')
+        db_arg = content.get('db')
+        keyword_arg = content.get('keyword')
+        count_arg = content.get('count')
+        if all([keyword_arg,gene_arg,count_arg]):
+            reply = self.respond_find_common_pathway_genes_keyword(content)
+        elif all([keyword_arg,gene_arg]):
+            reply = self.respond_find_pathway_gene_keyword(content)
+        elif keyword_arg:
+            reply = self.respond_find_pathway_chemical(content)
+        elif all([pathway_arg,gene_arg]):
+            reply = self.respond_is_pathway_gene(content)
+        elif all([pathway_arg,db_arg]):
+            reply = self.respond_find_pathway_db_keyword(content)
+        elif all([gene_arg,db_arg]):
+            reply = self.respond_find_pathway_db_gene(content)
+        elif all([gene_arg,count_arg]):
+            reply = self.respond_find_common_pathway_genes(content)
+        elif gene_arg:
+            reply = self.respond_find_pathway_gene(content)
+        else:
+            reply = make_failure('UNKNOWN_TASK')
+        return reply
+            
     def respond_is_tf_target(self, content):
         """Response content to is-tf-target request."""
         tf_arg = content.gets('tf')
