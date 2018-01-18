@@ -815,6 +815,8 @@ class TFTA_Module(KQMLModule):
         response content to FIND-COMMON-PATHWAY-GENES request
         """
         target_arg = content.gets('target')
+        if not target_arg:
+            target_arg = content.gets('gene')
         try:
             targets = _get_targets(target_arg)
             target_names = []
