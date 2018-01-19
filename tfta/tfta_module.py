@@ -1063,7 +1063,7 @@ class TFTA_Module(KQMLModule):
         Respond content to FIND-GENE-GO-TF request
         The inputs here are GO id and tf list
         """
-        go_arg = content.get('go-id')
+        go_arg = content.get('goid')
         try:
             #goid = go_arg.head()
             goid = go_arg.data
