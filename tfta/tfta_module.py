@@ -36,7 +36,7 @@ class TFTA_Module(KQMLModule):
                       'FIND-MIRNA-TARGET', 'FIND-TARGET-MIRNA', 'FIND-EVIDENCE-MIRNA-TARGET',
                       'FIND-MIRNA-COUNT-GENE','FIND-GENE-COUNT-MIRNA',
                       'FIND-PATHWAY-DB-KEYWORD', 'FIND-TISSUE-GENE', 'IS-REGULATION',
-                      'FIND-TF', 'FIND-PATHWAY', 'FIND-TARGET', 'FIND-GENE']
+                      'FIND-TF', 'FIND-PATHWAY', 'FIND-TARGET', 'FIND-GENE', 'FIND-MIRNA']
 
         #Send subscribe messages
         for task in self.tasks:
@@ -116,6 +116,8 @@ class TFTA_Module(KQMLModule):
             reply_content = self.respond_find_target(content)
         elif task_str == 'FIND-GENE':
             reply_content = self.respond_find_gene(content)
+        elif task_str == 'FIND-MIRNA':
+            reply_content = self.respond_find_miRNA(content)
         else:
             self.error_reply(msg, 'unknown request task ' + task_str)
             return
@@ -239,6 +241,21 @@ class TFTA_Module(KQMLModule):
             reply = self.respond_find_genes_go_tf2(content)
         elif pathway_arg:
             reply = self.respond_find_gene_pathway(content)
+        else:
+            reply = make_failure('UNKNOWN_TASK')
+        return reply
+      
+    def respond_find_miRNA(self, content):
+        """
+        Response content to find-mirna request, which includes:
+        find-mirna-target, find-mirna-count-gene
+        """
+        target_arg = content.gets('target')
+        count_arg = content.get('count')
+        if all([target_arg,count_arg]):
+            reply = self.respond_find_target_count_miRNA(content)
+        elif target_arg:
+            reply = self.respond_find_miRNA_target(content)
         else:
             reply = make_failure('UNKNOWN_TASK')
         return reply
