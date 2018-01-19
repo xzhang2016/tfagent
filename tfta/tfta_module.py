@@ -36,7 +36,7 @@ class TFTA_Module(KQMLModule):
                       'FIND-MIRNA-TARGET', 'FIND-TARGET-MIRNA', 'FIND-EVIDENCE-MIRNA-TARGET',
                       'FIND-MIRNA-COUNT-GENE','FIND-GENE-COUNT-MIRNA',
                       'FIND-PATHWAY-DB-KEYWORD', 'FIND-TISSUE-GENE', 'IS-REGULATION',
-                      'FIND-TF', 'FIND-PATHWAY', 'FIND-TARGET']
+                      'FIND-TF', 'FIND-PATHWAY', 'FIND-TARGET', 'FIND-GENE']
 
         #Send subscribe messages
         for task in self.tasks:
@@ -114,6 +114,8 @@ class TFTA_Module(KQMLModule):
             reply_content = self.respond_find_pathway(content)
         elif task_str == 'FIND-TARGET':
             reply_content = self.respond_find_target(content)
+        elif task_str == 'FIND-GENE':
+            reply_content = self.respond_find_gene(content)
         else:
             self.error_reply(msg, 'unknown request task ' + task_str)
             return
