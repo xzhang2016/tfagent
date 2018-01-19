@@ -204,20 +204,39 @@ class TFTA_Module(KQMLModule):
         """
         Response content to find-target request, which includes these cases:
         find-target-miran, find-tf-target, find-tf-target-tissue,
-        find-overlap-targets-tf-genes
+        find-overlap-targets-tf-genes, find-gene-count-miRNA
         """
         tf_arg = content.gets('tf')
         target_arg = content.gets('target')
         miRNA_arg = content.gets('miRNA')
         tissue_arg = content.get('tissue')
+        count_arg = content.get('count')
         if all([tf_arg,tissue_arg]):
             reply = self.respond_find_tf_targets_tissue(content)
         elif all([tf_arg,target_arg]):
             reply = self.respond_find_overlap_targets_tf_genes(content)
         elif tf_arg:
             reply = self.respond_find_tf_targets(content)
+        elif all([miRNA_arg,count_arg]):
+            reply = self.respond_find_target_count_miRNA(content)
         elif miRNA_arg:
             reply = self.respond_find_target_miRNA(content)
+        else:
+            reply = make_failure('UNKNOWN_TASK')
+        return reply
+    
+    def respond_find_gene(self, content):
+        """
+        Response content to find-gene request, which includes:
+        find-gene-pathway, find-gene-go-tf
+        """
+        pathway_arg = content.gets('pathway')
+        goid_arg = content.get('goid')
+        tf_arg = content.gets('tf')
+        if all([goid_arg,tf_arg]):
+            reply = self.respond_find_genes_go_tf2(content)
+        elif pathway_arg:
+            reply = self.respond_find_gene_pathway(content)
         else:
             reply = make_failure('UNKNOWN_TASK')
         return reply
