@@ -14,7 +14,6 @@ from tfta import TFTA, TFNotFoundException, TargetNotFoundException, PathwayNotF
 from tfta import GONotFoundException, miRNANotFoundException, TissueNotFoundException
 from indra.sources.trips.processor import TripsProcessor
 from collections import defaultdict
-#from indra.util import UnicodeXMLTreeBuilder as UTB
 
 class TFTA_Module(KQMLModule):
     """TFTA module is used to receive and decode messages and send
@@ -261,7 +260,9 @@ class TFTA_Module(KQMLModule):
         return reply
             
     def respond_is_tf_target(self, content):
-        """Response content to is-tf-target request."""
+        """
+        Response content to is-tf-target request.
+        """
         tf_arg = content.gets('tf')
         try:
             tf = _get_target(tf_arg)
@@ -269,7 +270,6 @@ class TFTA_Module(KQMLModule):
         except Exception as e:
             reply = make_failure('NO_TF_NAME')
             return reply
-
         target_arg = content.gets('target')
         try:
             target = _get_target(target_arg)
@@ -277,7 +277,6 @@ class TFTA_Module(KQMLModule):
         except Exception as e:
             reply = make_failure('NO_TARGET_NAME')
             return reply
-
         try:
             is_target = self.tfta.Is_tf_target(tf_name, target_name)
         except TFNotFoundException:
@@ -286,7 +285,6 @@ class TFTA_Module(KQMLModule):
         except TargetNotFoundException:
             reply = make_failure('TARGET_NOT_FOUND')
             return reply
-
         reply = KQMLList('SUCCESS')
         is_target_str = 'TRUE' if is_target else 'FALSE'
         reply.set('result', is_target_str)
@@ -301,16 +299,16 @@ class TFTA_Module(KQMLModule):
 
 
     def respond_is_tf_target_tissue(self, content):
-        """Response content to is-tf-target-tissue request."""
+        """
+        Response content to is-tf-target-tissue request.
+        """
         tf_arg = content.gets('tf')
         try:
             tf = _get_target(tf_arg)
             tf_name = tf.name
-            #print 'tf=' + tf.name
         except Exception as e:
             reply = make_failure('NO_TF_NAME')
             return reply
-
         target_arg = content.gets('target')
         try:
             target = _get_target(target_arg)
@@ -329,11 +327,9 @@ class TFTA_Module(KQMLModule):
         except Exception as e:
             reply = make_failure('NO_TISSUE_NAME')
             return reply
-
         if tissue_name not in self.tissue_list:
             reply = make_failure('INVALID_TISSUE')
             return reply
-
         try:
             is_target = self.tfta.Is_tf_target_tissue(tf_name, target_name, tissue_name)
         except TFNotFoundException:
@@ -342,7 +338,6 @@ class TFTA_Module(KQMLModule):
         except TargetNotFoundException:
             reply = make_failure('TARGET_NOT_FOUND')
             return reply
-
         reply = KQMLList('SUCCESS')
         is_target_str = 'TRUE' if is_target else 'FALSE'
         reply.set('result', is_target_str)
@@ -360,26 +355,21 @@ class TFTA_Module(KQMLModule):
             for tf in tfs:
                 tf_names.append(tf.name)
         except Exception as e:
-            #print 'received message:' + content
             reply = make_failure('NO_TF_NAME')
-            return reply
-            
+            return reply  
         try:
             target_names = self.tfta.find_targets(tf_names)
         except TFNotFoundException:
             reply = make_failure('TF_NOT_FOUND')
             return reply
-        
         if len(target_names):
             target_list_str = ''
             for tg in target_names:
                 target_list_str += '(:name %s ) ' % tg.encode('ascii', 'ignore')
-
             reply = KQMLList.from_string(
                 '(SUCCESS :targets (' + target_list_str + '))')
         else:
             reply = make_failure('NO_TARGET_FOUND')
-        #print "reply=",reply
         t1 = time.clock()
         f = open('time-test.txt','a')
         t01 = t1 - t0
@@ -389,7 +379,8 @@ class TFTA_Module(KQMLModule):
         return reply
 
     def respond_find_tf_targets_tissue(self, content):
-        """Response content to find-tf-target-tissue request
+        """
+        Response content to find-tf-target-tissue request
         For tf list, reply with the targets found within given tissue
         """
         tf_arg = content.gets('tf')
@@ -412,22 +403,18 @@ class TFTA_Module(KQMLModule):
         except Exception as e:
             reply = make_failure('NO_TISSUE_NAME')
             return reply
-
         if tissue_name not in self.tissue_list:
             reply = make_failure('INVALID_TISSUE')
-            return reply
-        
+            return reply    
         try:
             target_names = self.tfta.find_targets_tissue(tf_names, tissue_name)
         except TFNotFoundException:
             reply = make_failure('TF_NOT_FOUND')
-            return reply
-        
+            return reply  
         if len(target_names):
             target_list_str = ''
             for tg in target_names:
                 target_list_str += '(:name %s) ' % tg.encode('ascii', 'ignore')
-
             reply = KQMLList.from_string(
                 '(SUCCESS :targets (' + target_list_str + '))')
         else:
@@ -435,8 +422,10 @@ class TFTA_Module(KQMLModule):
         return reply
 
     def respond_find_target_tfs(self, content):
-        """Response content to find-target-tf request
-        For a target list, reply the tfs found"""
+        """
+        Response content to find-target-tf request
+        For a target list, reply the tfs found
+        """
         target_arg = content.gets('target')
         try:
             targets = _get_targets(target_arg)
@@ -450,8 +439,7 @@ class TFTA_Module(KQMLModule):
             tf_names = self.tfta.find_tfs(target_names)
         except TargetNotFoundException:
             reply = make_failure('TARGET_NOT_FOUND')
-            return reply
-            
+            return reply   
         if len(tf_names):    
             tf_list_str = ''
             for tf in tf_names:
@@ -460,12 +448,13 @@ class TFTA_Module(KQMLModule):
                 '(SUCCESS :tfs (' + tf_list_str + '))')
         else:
             reply = make_failure('NO_TF_FOUND')
-        print "reply=", reply
         return reply
 
     def respond_find_target_tfs_tissue(self, content):
-        """Response content to find-target-tf-tissue request
-        For a target list, reply the tfs found within a given tissue"""
+        """
+        Response content to find-target-tf-tissue request
+        For a target list, reply the tfs found within a given tissue
+        """
         target_arg = content.gets('target')
         try:
             targets = _get_targets(target_arg)
@@ -486,22 +475,18 @@ class TFTA_Module(KQMLModule):
         except Exception as e:
             reply = make_failure('NO_TISSUE_NAME')
             return reply
-
         if tissue_name not in self.tissue_list:
             reply = make_failure('INVALID_TISSUE')
-            return reply
-        
+            return reply     
         try:
             tf_names = self.tfta.find_tfs_tissue(target_names, tissue_name)
         except TargetNotFoundException:
             reply = make_failure('TARGET_NOT_FOUND')
-            return reply
-            
+            return reply      
         if len(tf_names):
             tf_list_str = ''
             for tf in tf_names:
                 tf_list_str += '(:name %s) ' % tf.encode('ascii', 'ignore')
-
             reply = KQMLList.from_string(
                 '(SUCCESS :tfs (' + tf_list_str + '))')
         else:
@@ -509,8 +494,10 @@ class TFTA_Module(KQMLModule):
         return reply
 
     def respond_find_pathway_gene(self,content):
-        """Response content to find_pathway_gene request
-        For a given gene list, reply the related pathways information"""
+        """
+        Response content to find_pathway_gene request
+        For a given gene list, reply the related pathways information
+        """
         gene_arg = content.gets('gene')
         try:
             genes = _get_targets(gene_arg)
@@ -520,29 +507,27 @@ class TFTA_Module(KQMLModule):
         except Exception as e:
             reply = make_failure('NO_GENE_NAME')
             return reply
-
         try:
             pathwayName, dblink = \
                 self.tfta.find_pathways_from_genelist(gene_names)
         except PathwayNotFoundException:
             reply = make_failure('PathwayNotFoundException')
             return reply
-
         pathway_list_str = ''
         for pn, dbl in zip(pathwayName, dblink):
             pnslash = '"' + pn + '"'
-            #eidslash = '"' + eid + '"'
             dbl = '"' + dbl + '"'
             pathway_list_str += \
                 '(:name %s :dblink %s) ' % (pnslash, dbl)
-
         reply = KQMLList.from_string(
             '(SUCCESS :pathways (' + pathway_list_str + '))')
         return reply
 
     def respond_find_pathway_gene_keyword(self,content):
-        """Response content to find_pathway_gene_name request
-        For a given gene list and keyword, reply the related pathways information"""
+        """
+        Response content to find_pathway_gene_name request
+        For a given gene list and keyword, reply the related pathways information
+        """
         keyword_arg = content.get('keyword')
         try:
             #keyword_name = keyword_arg.head()
@@ -551,8 +536,7 @@ class TFTA_Module(KQMLModule):
             #keyword = trim_word([keyword], 'pathway')
         except Exception as e:
             reply = make_failure('NO_KEYWORD')
-            return reply
-        
+            return reply        
         gene_arg = content.gets('gene')
         try:
             genes = _get_targets(gene_arg)
@@ -562,22 +546,18 @@ class TFTA_Module(KQMLModule):
         except Exception as e:
             reply = make_failure('NO_GENE_NAME')
             return reply
-
         try:
             pathwayId, pathwayName, externalId, source,dblink = \
                 self.tfta.find_pathways_from_genelist_keyword(gene_names, keyword_name)
         except PathwayNotFoundException:
             reply = make_failure('PathwayNotFoundException')
             return reply
-
         pathway_list_str = ''
         for pn, eid, src, dbl in zip(pathwayName, externalId, source, dblink):
             pnslash = '"' + pn +'"'
-            #eidslash= '"' + eid +'"'
             dbl = '"' + dbl +'"'
             pathway_list_str += \
                 '(:name %s :dblink %s) ' % (pnslash, dbl)
-
         reply = KQMLList.from_string(
             '(SUCCESS :pathways (' + pathway_list_str + '))')
         return reply
@@ -590,12 +570,10 @@ class TFTA_Module(KQMLModule):
         try:
             #db_name = db_arg.head()
             db_name = db_arg.data
-            #print db_name
             #db_name = trim_quotes(db_name)
         except Exception as e:
             reply = make_failure('NO_DB_NAME')
             return reply
-
         gene_arg = content.gets('gene')
         try:
             genes = _get_targets(gene_arg)
@@ -605,29 +583,27 @@ class TFTA_Module(KQMLModule):
         except Exception as e:
             reply = make_failure('NO_GENE_NAME')
             return reply
-
         try:
             pathwayId, pathwayName, externalId, source, dblink = \
                 self.tfta.find_pathways_from_dbsource_geneName(db_name,gene_names)
         except PathwayNotFoundException:
             reply = make_failure('PathwayNotFoundException')
             return reply
-
         pathway_list_str = ''
         for pn, eid, src, dbl in zip(pathwayName, externalId, source, dblink):
             pnslash = '"' + pn + '"'
-            #eidslash= '"' + eid + '"'
             dbl = '"' + dbl + '"'
             pathway_list_str += \
                 '(:name %s :dblink %s) ' % (pnslash, dbl)
-
         reply = KQMLList.from_string(
             '(SUCCESS :pathways (' + pathway_list_str + '))')
         return reply
 
     def respond_find_tf_pathway(self, content):
-        """Response content to FIND_TF_PATHWAY request
-        For a given pathway name, reply the tfs within the pathway"""
+        """
+        Response content to FIND_TF_PATHWAY request
+        For a given pathway name, reply the tfs within the pathway
+        """
         pathway_arg = content.gets('pathway')
         pathway_names = _get_pathway_name(pathway_arg)
         pathway_names = trim_word(pathway_names, 'pathway')
@@ -658,54 +634,6 @@ class TFTA_Module(KQMLModule):
             return reply
         return reply
 
-    def respond_find_gene_pathway2(self, content):
-        """Response content to FIND-GENE-PATHWAY request
-        For a given pathway name, reply the genes within the pathway"""
-        pathway_arg = content.gets('pathway')
-        #pathway_name = pathway_arg.head()
-        print 'pathway_arg=' + pathway_arg
-        ekb_type = _get_ekb_type(pathway_arg)
-        if ekb_type == 1:
-            try:
-                target = _get_target(pathway_arg)
-                pathway_name = target.name
-                pathway_name = trim_hyphen(pathway_name)
-                alias = _get_pathway_alias(pathway_arg)
-                pathway_names = list(set([pathway_name] + alias))
-                #print 'pathway_name=' + pathway_name
-            except Exception as e:
-                reply = make_failure('NO_PATHWAY_NAME')
-                return reply
-        elif ekb_type == 2:
-            pathway_names = _get_pathway_name(pathway_arg)
-            if not len(pathway_names):
-                reply = make_failure('NO_PATHWAY_NAME')
-                return reply    
-        elif ekb_type == 0:
-            reply = make_failure('NO_PATHWAY_NAME')
-            return reply
-
-        try:
-            pathwayId,pathwayName,genelist = \
-                self.tfta.find_genes_from_pathwayName(pathway_names)
-        except PathwayNotFoundException:
-            reply = make_failure('PathwayNotFoundException')
-            return reply
-
-        pathway_list_str = ''
-        for pid in pathwayId:
-            gene_list_str = ''
-            for gene in genelist[pid]:
-                gene_list_str += '(:name %s) ' % gene.encode('ascii', 'ignore')
-
-            gene_list_str = '(' + gene_list_str + ')'
-            pnslash = '"' + pathwayName[pid] +'"'
-            pathway_list_str += '(:name %s :genes %s) ' % (pnslash, gene_list_str)
-
-        reply = KQMLList.from_string(
-            '(SUCCESS :pathways (' + pathway_list_str + '))')
-        return reply
-
     def respond_find_gene_pathway(self, content):
         """
         Response content to FIND-GENE-PATHWAY request
@@ -731,15 +659,16 @@ class TFTA_Module(KQMLModule):
             gene_list_str = '(' + gene_list_str + ')'
             pnslash = '"' + pathwayName[pid] +'"'
             pwlink = '"' + plink[pid] + '"'
-            pathway_list_str += '(:name %s :dblink %s :genes %s) ' % (pnslash, pwlink, gene_list_str)
-            
+            pathway_list_str += '(:name %s :dblink %s :genes %s) ' % (pnslash, pwlink, gene_list_str)            
         reply = KQMLList.from_string(
                         '(SUCCESS :pathways (' + pathway_list_str + '))')
         return reply
 
     def respond_find_pathway_chemical(self, content):
-        """Response content to FIND_PATHWAY_KEYWORD request
-        For a given chemical name, reply the pathways involving the chemical"""
+        """
+        Response content to FIND_PATHWAY_KEYWORD request
+        For a given chemical name, reply the pathways involving the chemical
+        """
         chemical_arg = content.get('keyword')
         try:
             chemical_name = chemical_arg.data
@@ -754,23 +683,22 @@ class TFTA_Module(KQMLModule):
         except PathwayNotFoundException:
             reply = make_failure('PathwayNotFoundException')
             return reply
-
         pathway_list_str = ''
         for pn, dbl in zip(pathwayName,dblink):
             pnslash = '"' + pn +'"'
-            #eidslash= '"' + eid +'"'
             dbl = '"' + dbl +'"'
             pathway_list_str += \
                 '(:name %s :dblink %s) ' % (pnslash, dbl)
-
         reply = KQMLList.from_string(
             '(SUCCESS :pathways (' + pathway_list_str + '))')
         return reply
 
     def respond_find_tf_chemical(self, content):
-        """Response content to FIND_TF_KEYWORD request
+        """
+        Response content to FIND_TF_KEYWORD request
         For a given chemical name, reply the tfs within the pathways
-        involving the chemical"""
+        involving the chemical
+        """
         chemical_arg = content.get('keyword')
         try:
             chemical_name = chemical_arg.data
@@ -779,33 +707,31 @@ class TFTA_Module(KQMLModule):
         except Exception as e:
             reply = make_failure('NO_PATHWAY_NAME')
             return reply
-
         try:
             pathwayId, pathwayName, tflist, dblink = \
                 self.tfta.find_tfs_from_pathwaysWithChemical(chemical_name)
         except PathwayNotFoundException:
             reply = make_failure('PathwayNotFoundException')
             return reply
-
         pathway_list_str = ''
         for pid, pn, dl in zip(pathwayId, pathwayName, dblink):
             tf_list_str = ''
             for tf in tflist[pid]:
                 tf_list_str += '(:name %s) ' % tf.encode('ascii', 'ignore')
-
             tf_list_str = '(' + tf_list_str + ')'
             pnslash = '"' + pn + '"'
             dl = '"' + dl + '"'
             pathway_list_str += '(:name %s :dblink %s :tfs %s) ' % (pnslash, dl, tf_list_str)
-
         reply = KQMLList.from_string(
             '(SUCCESS :pathways (' + pathway_list_str + '))')
         return reply
 
     def respond_find_common_tfs_genes(self, content):
-        """Response content to FIND-COMMON-TF-GENES request
+        """
+        Response content to FIND-COMMON-TF-GENES request
         For a given target list, reply the tfs regulating these genes
-        and the frequency of each TF"""
+        and the frequency of each TF
+        """
         target_arg = content.gets('target')
         try:
             targets = _get_targets(target_arg)
@@ -837,9 +763,11 @@ class TFTA_Module(KQMLModule):
         return reply
 
     def respond_find_common_tfs_genes2(self, content):
-        """Response content to FIND-COMMON-TF-GENES request
+        """
+        Response content to FIND-COMMON-TF-GENES request
         For a given target list, reply the tfs regulating all these genes
-        ,same as find_target_tf"""
+        ,same as find_target_tf
+        """
         target_arg = content.gets('target')
         try:
             targets = _get_targets(target_arg)
@@ -849,7 +777,6 @@ class TFTA_Module(KQMLModule):
         except Exception as e:
             reply = make_failure('NO_TARGET_NAME')
             return reply
-
         try:
             tf_names = self.tfta.find_tfs(target_names)
         except TargetNotFoundException:
@@ -866,9 +793,11 @@ class TFTA_Module(KQMLModule):
         return reply
 
     def respond_find_overlap_targets_tf_genes(self, content):
-        """For given tf list, find the targets which are regulated
+        """
+        For given tf list, find the targets which are regulated
         by all of them; then return the overlap between the targets
-        and the given gene list"""
+        and the given gene list
+        """
         tf_arg = content.gets('tf')
         try:
             tfs = _get_targets(tf_arg)
@@ -878,7 +807,6 @@ class TFTA_Module(KQMLModule):
         except Exception as e:
             reply = make_failure('NO_TF_NAME')
             return reply
-
         target_arg = content.gets('target')
         try:
             targets = _get_targets(target_arg)
@@ -887,8 +815,7 @@ class TFTA_Module(KQMLModule):
                 target_names.append(tg.name)
         except Exception as e:
             reply = make_failure('NO_TARGET_NAME')
-            return reply
-        
+            return reply        
         try:
             overlap_targets = \
                 self.tfta.find_overlap_targets_tfs_genes(tf_names, target_names)
@@ -899,7 +826,6 @@ class TFTA_Module(KQMLModule):
             target_list_str = ''
             for tg in overlap_targets:
                 target_list_str += '(:name %s ) ' % tg.encode('ascii', 'ignore')
-
             reply = KQMLList.from_string(
                 '(SUCCESS :targets (' + target_list_str + '))')
         else:
@@ -932,14 +858,15 @@ class TFTA_Module(KQMLModule):
             #eidslash= '"' + eid +'"'
             dbl = '"' + dbl +'"'
             path_list_str += '(:name %s :dblink %s :count %d) ' % (pnslash, dbl, ct)
-
         reply = KQMLList.from_string(
                '(SUCCESS :pathways (' + path_list_str + '))')
         return reply
 
     def respond_find_common_pathway_genes2(self, content):
-        """response content to FIND-COMMON-PATHWAY-GENES request,same as find-pathway-gene
-        For a given gene list, reply the related pathways information"""
+        """
+        Response content to FIND-COMMON-PATHWAY-GENES request,same as find-pathway-gene
+        For a given gene list, reply the related pathways information
+        """
         gene_arg = content.gets('target')
         try:
             genes = _get_targets(gene_arg)
@@ -949,14 +876,12 @@ class TFTA_Module(KQMLModule):
         except Exception as e:
             reply = make_failure('NO_GENE_NAME')
             return reply
-
         try:
             pathwayId, pathwayName, externalId, source,dblink = \
                 self.tfta.find_pathways_from_genelist(gene_names)
         except PathwayNotFoundException:
             reply = make_failure('PathwayNotFoundException')
             return reply
-
         pathway_list_str = ''
         for pn, eid, src, dbl in zip(pathwayName, externalId, source, dblink):
             pnslash = '"' + pn +'"'
@@ -964,13 +889,14 @@ class TFTA_Module(KQMLModule):
             dbl = '"' + dbl +'"'
             pathway_list_str += \
                 '(:name %s :externalId %s :source %s :dblink %s) ' % (pnslash, eidslash ,src, dbl)
-
         reply = KQMLList.from_string(
             '(SUCCESS :pathways (' + pathway_list_str + '))')
         return reply
 
     def respond_find_common_pathway_genes_keyword(self, content):
-        """response content to FIND-COMMON-PATHWAY-GENES-KEYWORD request"""
+        """
+        Response content to FIND-COMMON-PATHWAY-GENES-KEYWORD request
+        """
         keyword_arg = content.get('keyword')
         try:
             #keyword_name = keyword_arg.head()
@@ -999,10 +925,8 @@ class TFTA_Module(KQMLModule):
         path_list_str = ''
         for pn,eid,src,dbl,ct in zip(pathwayName,externalId,source,dblink,counts):
             pnslash = '"' + pn +'"'
-            #eidslash= '"' + eid +'"'
             dbl = '"' + dbl +'"'
             path_list_str += '(:name %s :dblink %s :count %d) ' % (pnslash, dbl, ct)
-
         reply = KQMLList.from_string(
                '(SUCCESS :pathways (' + path_list_str + '))')
         return reply
@@ -1032,15 +956,13 @@ class TFTA_Module(KQMLModule):
                 self.tfta.Is_pathway_gene(pathway_names, gene_names)
         except PathwayNotFoundException:
             reply = make_failure('PathwayNotFoundException')
-            return reply
-            
+            return reply            
         pathway_list_str = ''
         for pid in pids:
             pn = '"' + pathwayName[pid] + '"'
             dbl = '"' + dblink[pid] + '"'
             pathway_list_str += \
-                '(:name %s :dblink %s) ' % (pn, dbl)
-                
+                '(:name %s :dblink %s) ' % (pn, dbl)                
         reply = KQMLList.from_string(
             '(SUCCESS :pathways (' + pathway_list_str + '))')
         return reply
@@ -1058,8 +980,7 @@ class TFTA_Module(KQMLModule):
             keyword = keyword_name.lower()
         except Exception as e:
             reply = make_failure('NO_GO_NAME')
-            return reply
-        
+            return reply        
         tf_arg = content.gets('tf')
         try:
             tfs = _get_targets(tf_arg)
@@ -1068,8 +989,7 @@ class TFTA_Module(KQMLModule):
                 tf_names.append(tf.name)
         except Exception as e:
             reply = make_failure('NO_TF_NAME')
-            return reply
-            
+            return reply            
         try:
             go_ids,go_types,go_names,go_genes = \
                 self.tfta.find_genes_GO_tf(keyword, tf_names)
@@ -1078,22 +998,18 @@ class TFTA_Module(KQMLModule):
             return reply
         except GONotFoundException:
             reply = make_failure('GOTERM_NOT_FOUND')
-            return reply
-            
+            return reply           
         go_list_str = ''
         for gid,gn in zip(go_ids, go_names):
             gene_list_str = ''
             for gene in go_genes[gid]:
-                gene_list_str += '(:name %s) ' % gene.encode('ascii', 'ignore')
-                
+                gene_list_str += '(:name %s) ' % gene.encode('ascii', 'ignore')              
             gene_list_str = '(' + gene_list_str + ')'
             gn_str = '"' + gn + '"'
             gid_str = '"' + gid + '"'
-            go_list_str += '(:id %s :name %s :genes %s) ' % (gid_str, gn_str, gene_list_str)
-            
+            go_list_str += '(:id %s :name %s :genes %s) ' % (gid_str, gn_str, gene_list_str)            
         reply = KQMLList.from_string(
-            '(SUCCESS :go-terms (' + go_list_str + '))')
-            
+            '(SUCCESS :go-terms (' + go_list_str + '))')        
         return reply
 
     def respond_find_genes_go_tf2(self, content):
@@ -1108,8 +1024,7 @@ class TFTA_Module(KQMLModule):
             #goid = trim_quotes(goid)
         except Exception as e:
             reply = make_failure('NO_GO_ID')
-            return reply
-        
+            return reply       
         tf_arg = content.gets('tf')
         try:
             tfs = _get_targets(tf_arg)
@@ -1118,8 +1033,7 @@ class TFTA_Module(KQMLModule):
                 tf_names.append(tf.name)
         except Exception as e:
             reply = make_failure('NO_TF_NAME')
-            return reply
-            
+            return reply           
         try:
             go_ids,go_types,go_names,go_genes = \
                 self.tfta.find_genes_GO_tf2(goid, tf_names)
@@ -1128,22 +1042,18 @@ class TFTA_Module(KQMLModule):
             return reply
         except GONotFoundException:
             reply = make_failure('GOTERM_NOT_FOUND')
-            return reply
-            
+            return reply            
         go_list_str = ''
         for gid,gn in zip(go_ids, go_names):
             gene_list_str = ''
             for gene in go_genes[gid]:
-                gene_list_str += '(:name %s) ' % gene.encode('ascii', 'ignore')
-                
+                gene_list_str += '(:name %s) ' % gene.encode('ascii', 'ignore')               
             gene_list_str = '(' + gene_list_str + ')'
             gn_str = '"' + gn + '"'
             gid_str = '"' + gid + '"'
-            go_list_str += '(:id %s :name %s :genes %s) ' % (gid_str, gn_str, gene_list_str)
-            
+            go_list_str += '(:id %s :name %s :genes %s) ' % (gid_str, gn_str, gene_list_str)            
         reply = KQMLList.from_string(
-            '(SUCCESS :go-terms (' + go_list_str + '))')
-            
+            '(SUCCESS :go-terms (' + go_list_str + '))')            
         return reply
 
     def respond_is_miRNA_target(self, content):
@@ -1155,16 +1065,14 @@ class TFTA_Module(KQMLModule):
         miRNA_name = _get_miRNA_name(miRNA_arg)
         if not len(miRNA_name):
             reply = make_failure('NO_MIRNA_NAME')
-            return reply
-        
+            return reply       
         target_arg = content.gets('target')
         try:
             target = _get_target(target_arg)
             target_name = target.name
         except Exception as e:
             reply = make_failure('NO_TARGET_NAME')
-            return reply
-        
+            return reply        
         try:
             is_target = self.tfta.Is_miRNA_target(miRNA_name[0], target_name)
         except miRNANotFoundException:
@@ -1172,8 +1080,7 @@ class TFTA_Module(KQMLModule):
             return reply
         except TargetNotFoundException:
             reply = make_failure('TARGET_NOT_FOUND')
-            return reply
-            
+            return reply            
         reply = KQMLList('SUCCESS')
         is_target_str = 'TRUE' if is_target else 'FALSE'
         reply.set('is-miRNA-target', is_target_str)
@@ -1191,24 +1098,20 @@ class TFTA_Module(KQMLModule):
                 target_names.append(target.name)
         except Exception as e:
             reply = make_failure('NO_TARGET_NAME')
-            return reply
-        
+            return reply        
         try:
             miRNA_names = self.tfta.find_miRNA_target(target_names)
         except TargetNotFoundException:
             reply = make_failure('TARGET_NOT_FOUND')
-            return reply
-            
+            return reply            
         if len(miRNA_names):
             miRNA_list_str = ''
             for m in miRNA_names:
-                miRNA_list_str += '(:name %s ) ' % m.encode('ascii', 'ignore')
-                
+                miRNA_list_str += '(:name %s ) ' % m.encode('ascii', 'ignore')                
             reply = KQMLList.from_string(
                 '(SUCCESS :miRNAs (' + miRNA_list_str + '))')
         else:
-            reply = make_failure('NO_MIRNA_FOUND')
-            
+            reply = make_failure('NO_MIRNA_FOUND')            
         return reply
         
     def respond_find_target_miRNA(self, content):
@@ -1255,16 +1158,14 @@ class TFTA_Module(KQMLModule):
         miRNA_name = _get_miRNA_name(miRNA_arg)
         if not len(miRNA_name):
             reply = make_failure('NO_MIRNA_NAME')
-            return reply
-        
+            return reply      
         target_arg = content.gets('target')
         try:
             target = _get_target(target_arg)
             target_name = target.name
         except Exception as e:
             reply = make_failure('NO_TARGET_NAME')
-            return reply
-            
+            return reply           
         try:
             experiments,supportType,pmlink = \
                 self.tfta.find_evidence_miRNA_target(miRNA_name[0], target_name)
@@ -1273,8 +1174,7 @@ class TFTA_Module(KQMLModule):
             return reply
         except TargetNotFoundException:
             reply = make_failure('TARGET_NOT_FOUND')
-            return reply
-            
+            return reply            
         if len(experiments):
             evidence_list_str = ''
             for e,s,l in zip(experiments,supportType,pmlink):
@@ -1286,8 +1186,7 @@ class TFTA_Module(KQMLModule):
             reply = KQMLList.from_string(
                 '(SUCCESS :evidence (' + evidence_list_str + '))')
         else:
-            reply = make_failure('NO_EVIDENCE_FOUND')
-    
+            reply = make_failure('NO_EVIDENCE_FOUND')   
         return reply
 
     def respond_find_target_count_miRNA(self, content):
@@ -1307,8 +1206,7 @@ class TFTA_Module(KQMLModule):
             return reply
         except TargetNotFoundException:
             reply = make_failure('NO_TARGET_FOUND')
-            return reply
-            
+            return reply           
         target_str = ''
         for t,ct in zip(targets,counts):
             ms = mrna[t]
@@ -1330,8 +1228,7 @@ class TFTA_Module(KQMLModule):
         targets = _get_targets(target_arg)
         target_names = []
         for tg in targets:
-            target_names.append(tg.name)
-            
+            target_names.append(tg.name)           
         if not len(target_names):
             reply = make_failure('NO_TARGET_NAME')
             return reply
@@ -1342,8 +1239,7 @@ class TFTA_Module(KQMLModule):
             return reply
         except TargetNotFoundException:
             reply = make_failure('TARGET_NOT_FOUND')
-            return reply
-            
+            return reply            
         mirna_str = ''
         for m,ct in zip(mirnas,counts):
             gs = genes[m]
@@ -1368,9 +1264,6 @@ class TFTA_Module(KQMLModule):
         except Exception as e:
             reply = make_failure('NO_DB_NAME')
             return reply
-        #pathway_arg = content.gets('pathway')
-        #pathway_names = _get_pathway_name(pathway_arg)
-        #pathway_names = trim_word(pathway_names, 'pathway')
         try:
             pathway_arg = content.get('keyword')
             pathway_names = pathway_arg.data
@@ -1379,16 +1272,12 @@ class TFTA_Module(KQMLModule):
         except Exception as e:
             reply = make_failure('NO_PATHWAY_NAME')
             return reply
-        #if not len(pathway_names):
-        #    reply = make_failure('NO_PATHWAY_NAME')
-        #    return reply
         try:
             pathwayId,pathwayName,dblink = \
                     self.tfta.find_pathway_db_keyword(db_name, pathway_names)
         except PathwayNotFoundException:
             reply = make_failure('PathwayNotFoundException')
-            return reply
-            
+            return reply        
         pathway_list_str = ''
         for id in pathwayId:
             pn = '"' + pathwayName[id] + '"'
@@ -1460,7 +1349,6 @@ def _get_pathway_name(target_str):
                 if s and s not in ['PATHWAY', 'SIGNALING-PATHWAY']:
                     pathway_name = pathway_name + [t.get('name')]
         pathway_name = list(set(pathway_name))
-        #print 'pathway_name=' + ','.join(pathway_name)
     except Exception as e:
         try:
             for term in root.findall('TERM'):
@@ -1599,7 +1487,6 @@ def cluster_dict_by_value(d):
     for key, val in d:
         clusters[val].append(key)
     return clusters
-
 
 if __name__ == "__main__":
     TFTA_Module(['-name', 'TFTA'] + sys.argv[1:])
