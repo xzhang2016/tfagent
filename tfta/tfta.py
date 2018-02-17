@@ -125,7 +125,7 @@ class TFTA:
                 tf_names.sort()
         else:
             tf_names = []
-        #print tf_names
+        #print(tf_names)
         return tf_names
 
     def find_tfs_count(self,target_names):
@@ -161,7 +161,7 @@ class TFTA:
             if len(tf_counts):
                 tf_counts = sorted(tf_counts.items(), key=operator.itemgetter(1))
                 tf_counts.reverse()
-                #tf_counts,unique_tfs = zip(*sorted(zip(tf_counts, unique_tfs),reverse=True))
+                #tf_counts, unique_tfs = list(zip(*sorted(zip(tf_counts, unique_tfs),reverse=True)))
             else:
                 raise TFNotFoundException	
         return tf_counts
@@ -268,7 +268,7 @@ class TFTA:
             #sort
             if len(pathwayName):
                 pathwayName,pathwayId,externalId,psource,dblink = \
-                     zip(*sorted(zip(pathwayName,pathwayId,externalId,psource,dblink)))
+                     list(zip(*sorted(zip(pathwayName,pathwayId,externalId,psource,dblink))))
         return pathwayId,pathwayName,externalId,psource,dblink
 
     def find_pathways_from_dbsource_geneName(self, dbsource,gene_names):
@@ -311,7 +311,7 @@ class TFTA:
                 raise PathwayNotFoundException    
             #sort
             pathwayName,pathwayId,externalId,psource,dblink = \
-                    zip(*sorted(zip(pathwayName,pathwayId,externalId,psource,dblink)))
+                    list(zip(*sorted(zip(pathwayName,pathwayId,externalId,psource,dblink))))
         return pathwayId,pathwayName,externalId,psource,dblink
 
     def find_genes_from_pathwayName(self, pathway_names):
@@ -430,7 +430,7 @@ class TFTA:
                     dblink = dblink + [r[1] for r in res]
                 #sort
                 pathwayName,dblink = \
-                    zip(*sorted(zip(pathwayName,dblink)))
+                    list(zip(*sorted(zip(pathwayName,dblink))))
             else:
                 raise PathwayNotFoundException	
         return pathwayName,dblink
@@ -515,7 +515,7 @@ class TFTA:
                 #sort
                 if len(pathwayId):
                     pathwayName1,pathwayId,externalId,source,dblink = \
-                        zip(*sorted(zip(pathwayName1,pathwayId,externalId,source,dblink)))
+                        list(zip(*sorted(zip(pathwayName1,pathwayId,externalId,source,dblink))))
                 else:
                     raise PathwayNotFoundException
             else:
@@ -628,7 +628,7 @@ class TFTA:
                     dblink = dblink + [r[4] for r in res]
                 #sort
                 counts,pathwayName,externalId,source,dblink = \
-                    zip(*sorted(zip(counts,pathwayName,externalId,source,dblink),reverse=True))
+                    list(zip(*sorted(zip(counts,pathwayName,externalId,source,dblink),reverse=True)))
             else:
                 raise PathwayNotFoundException
         return pathwayName,externalId,source,dblink,counts
@@ -675,7 +675,7 @@ class TFTA:
                 #sort
                 if len(counts):
                     counts,pathwayName,externalId,source,dblink = \
-                        zip(*sorted(zip(counts,pathwayName,externalId,source,dblink),reverse=True))
+                        list(zip(*sorted(zip(counts,pathwayName,externalId,source,dblink),reverse=True)))
                 else:
                     raise PathwayNotFoundException
             else:
@@ -708,7 +708,7 @@ class TFTA:
                 target_names.sort()
         else:
             target_names = []
-        #print "target_names=",target_names
+        #print("target_names=%s" % target_names)
         if '--' in target_names:
             target_names.remove('--')
         return target_names
@@ -842,7 +842,7 @@ class TFTA:
             t = (regstr,)
             res = self.tfdb.execute("SELECT * FROM goInfo "
                                     "WHERE goName LIKE ? ", t).fetchall()
-            #print 'res=',res
+            #print('res=%s' % res)
             if not res:
                 raise GONotFoundException
             else:
@@ -1057,7 +1057,7 @@ class TFTA:
                             counts.append(ct)
                     #sort
                     if len(mirna) > 1:
-                        counts,mirna = zip(*sorted(zip(counts,mirna), reverse=True))
+                        counts, mirna = list(zip(*sorted(zip(counts,mirna), reverse=True)))
                 else:
                     mirna = um
                     counts = np.ones(len(um), dtype=np.int)
@@ -1098,7 +1098,7 @@ class TFTA:
                             counts.append(ct)
                     #sort
                     if len(genes) > 1:
-                        counts,genes = zip(*sorted(zip(counts,genes), reverse=True))  
+                        counts, genes = list(zip(*sorted(zip(counts,genes), reverse=True)))
                 else:
                     genes = ug
                     counts = np.ones(len(ug), dtype=np.int)
