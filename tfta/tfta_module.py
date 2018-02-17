@@ -617,8 +617,8 @@ class TFTA_Module(KQMLModule):
             reply = make_failure('PathwayNotFoundException')
             return reply
         pathway_list_str = ''
-        keys = tflist.keys()
-        if len(keys):
+        keys = list(tflist.keys())
+        if keys:
             for key in keys:
                 tf_list_str = ''
                 for tf in tflist[key]:
@@ -749,7 +749,7 @@ class TFTA_Module(KQMLModule):
         #cluster the tfs according to the count
         tf_clustered = cluster_dict_by_value(tf_counts)
         tf_list_str = ''
-        counts = tf_clustered.keys()
+        counts = list(tf_clustered.keys())
         counts.reverse()
         for ct in counts:
             tf_list = ''
@@ -1327,7 +1327,7 @@ def _get_targets(target_arg):
     return agent
 
 def _get_pathway_name(target_str):
-    #print 'In _get_pathway_name'
+    #print('In _get_pathway_name')
     #tree = ET.XML(xml_string, parser=UTB())
     pathway_name = []
     try:
@@ -1409,12 +1409,12 @@ def _get_ekb_type(xml_string):
     1: 'ONT::GENE-PROTEIN'
     2: 'ONT::CHEMICAL'
     """
-    #print 'In _get_ekb_type'
+    #print('In _get_ekb_type')
     ekb_type = 2
     ekb_onto = ''
     #tree = ET.XML(xml_string, parser=UTB())
     root = ET.fromstring(xml_string)
-    #print root
+    #print(root)
     try:
         ekb_onto = root.find('TERM').find('type').text
     except Exception as e:
@@ -1423,7 +1423,7 @@ def _get_ekb_type(xml_string):
    
     if ekb_onto == 'ONT::GENE-PROTEIN':
          ekb_type = 1
-    #print 'ekb_type=' + str(ekb_type)
+    #print('ekb_type=' + str(ekb_type))
     return ekb_type
 
 def _get_pathway_name_list(str1):
