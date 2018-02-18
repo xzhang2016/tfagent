@@ -285,6 +285,7 @@ class TFTA:
             pathlist = []
             for gene_name in gene_names:
                 t = (gene_name,dbsource)
+                print(t)
                 res = self.tfdb.execute("SELECT Id FROM pathwayInfo "
                                    "WHERE Id in (SELECT DISTINCT pathwayID FROM pathway2Genes "
                                    "WHERE genesymbol = ?) AND source LIKE ? ", t).fetchall()

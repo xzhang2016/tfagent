@@ -10,8 +10,8 @@ logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger('TFTA')
 from kqml import KQMLModule, KQMLPerformative, KQMLList
-from tfta import TFTA, TFNotFoundException, TargetNotFoundException, PathwayNotFoundException 
-from tfta import GONotFoundException, miRNANotFoundException, TissueNotFoundException
+from .tfta import TFTA, TFNotFoundException, TargetNotFoundException, PathwayNotFoundException 
+from .tfta import GONotFoundException, miRNANotFoundException, TissueNotFoundException
 from indra.sources.trips.processor import TripsProcessor
 from collections import defaultdict
 
@@ -365,7 +365,7 @@ class TFTA_Module(KQMLModule):
         if len(target_names):
             target_list_str = ''
             for tg in target_names:
-                target_list_str += '(:name %s ) ' % tg.encode('ascii', 'ignore')
+                target_list_str += '(:name %s ) ' % tg
             reply = KQMLList.from_string(
                 '(SUCCESS :targets (' + target_list_str + '))')
         else:
@@ -414,7 +414,7 @@ class TFTA_Module(KQMLModule):
         if len(target_names):
             target_list_str = ''
             for tg in target_names:
-                target_list_str += '(:name %s) ' % tg.encode('ascii', 'ignore')
+                target_list_str += '(:name %s) ' % tg
             reply = KQMLList.from_string(
                 '(SUCCESS :targets (' + target_list_str + '))')
         else:
@@ -443,7 +443,7 @@ class TFTA_Module(KQMLModule):
         if len(tf_names):    
             tf_list_str = ''
             for tf in tf_names:
-                tf_list_str += '(:name %s) ' % tf.encode('ascii', 'ignore')
+                tf_list_str += '(:name %s) ' % tf
             reply = KQMLList.from_string(
                 '(SUCCESS :tfs (' + tf_list_str + '))')
         else:
@@ -486,7 +486,7 @@ class TFTA_Module(KQMLModule):
         if len(tf_names):
             tf_list_str = ''
             for tf in tf_names:
-                tf_list_str += '(:name %s) ' % tf.encode('ascii', 'ignore')
+                tf_list_str += '(:name %s) ' % tf
             reply = KQMLList.from_string(
                 '(SUCCESS :tfs (' + tf_list_str + '))')
         else:
@@ -569,7 +569,7 @@ class TFTA_Module(KQMLModule):
         db_arg = content.get('database')
         try:
             #db_name = db_arg.head()
-            db_name = db_arg.data
+            db_name = db_arg.head()
             #db_name = trim_quotes(db_name)
         except Exception as e:
             reply = make_failure('NO_DB_NAME')
@@ -622,7 +622,7 @@ class TFTA_Module(KQMLModule):
             for key in keys:
                 tf_list_str = ''
                 for tf in tflist[key]:
-                    tf_list_str += '(:name %s) ' % tf.encode('ascii', 'ignore')
+                    tf_list_str += '(:name %s) ' % tf
                 tf_list_str = '(' + tf_list_str + ')'
                 pn = '"' + pathwayName[key] + '"'
                 dl = '"' + dblink[key] + '"'
@@ -655,7 +655,7 @@ class TFTA_Module(KQMLModule):
         for pid in pathwayId:
             gene_list_str = ''
             for gene in genelist[pid]:
-                gene_list_str += '(:name %s) ' % gene.encode('ascii', 'ignore')
+                gene_list_str += '(:name %s) ' % gene
             gene_list_str = '(' + gene_list_str + ')'
             pnslash = '"' + pathwayName[pid] +'"'
             pwlink = '"' + plink[pid] + '"'
@@ -717,7 +717,7 @@ class TFTA_Module(KQMLModule):
         for pid, pn, dl in zip(pathwayId, pathwayName, dblink):
             tf_list_str = ''
             for tf in tflist[pid]:
-                tf_list_str += '(:name %s) ' % tf.encode('ascii', 'ignore')
+                tf_list_str += '(:name %s) ' % tf
             tf_list_str = '(' + tf_list_str + ')'
             pnslash = '"' + pn + '"'
             dl = '"' + dl + '"'
@@ -754,7 +754,7 @@ class TFTA_Module(KQMLModule):
         for ct in counts:
             tf_list = ''
             for tf in tf_clustered[ct]:
-                tf_list += '(:name %s) ' % tf.encode('ascii', 'ignore')
+                tf_list += '(:name %s) ' % tf
             tf_list = ':tf-list (' + tf_list + ')'
             tf_list += ' :count %d' % ct
             tf_list_str += '(' + tf_list + ') '
@@ -785,7 +785,7 @@ class TFTA_Module(KQMLModule):
         if len(tf_names):    
             tf_list_str = ''
             for tf in tf_names:
-                tf_list_str += '(:name %s) ' % tf.encode('ascii', 'ignore')
+                tf_list_str += '(:name %s) ' % tf
             reply = KQMLList.from_string(
                 '(SUCCESS :tfs (' + tf_list_str + '))')
         else:
@@ -825,7 +825,7 @@ class TFTA_Module(KQMLModule):
         if len(overlap_targets):
             target_list_str = ''
             for tg in overlap_targets:
-                target_list_str += '(:name %s ) ' % tg.encode('ascii', 'ignore')
+                target_list_str += '(:name %s ) ' % tg
             reply = KQMLList.from_string(
                 '(SUCCESS :targets (' + target_list_str + '))')
         else:
@@ -1003,7 +1003,7 @@ class TFTA_Module(KQMLModule):
         for gid,gn in zip(go_ids, go_names):
             gene_list_str = ''
             for gene in go_genes[gid]:
-                gene_list_str += '(:name %s) ' % gene.encode('ascii', 'ignore')              
+                gene_list_str += '(:name %s) ' % gene
             gene_list_str = '(' + gene_list_str + ')'
             gn_str = '"' + gn + '"'
             gid_str = '"' + gid + '"'
@@ -1047,7 +1047,7 @@ class TFTA_Module(KQMLModule):
         for gid,gn in zip(go_ids, go_names):
             gene_list_str = ''
             for gene in go_genes[gid]:
-                gene_list_str += '(:name %s) ' % gene.encode('ascii', 'ignore')               
+                gene_list_str += '(:name %s) ' % gene
             gene_list_str = '(' + gene_list_str + ')'
             gn_str = '"' + gn + '"'
             gid_str = '"' + gid + '"'
@@ -1107,7 +1107,7 @@ class TFTA_Module(KQMLModule):
         if len(miRNA_names):
             miRNA_list_str = ''
             for m in miRNA_names:
-                miRNA_list_str += '(:name %s ) ' % m.encode('ascii', 'ignore')                
+                miRNA_list_str += '(:name %s ) ' % m
             reply = KQMLList.from_string(
                 '(SUCCESS :miRNAs (' + miRNA_list_str + '))')
         else:
@@ -1133,7 +1133,7 @@ class TFTA_Module(KQMLModule):
                     clari_mirna = self.tfta.get_similar_miRNAs(miRNA_names[0])
                     c_str = ''
                     for c in clari_mirna:
-                        c_str += '(:name %s) ' % c.encode('ascii', 'ignore')
+                        c_str += '(:name %s) ' % c
                     reply = make_failure_clarification('MIRNA_NOT_FOUND', '(' + c_str + ')')
                     return reply
                 except miRNANotFoundException:
@@ -1142,7 +1142,7 @@ class TFTA_Module(KQMLModule):
         if len(target_names):
             target_list_str = ''
             for tg in target_names:
-                target_list_str += '(:name %s ) ' % tg.encode('ascii', 'ignore')   
+                target_list_str += '(:name %s ) ' % tg
             reply = KQMLList.from_string(
                 '(SUCCESS :targets (' + target_list_str + '))')
         else:
@@ -1212,7 +1212,7 @@ class TFTA_Module(KQMLModule):
             ms = mrna[t]
             m_str = ''
             for m in ms:
-                m_str += '(:name %s)' % m.encode('ascii', 'ignore')
+                m_str += '(:name %s)' % m
             m_str = '(' + m_str + ')'
             target_str += '(:name %s :count %d :miRNA %s) ' % (t, ct, m_str)
         reply = KQMLList.from_string(
@@ -1245,7 +1245,7 @@ class TFTA_Module(KQMLModule):
             gs = genes[m]
             g_str = ''
             for g in gs:
-                g_str += '(:name %s) ' % g.encode('ascii', 'ignore')
+                g_str += '(:name %s) ' % g
             g_str = '(' + g_str + ')'
             mirna_str += '(:name %s :count %d :targets %s) ' % (m, ct, g_str)
         reply = KQMLList.from_string(
@@ -1306,7 +1306,7 @@ class TFTA_Module(KQMLModule):
             return reply    
         tissue_str = ''
         for ts in tissues:
-            tissue_str += '(:name %s) ' % ts.encode('ascii', 'ignore')
+            tissue_str += '(:name %s) ' % ts
         reply = KQMLList.from_string(
             '(SUCCESS :tissue (' + tissue_str + '))')
         return reply
