@@ -1335,7 +1335,7 @@ def _get_pathway_name(target_str):
         f = open('TFTA-test-pathway-ekb.txt', 'a')
         f.write(target_str + '\n')
         f.write('===============================\n')
-        f.close()
+        
         root = ET.fromstring(target_str)
     except Exception as e:
         return pathway_name
@@ -1360,6 +1360,9 @@ def _get_pathway_name(target_str):
             pathway_name = list(set(pathway_name))
         except Exception as e:
             return pathway_name
+    f.write('Extracted pathwayName=' + ';;;'.join(pathway_name) + '\n')
+    f.write('===============================\n')
+    f.close()
     return pathway_name
 
 def _get_miRNA_name(xml_string):
