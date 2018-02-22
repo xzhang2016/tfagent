@@ -329,7 +329,10 @@ class TFTA:
             pids = []
             plink = []
             for pathway_name in pathway_names:
-                regstr = '%' + pathway_name + ' %'
+                if pathway_name == 'immune system':
+                    regstr = '%' + pathway_name + '%'
+                else:
+                    regstr = '%' + pathway_name + ' %'
                 t = (regstr,)
                 #get pathwayId
                 res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
