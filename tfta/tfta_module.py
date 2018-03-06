@@ -51,7 +51,19 @@ class TFTA_Module(KQMLModule):
         response. A reply message is then sent back.
         """
         task_str = content.head().upper()
-        if task_str == 'IS-TF-TARGET':
+        if task_str == 'IS-REGULATION':
+            reply_content = self.respond_is_regulation(content)
+        elif task_str == 'FIND-TF':
+            reply_content = self.respond_find_tf(content)
+        elif task_str == 'FIND-PATHWAY':
+            reply_content = self.respond_find_pathway(content)
+        elif task_str == 'FIND-TARGET':
+            reply_content = self.respond_find_target(content)
+        elif task_str == 'FIND-GENE':
+            reply_content = self.respond_find_gene(content)
+        elif task_str == 'FIND-MIRNA':
+            reply_content = self.respond_find_miRNA(content)
+        elif task_str == 'IS-TF-TARGET':
             reply_content = self.respond_is_tf_target(content)
         elif task_str == 'FIND-TF-TARGET':
             reply_content = self.respond_find_tf_targets(content)
@@ -105,18 +117,6 @@ class TFTA_Module(KQMLModule):
             reply_content = self.respond_find_pathway_db_keyword(content)
         elif task_str == 'FIND-TISSUE-GENE':
             reply_content = self.respond_find_tissue_gene(content)
-        elif task_str == 'IS-REGULATION':
-            reply_content = self.respond_is_regulation(content)
-        elif task_str == 'FIND-TF':
-            reply_content = self.respond_find_tf(content)
-        elif task_str == 'FIND-PATHWAY':
-            reply_content = self.respond_find_pathway(content)
-        elif task_str == 'FIND-TARGET':
-            reply_content = self.respond_find_target(content)
-        elif task_str == 'FIND-GENE':
-            reply_content = self.respond_find_gene(content)
-        elif task_str == 'FIND-MIRNA':
-            reply_content = self.respond_find_miRNA(content)
         else:
             self.error_reply(msg, 'unknown request task ' + task_str)
             return
