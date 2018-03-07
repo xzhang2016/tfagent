@@ -1225,10 +1225,11 @@ class TFTA_Module(KQMLModule):
         Respond to FIND-MIRNA-COUNT-GENE request
         """
         target_arg = content.gets('target')
-        if target_arg is None:
+        try:
+            targets = _get_targets(target_arg)
+        except Exception as e:
             reply = make_failure('NO_TARGET_NAME')
             return reply
-        targets = _get_targets(target_arg)
         target_names = []
         for tg in targets:
             target_names.append(tg.name)           
