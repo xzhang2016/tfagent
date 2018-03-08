@@ -532,8 +532,6 @@ class TFTA_Module(KQMLModule):
         try:
             #keyword_name = keyword_arg.head()
             keyword_name = keyword_arg.data
-            #keyword = trim_quotes(keyword_name)
-            #keyword = trim_word([keyword], 'pathway')
         except Exception as e:
             reply = make_failure('NO_KEYWORD')
             return reply        
@@ -672,8 +670,6 @@ class TFTA_Module(KQMLModule):
         chemical_arg = content.get('keyword')
         try:
             chemical_name = chemical_arg.data
-            #chemical_name = trim_quotes(chemical_name)
-            #chemical_name = trim_word([chemical_name], 'pathway')
         except Exception as e:
             reply = make_failure('NO_PATHWAY_NAME')
             return reply
@@ -702,8 +698,6 @@ class TFTA_Module(KQMLModule):
         chemical_arg = content.get('keyword')
         try:
             chemical_name = chemical_arg.data
-            #chemical_name = trim_quotes(chemical_name)
-            #chemical_name = trim_word([chemical_name], 'pathway') 
         except Exception as e:
             reply = make_failure('NO_PATHWAY_NAME')
             return reply
@@ -760,36 +754,6 @@ class TFTA_Module(KQMLModule):
             tf_list_str += '(' + tf_list + ') '
         reply = KQMLList.from_string(
             '(SUCCESS :tfs (' + tf_list_str + '))')
-        return reply
-
-    def respond_find_common_tfs_genes2(self, content):
-        """
-        Response content to FIND-COMMON-TF-GENES request
-        For a given target list, reply the tfs regulating all these genes
-        ,same as find_target_tf
-        """
-        target_arg = content.gets('target')
-        try:
-            targets = _get_targets(target_arg)
-            target_names = []
-            for target in targets:
-                target_names.append(target.name)
-        except Exception as e:
-            reply = make_failure('NO_TARGET_NAME')
-            return reply
-        try:
-            tf_names = self.tfta.find_tfs(target_names)
-        except TargetNotFoundException:
-            reply = make_failure('TARGET_NOT_FOUND')
-            return reply
-        if len(tf_names):    
-            tf_list_str = ''
-            for tf in tf_names:
-                tf_list_str += '(:name %s) ' % tf
-            reply = KQMLList.from_string(
-                '(SUCCESS :tfs (' + tf_list_str + '))')
-        else:
-            reply = make_failure('NO_TF_FOUND')
         return reply
 
     def respond_find_overlap_targets_tf_genes(self, content):
@@ -862,37 +826,6 @@ class TFTA_Module(KQMLModule):
                '(SUCCESS :pathways (' + path_list_str + '))')
         return reply
 
-    def respond_find_common_pathway_genes2(self, content):
-        """
-        Response content to FIND-COMMON-PATHWAY-GENES request,same as find-pathway-gene
-        For a given gene list, reply the related pathways information
-        """
-        gene_arg = content.gets('target')
-        try:
-            genes = _get_targets(gene_arg)
-            gene_names = []
-            for gene in genes:
-                gene_names.append(gene.name)
-        except Exception as e:
-            reply = make_failure('NO_GENE_NAME')
-            return reply
-        try:
-            pathwayId, pathwayName, externalId, source,dblink = \
-                self.tfta.find_pathways_from_genelist(gene_names)
-        except PathwayNotFoundException:
-            reply = make_failure('PathwayNotFoundException')
-            return reply
-        pathway_list_str = ''
-        for pn, eid, src, dbl in zip(pathwayName, externalId, source, dblink):
-            pnslash = '"' + pn +'"'
-            eidslash= '"' + eid +'"'
-            dbl = '"' + dbl +'"'
-            pathway_list_str += \
-                '(:name %s :externalId %s :source %s :dblink %s) ' % (pnslash, eidslash ,src, dbl)
-        reply = KQMLList.from_string(
-            '(SUCCESS :pathways (' + pathway_list_str + '))')
-        return reply
-
     def respond_find_common_pathway_genes_keyword(self, content):
         """
         Response content to FIND-COMMON-PATHWAY-GENES-KEYWORD request
@@ -901,8 +834,6 @@ class TFTA_Module(KQMLModule):
         try:
             #keyword_name = keyword_arg.head()
             keyword_name = keyword_arg.data
-            #keyword = trim_quotes(keyword_name)
-            #keyword = trim_word([keyword_name], 'pathway')
         except Exception as e:
             reply = make_failure('NO_KEYWORD')
             return reply
@@ -1218,8 +1149,7 @@ class TFTA_Module(KQMLModule):
         reply = KQMLList.from_string(
             '(SUCCESS :targets (' + target_str + '))')
         return reply
-        
-         
+             
     def respond_find_miRNA_count_target(self, content):
         """
         Respond to FIND-MIRNA-COUNT-GENE request
@@ -1227,13 +1157,10 @@ class TFTA_Module(KQMLModule):
         target_arg = content.gets('target')
         try:
             targets = _get_targets(target_arg)
+            target_names = []
+            for tg in targets:
+                target_names.append(tg.name)
         except Exception as e:
-            reply = make_failure('NO_TARGET_NAME')
-            return reply
-        target_names = []
-        for tg in targets:
-            target_names.append(tg.name)           
-        if not len(target_names):
             reply = make_failure('NO_TARGET_NAME')
             return reply
         try:
@@ -1264,7 +1191,6 @@ class TFTA_Module(KQMLModule):
             db_arg = content.get('database')
             #db_name = db_arg.head()
             db_name = db_arg.data
-            #db_name = trim_quotes(db_name)
         except Exception as e:
             reply = make_failure('NO_DB_NAME')
             return reply
@@ -1324,11 +1250,10 @@ def _get_target(target_str):
 
 def _get_targets(target_arg):
     agent = []
-    if target_arg:
-        tp = TripsProcessor(target_arg)
-        for term in tp.tree.findall('TERM'):
-            term_id = term.attrib['id']
-            agent.append(tp._get_agent_by_id(term_id, None))
+    tp = TripsProcessor(target_arg)
+    for term in tp.tree.findall('TERM'):
+        term_id = term.attrib['id']
+        agent.append(tp._get_agent_by_id(term_id, None))
     return agent
 
 def _get_pathway_name(target_str):
@@ -1402,45 +1327,6 @@ def _get_miRNA_name(xml_string):
         except Exception as e:
             return miRNA_names
     return miRNA_names
-
-def _get_pathway_alias(target_str):
-    root = ET.fromstring(target_str)
-    try:
-        alias = root.find('TERM').find('name').text
-        alias = [alias]
-    except Exception as e:
-        alias = []
-    return alias
-    
-def _get_ekb_type(xml_string):
-    """
-    1: 'ONT::GENE-PROTEIN'
-    2: 'ONT::CHEMICAL'
-    """
-    #print('In _get_ekb_type')
-    ekb_type = 2
-    ekb_onto = ''
-    #tree = ET.XML(xml_string, parser=UTB())
-    root = ET.fromstring(xml_string)
-    #print(root)
-    try:
-        ekb_onto = root.find('TERM').find('type').text
-    except Exception as e:
-        ekb_type = 0
-        return ekb_type
-   
-    if ekb_onto == 'ONT::GENE-PROTEIN':
-         ekb_type = 1
-    #print('ekb_type=' + str(ekb_type))
-    return ekb_type
-
-def _get_pathway_name_list(str1):
-    #consider gene ailas like 'il-12' to 'il12'
-    if not len(filter(str.isspace, str1)) and len(filter(str.isdigit, str1)):
-        s = [str1, '-'.join([filter(str.isalpha, str1),filter(str.isdigit, str1)])]
-    else:
-        s = [str1]
-    return s
 
 def make_failure(reason):
     msg = KQMLList('FAILURE')
