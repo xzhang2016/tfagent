@@ -46,4 +46,26 @@ class TestFindTfTarget2(_TestFindTfTarget):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('targets')) == 28
 
+#test IS-TF-TARGET
+class _TestIsTfTarget(_IntegrationTest):
+    def __init__(self, *args):
+        super(_TestIsTfTarget, self).__init__(TFTA_Module)
+    
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = ekb_kstring_from_text(self.tf)
+        target = ekb_kstring_from_text(self.target)
+        content = KQMLList('IS-TF-TARGET')
+        content.set('tf', tf)
+        content.set('target', target)
+        return get_request(content), content
+
+#Does STAT3 regulate the c-fos gene?
+class TestIsTfTarget1(_TestIsTfTarget):
+    tf = 'STAT3'
+    target = 'c-fos'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.gets('result') == 'TRUE', output
+        
 #
