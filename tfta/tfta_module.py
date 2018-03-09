@@ -14,36 +14,31 @@ from .tfta import TFTA, TFNotFoundException, TargetNotFoundException, PathwayNot
 from .tfta import GONotFoundException, miRNANotFoundException, TissueNotFoundException
 from indra.sources.trips.processor import TripsProcessor
 from collections import defaultdict
+from bioagents import Bioagent
 
-class TFTA_Module(KQMLModule):
+class TFTA_Module(Bioagent):
     """TFTA module is used to receive and decode messages and send
     responses from and to other agents in the system."""
-    def __init__(self, argv):
-        # Call the constructor of KQMLModule
-        super(TFTA_Module, self).__init__(argv)
+    name = 'TFTA'
+    tasks = ['IS-TF-TARGET', 'FIND-TF-TARGET', 'FIND-TARGET-TF',
+             'FIND-PATHWAY-GENE', 'FIND-PATHWAY-DB-GENE',
+             'FIND-TF-PATHWAY', 'FIND-GENE-PATHWAY',
+             'FIND-PATHWAY-KEYWORD', 'FIND-TF-KEYWORD',
+             'FIND-COMMON-TF-GENES', 'FIND-OVERLAP-TARGETS-TF-GENES',
+             'FIND-COMMON-PATHWAY-GENES','FIND-PATHWAY-GENE-KEYWORD',
+             'FIND-COMMON-PATHWAY-GENES-KEYWORD', 'FIND-GENE-GO-TF',
+             'IS-TF-TARGET-TISSUE', 'FIND-TF-TARGET-TISSUE',
+             'FIND-TARGET-TF-TISSUE', 'IS-PATHWAY-GENE','IS-MIRNA-TARGET', 
+             'FIND-MIRNA-TARGET', 'FIND-TARGET-MIRNA', 'FIND-EVIDENCE-MIRNA-TARGET',
+             'FIND-MIRNA-COUNT-GENE','FIND-GENE-COUNT-MIRNA',
+             'FIND-PATHWAY-DB-KEYWORD', 'FIND-TISSUE-GENE', 'IS-REGULATION',
+             'FIND-TF', 'FIND-PATHWAY', 'FIND-TARGET', 'FIND-GENE', 'FIND-MIRNA']
+
+    def __init__(self, **kwargs):
         #Instantiate a singleton TFTA agent
         self.tfta = TFTA()
-        self.tasks = ['IS-TF-TARGET', 'FIND-TF-TARGET', 'FIND-TARGET-TF',
-                      'FIND-PATHWAY-GENE', 'FIND-PATHWAY-DB-GENE',
-                      'FIND-TF-PATHWAY', 'FIND-GENE-PATHWAY',
-                      'FIND-PATHWAY-KEYWORD', 'FIND-TF-KEYWORD',
-                      'FIND-COMMON-TF-GENES', 'FIND-OVERLAP-TARGETS-TF-GENES',
-                      'FIND-COMMON-PATHWAY-GENES','FIND-PATHWAY-GENE-KEYWORD',
-                      'FIND-COMMON-PATHWAY-GENES-KEYWORD', 'FIND-GENE-GO-TF',
-                      'IS-TF-TARGET-TISSUE', 'FIND-TF-TARGET-TISSUE',
-                      'FIND-TARGET-TF-TISSUE', 'IS-PATHWAY-GENE','IS-MIRNA-TARGET', 
-                      'FIND-MIRNA-TARGET', 'FIND-TARGET-MIRNA', 'FIND-EVIDENCE-MIRNA-TARGET',
-                      'FIND-MIRNA-COUNT-GENE','FIND-GENE-COUNT-MIRNA',
-                      'FIND-PATHWAY-DB-KEYWORD', 'FIND-TISSUE-GENE', 'IS-REGULATION',
-                      'FIND-TF', 'FIND-PATHWAY', 'FIND-TARGET', 'FIND-GENE', 'FIND-MIRNA']
-
-        #Send subscribe messages
-        for task in self.tasks:
-            self.subscribe_request(task)
-        #send ready message
-        self.ready()
-        #super(TFTA_Module, self).start()
-        self.start()
+        # Call the constructor of KQMLModule
+        super(TFTA_Module, self).__init__(**kwargs)
 
     def receive_request(self, msg, content):
         """If a "request" message is received, decode the task and
@@ -1381,7 +1376,4 @@ def cluster_dict_by_value(d):
     for key, val in d:
         clusters[val].append(key)
     return clusters
-
-if __name__ == "__main__":
-    TFTA_Module(['-name', 'TFTA'] + sys.argv[1:])
 
