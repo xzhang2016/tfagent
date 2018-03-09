@@ -1377,3 +1377,5 @@ def cluster_dict_by_value(d):
         clusters[val].append(key)
     return clusters
 
+if __name__ == "__main__":
+    TFTA_Module(argv=sys.argv[1:])
