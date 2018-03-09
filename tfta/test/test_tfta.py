@@ -68,4 +68,41 @@ class TestIsTfTarget1(_TestIsTfTarget):
         assert output.head() == 'SUCCESS', output
         assert output.gets('result') == 'TRUE', output
         
+#TEST FIND-TARGET-TF
+class _TestFindTargetTf(_IntegrationTest):
+    def __init__(self, *args):
+        super(_TestFindTargetTf, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text(self.target)
+        content = KQMLList('FIND-TARGET-TF')
+        content.set('target', target)
+        return get_request(content), content
+
+    def check_response_to_message(self, output):
+        # Here we check the details of the response and make sure everything
+        # we are looking for is in the output
+        # First, we check that the response is a success
+        assert output.head() == 'SUCCESS', output
+        # Then we check that we got the expected number of target
+        assert len(output.get('targets')) == 116
+        # We could do further checks here to see if a given expected target
+        # shows up in the response, etc.
+
+#Which transcription factors regulate frizzled8?
+class TestFindTargetTf1(_TestFindTargetTf):
+    target = 'frizzled8'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('tfs')) == 2, output
+
+#What regulates SMURF2?
+#What are the regulators of SMURF2?
+class TestFindTfTarget2(_TestFindTfTarget):
+    target = 'SMURF2'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('tfs')) == 3
+    
 #
