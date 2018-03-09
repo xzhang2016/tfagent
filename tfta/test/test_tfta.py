@@ -105,4 +105,30 @@ class TestFindTfTarget2(_TestFindTfTarget):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('tfs')) == 3
     
+#TEST FIND-PATHWAY-GENE
+class _TestFindPathwayGene(_IntegrationTest):
+    def __init__(self, *args):
+        super(_TestFindPathwayGene, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        gene = ekb_kstring_from_text(self.gene)
+        content = KQMLList('FIND-PATHWAY-GENE')
+        content.set('gene', gene)
+        return get_request(content), content
+        
+#What pathways involve SRF?
+class TestFindPathwayGene1(_TestFindPathwayGene):
+    gene = 'SRF'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 27, output
+        
+#What pathways involve kras and elk1?
+class TestFindPathwayGene2(_TestFindPathwayGene):
+    gene = 'KRAS, ELK1'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 23, output
+
 #
