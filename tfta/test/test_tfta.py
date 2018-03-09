@@ -131,4 +131,34 @@ class TestFindPathwayGene2(_TestFindPathwayGene):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('pathways')) == 23, output
 
+#TEST FIND-PATHWAY-DB-GENE
+class _TestFindPathwayDBGene(_IntegrationTest):
+    def __init__(self, *args):
+        super(_TestFindPathwayDBGene, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        gene = ekb_kstring_from_text(self.gene)
+        db = self.database
+        content = KQMLList('FIND-PATHWAY-DB-GENE')
+        content.set('gene', gene)
+        content.set('database', db)
+        return get_request(content), content
+        
+#Which Reactome pathways utilize SRF?
+class TestFindPathwayDBGene1(_TestFindPathwayDBGene):
+    gene = 'SRF'
+    database = 'Reactome'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 4, output
+        
+#Which KEGG pathways utilize SRF?
+class TestFindPathwayDBGene1(_TestFindPathwayDBGene):
+    gene = 'SRF'
+    database = 'KEGG'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 4, output
+
 #
