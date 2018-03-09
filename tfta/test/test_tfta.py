@@ -26,3 +26,18 @@ class TestFindTfTarget1(_IntegrationTest):
         assert len(output.get('targets')) == 115
         # We could do further checks here to see if a given expected target
         # shows up in the response, etc.
+
+
+class TestFindTfTarget2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTfTarget2, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        tf = ekb_kstring_from_text('ELK1, SMAD2')
+        content = KQMLList('FIND-TF-TARGET')
+        content.set('tf', tf)
+        return get_request(content), content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('targets')) == 28
