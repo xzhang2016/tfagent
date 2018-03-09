@@ -6,13 +6,14 @@ from bioagents.tests.util import ekb_from_text, ekb_kstring_from_text, \
 from bioagents.tests.integration import _IntegrationTest, _FailureTest
 
 
-class TestFindTfTarget1(_IntegrationTest):
+#FIND-TF-TARGET
+class _TestFindTfTarget(_IntegrationTest):
     def __init__(self, *args):
-        super(TestFindTfTarget1, self).__init__(TFTA_Module)
+        super(_TestFindTfTarget, self).__init__(TFTA_Module)
 
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
-        tf = ekb_kstring_from_text('SMAD2')
+        tf = ekb_kstring_from_text(self.tf)
         content = KQMLList('FIND-TF-TARGET')
         content.set('tf', tf)
         return get_request(content), content
@@ -28,16 +29,21 @@ class TestFindTfTarget1(_IntegrationTest):
         # shows up in the response, etc.
 
 
-class TestFindTfTarget2(_IntegrationTest):
-    def __init__(self, *args):
-        super(TestFindTfTarget2, self).__init__(TFTA_Module)
+#what genes are regulated by smad2?
+class TestFindTfTarget1(_TestFindTfTarget):
+    tf = 'SMAD2'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('targets')) == 115, output
 
-    def create_message(self):
-        tf = ekb_kstring_from_text('ELK1, SMAD2')
-        content = KQMLList('FIND-TF-TARGET')
-        content.set('tf', tf)
-        return get_request(content), content
+#What genes does stat3 regulate?
 
+
+#what genes are regulated by elk1 and smad2?
+class TestFindTfTarget2(_TestFindTfTarget):
+    tf = 'ELK1, SMAD2'
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('targets')) == 28
+
+#
