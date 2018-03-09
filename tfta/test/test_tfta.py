@@ -161,4 +161,23 @@ class TestFindPathwayDBGene1(_TestFindPathwayDBGene):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('pathways')) == 4, output
 
+#TEST FIND-TF-PATHWAY
+class _TestFindTfPathway(_IntegrationTest):
+    def __init__(self, *args):
+        super(_TestFindTfPathway, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        pathway = ekb_kstring_from_text(self.pathway)
+        content = KQMLList('FIND-TF-PATHWAY')
+        content.set('pathway', pathway)
+        return get_request(content), content
+        
+#Which transcription factors are in the MAPK signaling pathway?
+class TestFindTfPathway1(_TestFindTfPathway):
+    pathway = 'MAPK'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 17, output
+        
 #
