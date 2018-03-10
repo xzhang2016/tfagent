@@ -180,4 +180,37 @@ class TestFindTfPathway1(_TestFindTfPathway):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('pathways')) == 17, output
         
+#TEST FIND-GENE-PATHWAY
+class _TestFindGenePathway(_IntegrationTest):
+    def __init__(self, *args):
+        super(_TestFindGenePathway, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        pathway = ekb_kstring_from_text(self.pathway)
+        content = KQMLList('FIND-GENE-PATHWAY')
+        content.set('pathway', pathway)
+        return get_request(content), content
+        
+#What genes are in the MAPK signaling pathway?
+class TestFindGenePathway1(_TestFindGenePathway):
+    pathway = 'MAPK'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 23, output
+        
+#What genes are involved in the il-12 pathway?
+class TestFindGenePathway2(_TestFindGenePathway):
+    pathway = 'il-12'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 3, output
+        
+#What genes are in the immune system pathway?
+class TestFindGenePathway3(_TestFindGenePathway):
+    pathway = 'immune system'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 4, output
+        
 #
