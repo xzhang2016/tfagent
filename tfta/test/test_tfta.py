@@ -333,4 +333,26 @@ class TestFindPathwayGeneKeyword2(_TestFindPathwayGeneKeyword):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('pathways')) == 1, output
 
+#TEST FIND-COMMON-PATHWAY-GENES-KEYWORD
+class _TestFindCommonPathwayGeneKeyword(_IntegrationTest):
+    def __init__(self, *args):
+        super(_TestFindCommonPathwayGeneKeyword, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        gene = ekb_kstring_from_text(self.gene)
+        keyword = self.keyword
+        content = KQMLList('FIND-COMMON-PATHWAY-GENES-KEYWORD')
+        content.set('gene', gene)
+        content.set('keyword', keyword)
+        return get_request(content), content
+        
+#Which immune pathways are shared by STAT3, SOCS3, and CREB5 genes?
+class TestFindPathwayGeneKeyword1(_TestFindPathwayGeneKeyword):
+    gene = 'STAT3, SOCS3, CREB5'
+    keyword = 'immune'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 2, output
+        
 #
