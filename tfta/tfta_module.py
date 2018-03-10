@@ -456,6 +456,11 @@ class TFTA_Module(Bioagent):
             target_names = []
             for target in targets:
                 target_names.append(target.name)
+            #debug: tract the target_names
+            f = open('targets-find-tfs-tissue.txt', 'a')
+            f.write(';'.join(target_names))
+            f.write('\n' + '================' + '\n')
+            f.close()
         except Exception as e:
             reply = make_failure('NO_TARGET_NAME')
             return reply
