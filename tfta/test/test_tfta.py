@@ -251,4 +251,30 @@ class TestFindTfKeyword1(_TestFindTfKeyword):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('pathways')) == 4, output
         
+#TEST FIND-COMMON-TF-GENES
+class _TestFindCommonTfGene(_IntegrationTest):
+    def __init__(self, *args):
+        super(_TestFindCommonTfGene, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text(self.target)
+        content = KQMLList('FIND-PATHWAY-GENE')
+        content.set('target', target)
+        return get_request(content), content
+        
+#What transcription factors are shared by the SRF, HRAS, and elk1 genes?
+class TestFindCommmonTfGene1(_TestFindCommonTfGene):
+    target = 'SRF, HRAS, elk1'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('tfs')) == 54, output
+        
+#What transcription factors are in common to the STAT3, SOCS3, and CREB5 genes?
+class TestFindCommonTfGene1(_TestFindCommonTfGene):
+    target = 'STAT3, SOCS3, CREB5'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('tfs')) == 94, output
+        
 #
