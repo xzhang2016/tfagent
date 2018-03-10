@@ -39,6 +39,11 @@ class TFTA_Module(Bioagent):
         self.tfta = TFTA()
         # Call the constructor of KQMLModule
         super(TFTA_Module, self).__init__(**kwargs)
+        
+    def receive_tell(self, msg, content):
+        #handle tell broadcast
+        #now just do nothing here, but to avoid error message senting out
+        pass
 
     def receive_request(self, msg, content):
         """If a "request" message is received, decode the task and
