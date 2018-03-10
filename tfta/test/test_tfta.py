@@ -420,4 +420,40 @@ class TestIsTfTargetTissue3(_TestIsTfTargetTissue):
         assert output.head() == 'SUCCESS', output
         assert output.gets('result') == 'TRUE', output
 
+#TEST FIND-TF-TARGET-TISSUE
+class _TestFindTfTargetTissue(_IntegrationTest):
+    def __init__(self, *args):
+        super(_TestFindTfTargetTissue, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = ekb_kstring_from_text(self.tf)
+        tissue = self.tissue
+        content = KQMLList('FIND-TF-TARGET-TISSUE')
+        content.set('tf', tf)
+        content.set('tissue', tissue)
+        return get_request(content), content
+
+    def check_response_to_message(self, output):
+        # First, we check that the response is a success
+        assert output.head() == 'SUCCESS', output
+        # Then we check that we got the expected number of target
+        assert len(output.get('targets')) == 115
+
+#What genes does stat3 regulate in lung?
+class TestFindTfTargetTissue1(_TestFindTfTargetTissue):
+    tf = 'STAT3'
+    tissue = 'lung'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('targets')) == 57, output
+
+#What genes does stat3 regulate in liver?
+class TestFindTfTargetTissue2(_TestFindTfTargetTissue):
+    tf = 'STAT3'
+    tissue = 'live'
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert len(output.get('reason')) == 'NO_TARGET_FOUND', output
+
 #
