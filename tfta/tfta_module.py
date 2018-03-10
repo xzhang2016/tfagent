@@ -1252,8 +1252,9 @@ def _get_targets(target_arg):
     agent = []
     tp = TripsProcessor(target_arg)
     for term in tp.tree.findall('TERM'):
-        term_id = term.attrib['id']
-        agent.append(tp._get_agent_by_id(term_id, None))
+        if term.find('type').text == 'ONT::GENE-PROTEIN'
+            term_id = term.attrib['id']
+            agent.append(tp._get_agent_by_id(term_id, None))
     return agent
 
 def _get_pathway_name(target_str):
