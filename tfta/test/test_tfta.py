@@ -213,4 +213,23 @@ class TestFindGenePathway3(_TestFindGenePathway):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('pathways')) == 4, output
         
+#TEST FIND-PATHWAY-KEYWORD
+class _TestFindPathwayKeyword(_IntegrationTest):
+    def __init__(self, *args):
+        super(_TestFindPathwayKeyword, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        keyword = ekb_kstring_from_text(self.keyword)
+        content = KQMLList('FIND-PATHWAY-KEYWORD')
+        content.set('keyword', keyword)
+        return get_request(content), content
+
+#What pathways involve calcium?
+class TestFindPathwayKeyword1(_TestFindPathwayKeyword):
+    keyword = 'calcium'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 10, output
+        
 #
