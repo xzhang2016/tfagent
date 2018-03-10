@@ -99,7 +99,7 @@ class TestFindTargetTf1(_TestFindTargetTf):
 
 #What regulates SMURF2?
 #What are the regulators of SMURF2?
-class TestFindTfTarget2(_TestFindTfTarget):
+class TestFindTargetTf2(_TestFindTargetTf):
     target = 'SMURF2'
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
@@ -154,7 +154,7 @@ class TestFindPathwayDBGene1(_TestFindPathwayDBGene):
         assert len(output.get('pathways')) == 4, output
         
 #Which KEGG pathways utilize SRF?
-class TestFindPathwayDBGene1(_TestFindPathwayDBGene):
+class TestFindPathwayDBGene2(_TestFindPathwayDBGene):
     gene = 'SRF'
     database = 'KEGG'
     def check_response_to_message(self, output):
@@ -271,7 +271,7 @@ class TestFindCommmonTfGene1(_TestFindCommonTfGene):
         assert len(output.get('tfs')) == 54, output
         
 #What transcription factors are in common to the STAT3, SOCS3, and CREB5 genes?
-class TestFindCommonTfGene1(_TestFindCommonTfGene):
+class TestFindCommonTfGene2(_TestFindCommonTfGene):
     target = 'STAT3, SOCS3, CREB5'
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
