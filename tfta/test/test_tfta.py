@@ -377,4 +377,47 @@ class TestIsPathwayGene1(_TestIsPathwayGene):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('pathways')) == 3, output
         
+#TEST IS-TF-TARGET-TISSUE
+class _TestIsTfTargetTissue(_IntegrationTest):
+    def __init__(self, *args):
+        super(_TestIsTfTargetTissue, self).__init__(TFTA_Module)
+    
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = ekb_kstring_from_text(self.tf)
+        target = ekb_kstring_from_text(self.target)
+        tissue = self.tissue
+        content = KQMLList('IS-TF-TARGET-TISSUE')
+        content.set('tf', tf)
+        content.set('target', target)
+        content.set('tissue', tissue)
+        return get_request(content), content
+
+#Does STAT3 regulate the JUN gene in the lung?
+class TestIsTfTargetTissue1(_TestIsTfTargetTissue):
+    tf = 'STAT3'
+    target = 'JUN'
+    tissue = 'lung'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.gets('result') == 'TRUE', output
+        
+#Does STAT3 regulate the c-fos gene in the liver?
+class TestIsTfTargetTissue2(_TestIsTfTargetTissue):
+    tf = 'STAT3'
+    target = 'c-fos'
+    tissue = 'liver'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.gets('result') == 'FALSE', output
+
+#Does STAT3 regulate the cfos gene in the lung?
+class TestIsTfTargetTissue3(_TestIsTfTargetTissue):
+    tf = 'STAT3'
+    target = 'c-fos'
+    tissue = 'lung'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.gets('result') == 'TRUE', output
+
 #
