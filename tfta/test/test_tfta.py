@@ -355,4 +355,26 @@ class TestFindPathwayGeneKeyword1(_TestFindPathwayGeneKeyword):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('pathways')) == 2, output
         
+#TEST IS-PATHWAY-GENE
+class _TestIsPathwayGene(_IntegrationTest):
+    def __init__(self, *args):
+        super(_TestIsPathwayGene, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        gene = ekb_kstring_from_text(self.gene)
+        pathway = ekb_kstring_from_text(self.pathway)
+        content = KQMLList('IS-PATHWAY-GENE')
+        content.set('gene', gene)
+        content.set('pathway', pathway)
+        return get_request(content), content
+        
+#Does the mTor pathway utilize SGK1?
+class TestIsPathwayGene1(_TestIsPathwayGene):
+    gene = 'SGK1'
+    pathway = 'mTor pathway'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 3, output
+        
 #
