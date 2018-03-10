@@ -296,4 +296,34 @@ class TestFindCommonPathwayGene1(_TestFindCommonPathwayGene):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('pathways')) == 86, output
         
+#TEST FIND-PATHWAY-GENE-KEYWORD
+class _TestFindPathwayGeneKeyword(_IntegrationTest):
+    def __init__(self, *args):
+        super(_TestFindPathwayGeneKeyword, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        gene = ekb_kstring_from_text(self.gene)
+        keyword = self.keyword
+        content = KQMLList('FIND-PATHWAY-GENE-KEYWORD')
+        content.set('gene', gene)
+        content.set('keyword', keyword)
+        return get_request(content), content
+        
+#What immune pathways involve kras and elk1?
+class TestFindPathwayGeneKeyword1(_TestFindPathwayGeneKeyword):
+    gene = 'kras, elk1'
+    keyword = 'immune'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 2, output
+        
+#What immune pathways involve tap1 and jak1?
+class TestFindPathwayGeneKeyword2(_TestFindPathwayGeneKeyword):
+    gene = 'tap1, jak1'
+    keyword = 'immune'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 1, output
+
 #
