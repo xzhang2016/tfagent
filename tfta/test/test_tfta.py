@@ -296,6 +296,13 @@ class TestFindCommonPathwayGene1(_TestFindCommonPathwayGene):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('pathways')) == 86, output
         
+#What signaling pathways are shared by STAT3 and SRF?
+class TestFindCommonPathwayGene2(_TestFindCommonPathwayGene):
+    target = 'STAT3, SRF'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 6, output
+
 #TEST FIND-PATHWAY-GENE-KEYWORD
 class _TestFindPathwayGeneKeyword(_IntegrationTest):
     def __init__(self, *args):
