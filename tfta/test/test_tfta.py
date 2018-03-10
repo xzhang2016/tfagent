@@ -259,7 +259,7 @@ class _TestFindCommonTfGene(_IntegrationTest):
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
         target = ekb_kstring_from_text(self.target)
-        content = KQMLList('FIND-PATHWAY-GENE')
+        content = KQMLList('FIND-COMMON-TF-GENES')
         content.set('target', target)
         return get_request(content), content
         
@@ -276,5 +276,24 @@ class TestFindCommonTfGene2(_TestFindCommonTfGene):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('tfs')) == 94, output
+        
+#TEST FIND-COMMON-PATHWAY-GENES
+class _TestFindCommonPathwayGene(_IntegrationTest):
+    def __init__(self, *args):
+        super(_TestFindCommonPathwayGene, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text(self.target)
+        content = KQMLList('FIND-COMMON-PATHWAY-GENES')
+        content.set('target', target)
+        return get_request(content), content
+        
+#Which pathways are shared by STAT3, SOCS3, IFNG, FOXO3, and CREB5 genes?
+class TestFindCommonPathwayGene1(_TestFindCommonPathwayGene):
+    target = 'STAT3, SOCS3, IFNG, FOXO3, CREB5'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 86, output
         
 #
