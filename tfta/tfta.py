@@ -42,7 +42,7 @@ class TFTA:
     def __init__(self):
         logger.debug('Using resource folder: %s' % _resource_dir)
         #Load TF_target database
-        tf_db_file = _resource_dir + 'TF_target_v6_1.db'
+        tf_db_file = _resource_dir + 'TF_target_v6_2.db'
         if os.path.isfile(tf_db_file):
             self.tfdb = sqlite3.connect(tf_db_file, check_same_thread=False)
             logger.info('Loaded TF-target database')
@@ -713,8 +713,8 @@ class TFTA:
         else:
             target_names = []
         #print("target_names=%s" % target_names)
-        if '--' in target_names:
-            target_names.remove('--')
+        #if '--' in target_names:
+            #target_names.remove('--')
         return target_names
 
     def find_overlap_targets_tfs_genes(self,tf_names,target_names):
