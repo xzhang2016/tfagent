@@ -456,4 +456,48 @@ class TestFindTfTargetTissue2(_TestFindTfTargetTissue):
         assert output.head() == 'FAILURE', output
         assert len(output.get('reason')) == 'NO_TARGET_FOUND', output
 
+#TEST FIND-TARGET-TF-TISSUE
+class _TestFindTargetTfTissue(_IntegrationTest):
+    def __init__(self, *args):
+        super(_TestFindTargetTfTissue, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text(self.target)
+        tissue = self.tissue
+        content = KQMLList('FIND-TARGET-TF-TISSUE')
+        content.set('target', target)
+        content.set('tissue', tissue)
+        return get_request(content), content
+
+    def check_response_to_message(self, output):
+        # First, we check that the response is a success
+        assert output.head() == 'SUCCESS', output
+        # Then we check that we got the expected number of target
+        assert len(output.get('tfs')) == 116
+
+#Which transcription factors regulate frizzled8 in liver?
+class TestFindTargetTfTissue1(_TestFindTargetTfTissue):
+    target = 'frizzled8'
+    tissue = 'liver'
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert len(output.get('reason')) == 'TARGET_NOT_FOUND', output
+
+#Which transcription factors regulate mapk14 in bladder?
+class TestFindTargetTfTissue2(_TestFindTargetTfTissue):
+    target = 'mapk14'
+    tissue = 'bladder'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('tfs')) == 5, output
+
+#Which transcription factors regulate ELK1 in brain?
+class TestFindTargetTfTissue3(_TestFindTargetTfTissue):
+    target = 'ELK1'
+    tissue = 'brain'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('tfs')) == 55, output
+        
 #
