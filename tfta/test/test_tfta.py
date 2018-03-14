@@ -500,4 +500,26 @@ class TestFindTargetTfTissue3(_TestFindTargetTfTissue):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('tfs')) == 55, output
         
+#TEST IS-MIRNA-TARGET
+class _TestIsMirnaTarget(_IntegrationTest):
+    def __init__(self, *args):
+        super(_TestIsMirnaTarget, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text(self.target)
+        mirna = ekb_kstring_from_text(self.mirna)
+        content = KQMLList('IS-MIRNA-TARGET')
+        content.set('target', target)
+        content.set('miRNA', mirna)
+        return get_request(content), content
+        
+#Does miR-20b-5p target STAT3?
+class TestIsMirnaTarget1(_TestIsMirnaTarget):
+    target = 'STAT3'
+    mirna = 'miR-20b-5p'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('is-miRNA-target')) == 'TRUE', output
+        
 #
