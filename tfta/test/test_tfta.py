@@ -520,6 +520,32 @@ class TestIsMirnaTarget1(_TestIsMirnaTarget):
     mirna = 'miR-20b-5p'
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('is-miRNA-target')) == 'TRUE', output
+        assert output.get('is-miRNA-target') == 'TRUE', output
+        
+#TEST FIND-TARGET-MIRNA
+class _TestFindTargetMirna(_IntegrationTest):
+    def __init__(self, *args):
+        super(_TestFindTargetMirna, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = ekb_kstring_from_text(self.mirna)
+        content = KQMLList('FIND-TARGET-MIRNA')
+        content.set('miRNA', mirna)
+        return get_request(content), content
+        
+#What genes does miR-20b-5p target?
+class TestFindTargetMirna1(_TestFindTargetMirna):
+    mirna = 'miR-20b-5p'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('targets')) == 917, output
+
+#What genes are regulated by miR-20b-5p and MIR-29B-1-5P? (Don't work)
+class TestFindTargetMirna2(_TestFindTargetMirna):
+    mirna = 'miR-20b-5p, MIR-29B-1-5P'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('targets')) == 12, output
         
 #
