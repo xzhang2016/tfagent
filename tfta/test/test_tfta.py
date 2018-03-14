@@ -567,4 +567,42 @@ class TestFindMirnaCountGene1(_TestFindMirnaCountGene):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('miRNAs')) == 23, output
 
+#TEST FIND-PATHWAY-DB-KEYWORD
+class _TestFindPathwayDbKeyword(_IntegrationTest):
+    def __init__(self, *args):
+        super(_TestFindPathwayDbKeyword, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        database = self.database
+        keyword = self.keyword
+        content = KQMLList('FIND-PATHWAY-DB-KEYWORD')
+        content.set('database', database)
+        content.set('keyword', keyword)
+        return get_request(content), content
+        
+#What KEGG pathways involve immune signaling?
+class TestFindPathwayDbKeyword1(_TestFindPathwayDbKeyword):
+    database = 'KEGG'
+    keyword = 'immune'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 2, output
+        
+#What KEGG pathways involve immune system? (doesn't work, BA cannot send message to TFTA)
+class TestFindPathwayDbKeyword2(_TestFindPathwayDbKeyword):
+    database = 'KEGG'
+    keyword = 'immune system'
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason') == 'PathwayNotFoundException', output
+        
+# What reactome pathways involve immune system?
+class TestFindPathwayDbKeyword3(_TestFindPathwayDbKeyword):
+    database = 'reactome'
+    keyword = 'immune system'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 4, output
+        
 #
