@@ -548,4 +548,23 @@ class TestFindTargetMirna2(_TestFindTargetMirna):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('targets')) == 12, output
         
+#TEST FIND-MIRNA-COUNT-GENE
+class _TestFindMirnaCountGene(_IntegrationTest):
+    def __init__(self, *args):
+        super(_TestFindMirnaCountGene, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text(self.target)
+        content = KQMLList('FIND-MIRNA-COUNT-GENE')
+        content.set('target', target)
+        return get_request(content), content
+        
+#What miRNAs most frequently regulate EGFR, SRF, STAT3, JAK2, and SMAD3?
+class TestFindMirnaCountGene1(_TestFindMirnaCountGene):
+    target = 'EGFR, SRF, STAT3, JAK2, SMAD3'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('miRNAs')) == 23, output
+
 #
