@@ -1123,7 +1123,7 @@ class TFTA:
             pids = []
             plink = []
             for pathway_name in pathway_names:
-                regstr = '%' + pathway_name + ' %'
+                regstr = '%' + pathway_name + '%'
                 t = (regstr, db_source)
                 res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
                                         "WHERE pathwayName LIKE ? AND source LIKE ?", t).fetchall()
