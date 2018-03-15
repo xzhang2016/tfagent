@@ -1203,6 +1203,7 @@ class TFTA_Module(Bioagent):
             pathway_arg = content.get('keyword')
             pathway_names = pathway_arg.data
             pathway_names = pathway_names.replace('W::', '')
+            pathway_names = pathway_names.replace('-', ' ')
             pathway_names = trim_word([pathway_names], 'pathway')
         except Exception as e:
             reply = make_failure('NO_PATHWAY_NAME')
