@@ -548,6 +548,25 @@ class TestFindTargetMirna2(_TestFindTargetMirna):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('targets')) == 12, output
         
+#TEST FIND-MIRNA-TARGET
+class _TestFindMirnaTarget(_IntegrationTest):
+    def __init__(self, *args):
+        super(_TestFindMirnaTarget, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text(self.target)
+        content = KQMLList('FIND-MIRNA-TARGET')
+        content.set('target', target)
+        return get_request(content), content
+        
+#What microRNAs target STAT3?
+class TestFindMirnaTarget1(_TestFindMirnaTarget):
+    target = 'STAT3'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('miRNAs')) == 80, output
+
 #TEST FIND-MIRNA-COUNT-GENE
 class _TestFindMirnaCountGene(_IntegrationTest):
     def __init__(self, *args):
