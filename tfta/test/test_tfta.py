@@ -454,7 +454,7 @@ class TestFindTfTargetTissue2(_TestFindTfTargetTissue):
     tissue = 'live'
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
-        assert len(output.get('reason')) == 'NO_TARGET_FOUND', output
+        assert output.get('reason') == 'NO_TARGET_FOUND', output
 
 #TEST FIND-TARGET-TF-TISSUE
 class _TestFindTargetTfTissue(_IntegrationTest):
@@ -482,7 +482,7 @@ class TestFindTargetTfTissue1(_TestFindTargetTfTissue):
     tissue = 'liver'
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
-        assert len(output.get('reason')) == 'TARGET_NOT_FOUND', output
+        assert output.get('reason') == 'TARGET_NOT_FOUND', output
 
 #Which transcription factors regulate mapk14 in bladder?
 class TestFindTargetTfTissue2(_TestFindTargetTfTissue):
@@ -566,6 +566,32 @@ class TestFindMirnaCountGene1(_TestFindMirnaCountGene):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('miRNAs')) == 23, output
+        
+#FIND-GENE-COUNT-MIRNA
+class _TestFindGeneCountMirna(_IntegrationTest):
+    def __init__(self, *args):
+        super(_TestFindGeneCountMirna, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = ekb_kstring_from_text(self.mirna)
+        content = KQMLList('FIND-GENE-COUNT-MIRNA')
+        content.set('miRNA', mirna)
+        return get_request(content), content
+        
+#What genes are most frequently regulated by miR-335-5p, miR-155-5p, miR-145-5p, and miR-20a-5p?
+class TestFindGeneCountMirna1(_TestFindGeneCountMirna):
+    mirna = 'miR-335-5p, miR-155-5p, miR-145-5p, miR-20a-5p'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('targets')) == 380, output
+
+#What genes are most frequently regulated by miR-335-5p, miR-155-5p and miR-145-5p?
+class TestFindGeneCountMirna2(_TestFindGeneCountMirna):
+    mirna = 'miR-335-5p, miR-155-5p, miR-145-5p'
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('targets')) == 151, output
 
 #TEST FIND-PATHWAY-DB-KEYWORD
 class _TestFindPathwayDbKeyword(_IntegrationTest):
