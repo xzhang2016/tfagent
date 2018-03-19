@@ -102,5 +102,160 @@ class TestIsRegulation3(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         assert output.get('is-miRNA-target') == 'TRUE', output
         
-#
+#TEST FIND-TF
+#Which transcription factors regulate frizzled8? (subtask: find-target-tf)
+class TestFindTf1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTf1, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('frizzled8')
+        content = KQMLList('FIND-TF')
+        content.set('target', target)
+        return get_request(content), content
     
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('tfs')) == 2, output
+        
+##What regulates SMURF2?
+#What are the regulators of SMURF2? (subtask: find-target-tf)
+class TestFindTf11(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTf11, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('SMURF2')
+        content = KQMLList('FIND-TF')
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('tfs')) == 3
+        
+#Which transcription factors regulate frizzled8 in liver? (subtask: find-target-tf-tissue)
+class TestFindTf2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTf2, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('frizzled8')
+        tissue = 'liver'
+        content = KQMLList('FIND-TF')
+        content.set('target', target)
+        content.set('tissue', tissue)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason') == 'TARGET_NOT_FOUND', output
+        
+#Which transcription factors regulate mapk14 in bladder? (subtask: find-target-tf-tissue)
+class TestFindTf21(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTf21, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('mapk14')
+        tissue = 'bladder'
+        content = KQMLList('FIND-TF')
+        content.set('target', target)
+        content.set('tissue', tissue)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('tfs')) == 5, output
+        
+#Which transcription factors regulate ELK1 in brain? (subtask: find-target-tf-tissue)
+class TestFindTf22(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTf22, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('ELK1')
+        tissue = 'brain'
+        content = KQMLList('FIND-TF')
+        content.set('target', target)
+        content.set('tissue', tissue)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('tfs')) == 55, output
+        
+#What transcription factors are in the calcium regulated pathways? (subtask: find-tf-keyword)
+class TestFindTf3(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTf3, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        keyword = 'calcium'
+        content = KQMLList('FIND-TF')
+        content.set('keyword', keyword)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 4, output
+        
+#What transcription factors are shared by the SRF, HRAS, and elk1 genes? (subtask: find-common-tf-genes)
+class TestFindTf4(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTf4, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('SRF, HRAS, elk1')
+        count = 'count'
+        content = KQMLList('FIND-TF')
+        content.set('target', target)
+        content.set('count', count)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('tfs')) == 54, output
+        
+#What transcription factors are in common to the STAT3, SOCS3, and CREB5 genes?
+class TestFindTf41(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTf41, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('STAT3, SOCS3, CREB5')
+        count = 'count'
+        content = KQMLList('FIND-TF')
+        content.set('target', target)
+        content.set('count', count)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('tfs')) == 94, output
+        
+#Which transcription factors are in the MAPK signaling pathway? (subtask: find-tf-pathway)
+class TestFindTf5(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTf5, self).__init__(TFTA_Module)
+    
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        pathway = ekb_kstring_from_text('MAPK')
+        content = KQMLList('FIND-TF')
+        content.set('pathway', pathway)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 17, output
+        
+#
