@@ -86,7 +86,7 @@ class _TestFindTargetTf(_IntegrationTest):
         # First, we check that the response is a success
         assert output.head() == 'SUCCESS', output
         # Then we check that we got the expected number of target
-        assert len(output.get('targets')) == 116
+        assert len(output.get('tfs')) == 116
         # We could do further checks here to see if a given expected target
         # shows up in the response, etc.
 
@@ -348,7 +348,7 @@ class _TestFindCommonPathwayGeneKeyword(_IntegrationTest):
         return get_request(content), content
         
 #Which immune pathways are shared by STAT3, SOCS3, and CREB5 genes?
-class TestFindPathwayGeneKeyword1(_TestFindPathwayGeneKeyword):
+class TestFindCommonPathwayGeneKeyword1(_TestFindCommonPathwayGeneKeyword):
     gene = 'STAT3, SOCS3, CREB5'
     keyword = 'immune'
     def check_response_to_message(self, output):
@@ -589,7 +589,7 @@ class TestFindPathwayDbKeyword1(_TestFindPathwayDbKeyword):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('pathways')) == 2, output
         
-#What KEGG pathways involve immune system? (doesn't work, BA cannot send message to TFTA)
+#What KEGG pathways involve immune system?
 class TestFindPathwayDbKeyword2(_TestFindPathwayDbKeyword):
     database = 'KEGG'
     keyword = 'immune system'
@@ -606,3 +606,5 @@ class TestFindPathwayDbKeyword3(_TestFindPathwayDbKeyword):
         assert len(output.get('pathways')) == 4, output
         
 #
+if __name__ == '__main__':
+    TestFindTfTarget1().run_test()
