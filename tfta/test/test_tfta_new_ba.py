@@ -683,9 +683,43 @@ class TestFindPathway82(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('pathways')) == 4, output
         
-#
-
+#TEST FIND-MIRNA
+#What microRNAs target STAT3? (subtask: FIND-MIRNA-TARGET)
+class TestFindMirna1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindMirna1, self).__init__(TFTA_Module)
         
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('STAT3')
+        content = KQMLList('FIND-MIRNA')
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('miRNAs')) == 80, output
+        
+#What miRNAs most frequently regulate EGFR, SRF, STAT3, JAK2, and SMAD3?
+#(subtask: FIND-MIRNA-COUNT-GENE)
+class TestFindMirna2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindMirna2, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('EGFR, SRF, STAT3, JAK2, SMAD3')
+        count = 'count'
+        content = KQMLList('FIND-MIRNA')
+        content.set('target', target)
+        content.set('count', count)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('miRNAs')) == 23, output
+        
+
 if __name__ == '__main__':
     TestIsRegulation1().run_test()
 
