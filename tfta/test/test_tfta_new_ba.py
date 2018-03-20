@@ -258,4 +258,131 @@ class TestFindTf5(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('pathways')) == 17, output
         
+#TEST FIND-TARGET
+#what genes are regulated by smad2? (subtask: find-tf-target)
+class TestFindTarget1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTarget1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = ekb_kstring_from_text('smad2')
+        content = KQMLList('FIND-TARGET')
+        content.set('tf', tf)
+        return get_request(content), content
+        
+     def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('targets')) == 115, output
+        
+#what genes are regulated by elk1 and smad2? (subtask: find-tf-target)
+class TestFindTarget11(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTarget11, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = ekb_kstring_from_text('ELK1, SMAD2')
+        content = KQMLList('FIND-TARGET')
+        content.set('tf', tf)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('targets')) == 28
+        
+#What genes does stat3 regulate in lung? (subtask: find-tf-target-tissue)
+class TestFindTarget2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTarget2, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = ekb_kstring_from_text('STAT3')
+        tissue = 'lung'
+        content = KQMLList('FIND-TARGET')
+        content.set('tf', tf)
+        content.set('tissue', tissue)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('targets')) == 57, output
+        
+#hat genes does stat3 regulate in liver? (subtask: find-tf-target-tissue)
+class TestFindTarget21(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTarget21, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = ekb_kstring_from_text('STAT3')
+        tissue = 'liver'
+        content = KQMLList('FIND-TARGET')
+        content.set('tf', tf)
+        content.set('tissue', tissue)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason') == 'NO_TARGET_FOUND', output
+        
+#What genes does miR-20b-5p target? (subtask: find-target-mirna)
+class TestFindTarget3(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTarget3, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = ekb_kstring_from_text('miR-20b-5p')
+        content = KQMLList('FIND-TARGET')
+        content.set('miRNA', mirna)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('targets')) == 917, output
+        
+#What genes are most frequently regulated by miR-335-5p, miR-155-5p, miR-145-5p, and miR-20a-5p?
+#(subtask: FIND-GENE-COUNT-MIRNA)
+class TestFindTarget4(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTarget4, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = ekb_kstring_from_text('miR-335-5p, miR-155-5p, miR-145-5p, miR-20a-5p')
+        count = 'count'
+        content = KQMLList('FIND-TARGET')
+        content.set('miRNA', mirna)
+        content.set('count', count)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('targets')) == 380, output
+        
+#What genes are most frequently regulated by miR-335-5p, miR-155-5p and miR-145-5p?
+#(subtask: FIND-GENE-COUNT-MIRNA)
+class TestFindTarget41(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTarget41, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = ekb_kstring_from_text('miR-335-5p, miR-155-5p, miR-145-5p')
+        count = 'count'
+        content = KQMLList('FIND-TARGET')
+        content.set('miRNA', mirna)
+        content.set('count', count)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('targets')) == 151, output
+        
 #
+        
+if __name__ == '__main__':
+    TestIsRegulation1().run_test()
+
