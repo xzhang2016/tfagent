@@ -381,6 +381,57 @@ class TestFindTarget41(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('targets')) == 151, output
         
+#TEST FIND-GENE
+#What genes are in the MAPK signaling pathway? (subtask: find-gene-pathway)
+class TestFindGene1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindGene1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        pathway = ekb_kstring_from_text('MAPK')
+        content = KQMLList('FIND-GENE')
+        content.set('pathway', pathway)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 23, output
+        
+#What genes are involved in the il-12 pathway?
+class TestFindGene11(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindGene11, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        pathway = ekb_kstring_from_text('il-12')
+        content = KQMLList('FIND-GENE')
+        content.set('pathway', pathway)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 3, output
+        
+#What genes are in the immune system pathway?
+class TestFindGene12(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindGene12, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        pathway = ekb_kstring_from_text('immune system')
+        content = KQMLList('FIND-GENE')
+        content.set('pathway', pathway)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 4, output
+        
+#not implemented for find-gene-go-tf
+
 #
         
 if __name__ == '__main__':
