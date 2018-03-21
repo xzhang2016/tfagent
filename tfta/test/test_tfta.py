@@ -402,8 +402,10 @@ class _TestIsTfTargetTissue(_IntegrationTest):
 
 #Does STAT3 regulate the JUN gene in the lung?
 class TestIsTfTargetTissue1(_TestIsTfTargetTissue):
+    #since trips parser cannot recognize JUN as a gene, so instead try
+    #c-JUN or JUN gene
     tf = 'STAT3'
-    target = 'JUN'
+    target = 'c-JUN'
     tissue = 'lung'
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
