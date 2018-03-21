@@ -1055,8 +1055,12 @@ class TFTA_Module(Bioagent):
         Respond to FIND-TARGET-MIRNA request
         """
         #assume the miRNA is also in EKB XML format
-        miRNA_arg = content.gets('miRNA')
-        miRNA_names = _get_miRNA_name(miRNA_arg)
+        try:
+            miRNA_arg = content.gets('miRNA')
+            miRNA_names = _get_miRNA_name(miRNA_arg)
+        except Exception as e:
+            reply = make_failure('NO_MIRNA_NAME')
+            return reply
         if not len(miRNA_names):
             reply = make_failure('NO_MIRNA_NAME')
             return reply 
@@ -1074,7 +1078,10 @@ class TFTA_Module(Bioagent):
                     return reply
                 except miRNANotFoundException:
                     reply = make_failure('NO_SIMILAR_MIRNA')
-                    return reply  
+                    return reply
+            else:
+                reply = make_failure('MIRNA_NOT_FOUND')
+                return reply
         if len(target_names):
             target_list_str = ''
             for tg in target_names:
@@ -1319,7 +1326,7 @@ def _get_miRNA_name(xml_string):
                         s1 = dt.get('matched-name')
                         #matched_pattern = re.findall('([0-9]+-)[a-zA-Z]', s1)
                         s1 = rtrim_hyphen(s1)
-                        miRNA_names.append(s1)
+                        miRNA_names.append(s1.upper())
         miRNA_names = list(set(miRNA_names))
     except Exception as e:
         try:
