@@ -659,6 +659,16 @@ class TestFindPathwayDbKeyword3(_TestFindPathwayDbKeyword):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('pathways')) == 4, output
         
-#
+##test wrong message sent to TFTA
+#What genes are regulated by elk1 and srf?
+#This query should send query to find-target for new ba or find-tf-target, but now we take 
+#it as a find-target-mirna query
+class TestFindTargetMirna2(_TestFindTargetMirna):
+    mirna = 'ELK1, SRF'
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason') == 'MIRNA_NOT_FOUND', output
+
+
 if __name__ == '__main__':
     TestFindTfTarget1().run_test()
