@@ -252,7 +252,7 @@ class TFTA_Module(Bioagent):
         target_arg = content.gets('target')
         count_arg = content.get('count')
         if all([target_arg,count_arg]):
-            reply = self.respond_find_target_count_miRNA(content)
+            reply = self.respond_find_miRNA_count_target(content)
         elif target_arg:
             reply = self.respond_find_miRNA_target(content)
         else:
