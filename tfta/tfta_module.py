@@ -1337,7 +1337,7 @@ def _get_miRNA_name(xml_string):
                     #change miRNA name to standard name
                     #matched_pattern = re.findall('([0-9]+-)[a-zA-Z]', s1)
                     s1 = rtrim_hyphen(s1)
-                    miRNA_names.append(s1)
+                    miRNA_names.append(s1.upper())
             miRNA_names = list(set(miRNA_names))
         except Exception as e:
             return miRNA_names
