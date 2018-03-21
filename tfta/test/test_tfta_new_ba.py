@@ -204,7 +204,7 @@ class TestFindTf3(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('pathways')) == 4, output
+        assert len(output.get('pathways')) == 6, output
         
 #What transcription factors are shared by the SRF, HRAS, and elk1 genes? (subtask: find-common-tf-genes)
 class TestFindTf4(_IntegrationTest):
@@ -222,7 +222,7 @@ class TestFindTf4(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('tfs')) == 54, output
+        assert len(output.get('tfs')) == 2, output
         
 #What transcription factors are in common to the STAT3, SOCS3, and CREB5 genes?
 class TestFindTf41(_IntegrationTest):
@@ -240,7 +240,7 @@ class TestFindTf41(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('tfs')) == 94, output
+        assert len(output.get('tfs')) == 2, output
         
 #Which transcription factors are in the MAPK signaling pathway? (subtask: find-tf-pathway)
 class TestFindTf5(_IntegrationTest):
@@ -271,7 +271,7 @@ class TestFindTarget1(_IntegrationTest):
         content.set('tf', tf)
         return get_request(content), content
         
-     def check_response_to_message(self, output):
+    def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('targets')) == 115, output
         
@@ -534,7 +534,7 @@ class TestFindPathway4(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('pathways')) == 86, output
+        assert len(output.get('pathways')) == 69, output
         
 #What signaling pathways are shared by STAT3 and SRF? (subtask: find-common-pathway-genes)
 class TestFindPathway41(_IntegrationTest):
