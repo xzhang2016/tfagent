@@ -31,8 +31,10 @@ class TestIsRegulation2(_IntegrationTest):
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
+        #since trips parser cannot recognize JUN as a gene, so instead try
+        #c-JUN or JUN gene
         tf = ekb_kstring_from_text('STAT3')
-        target = ekb_kstring_from_text('JUN')
+        target = ekb_kstring_from_text('c-JUN')
         tissue = 'lung'
         content = KQMLList('IS-REGULATION')
         content.set('tf', tf)
