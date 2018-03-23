@@ -63,14 +63,26 @@ class TFTA_Module(Bioagent):
             reply_content = self.respond_find_gene(content)
         elif task_str == 'FIND-MIRNA':
             reply_content = self.respond_find_miRNA(content)
+        elif task_str == 'FIND-COMMON-PATHWAY-GENES':
+            reply_content = self.respond_find_common_pathway_genes2keyword(content)
+        elif task_str == 'FIND-MIRNA-COUNT-GENE':
+            reply_content = self.respond_find_miRNA_count_target(content)
+        elif task_str == 'FIND-GENE-COUNT-MIRNA':
+            reply_content = self.respond_find_target_count_miRNA(content)
+        elif task_str == 'IS-MIRNA-TARGET':
+            reply_content = self.respond_is_miRNA_target(content)
+        elif task_str == 'FIND-COMMON-TF-GENES':
+            reply_content = self.respond_find_common_tfs_genes(content)
+        elif task_str == 'IS-PATHWAY-GENE':
+            reply_content = self.respond_is_pathway_gene(content)
+        elif task_str == 'FIND-TARGET-MIRNA':
+            reply_content = self.respond_find_target_miRNA(content)
         elif task_str == 'IS-TF-TARGET':
             reply_content = self.respond_is_tf_target(content)
         elif task_str == 'FIND-TF-TARGET':
             reply_content = self.respond_find_tf_targets(content)
         elif task_str == 'FIND-TARGET-TF':
             reply_content = self.respond_find_target_tfs(content)
-        elif task_str == 'IS-PATHWAY-GENE':
-            reply_content = self.respond_is_pathway_gene(content)
         elif task_str == 'FIND-PATHWAY-GENE':
             reply_content = self.respond_find_pathway_gene(content)
         elif task_str == 'FIND-PATHWAY-GENE-KEYWORD':
@@ -85,12 +97,8 @@ class TFTA_Module(Bioagent):
             reply_content = self.respond_find_pathway_chemical(content)
         elif task_str == 'FIND-TF-KEYWORD':
             reply_content = self.respond_find_tf_chemical(content)
-        elif task_str == 'FIND-COMMON-TF-GENES':
-            reply_content = self.respond_find_common_tfs_genes(content)
         elif task_str == 'FIND-OVERLAP-TARGETS-TF-GENES':
             reply_content = self.respond_find_overlap_targets_tf_genes(content)
-        elif task_str == 'FIND-COMMON-PATHWAY-GENES':
-            reply_content = self.respond_find_common_pathway_genes(content)
         elif task_str == 'FIND-COMMON-PATHWAY-GENES-KEYWORD':
             reply_content = self.respond_find_common_pathway_genes_keyword(content)
         elif task_str == 'FIND-GENE-GO-TF':
@@ -101,18 +109,10 @@ class TFTA_Module(Bioagent):
             reply_content = self.respond_find_tf_targets_tissue(content)
         elif task_str == 'FIND-TARGET-TF-TISSUE':
             reply_content = self.respond_find_target_tfs_tissue(content)
-        elif task_str == 'IS-MIRNA-TARGET':
-            reply_content = self.respond_is_miRNA_target(content)
         elif task_str == 'FIND-MIRNA-TARGET':
             reply_content = self.respond_find_miRNA_target(content)
-        elif task_str == 'FIND-TARGET-MIRNA':
-            reply_content = self.respond_find_target_miRNA(content)
         elif task_str == 'FIND-EVIDENCE-MIRNA-TARGET':
             reply_content = self.respond_find_evidence_miRNA_target(content)
-        elif task_str == 'FIND-MIRNA-COUNT-GENE':
-            reply_content = self.respond_find_miRNA_count_target(content)
-        elif task_str == 'FIND-GENE-COUNT-MIRNA':
-            reply_content = self.respond_find_target_count_miRNA(content)
         elif task_str == 'FIND-PATHWAY-DB-KEYWORD':
             reply_content = self.respond_find_pathway_db_keyword(content)
         elif task_str == 'FIND-TISSUE-GENE':
@@ -130,7 +130,7 @@ class TFTA_Module(Bioagent):
         Response content to is-regulation request which includes:
         is-tf-target
         is-tf-target-tissue
-        is-mirna-target
+        is-mirna-target (not covered here)
         """
         tf_arg = content.gets('tf')
         target_arg = content.gets('target')
@@ -140,8 +140,8 @@ class TFTA_Module(Bioagent):
             reply = self.respond_is_tf_target_tissue(content)
         elif all([tf_arg,target_arg]):
             reply = self.respond_is_tf_target(content)
-        elif all([mirna_arg,target_arg]):
-            reply = self.respond_is_miRNA_target(content)
+        #elif all([mirna_arg,target_arg]):
+            #reply = self.respond_is_miRNA_target(content)
         else:
             reply = make_failure('UNKNOW_TASK')
         return reply
@@ -149,18 +149,18 @@ class TFTA_Module(Bioagent):
     def respond_find_tf(self, content):
         """
         Response content to find-tf request which includes:
-        find-tf-keyword, find-tf-pathway,
-        find-common-tf-genes, find-target-tf, find-target-tf-tissue
+        find-target-tf, find-target-tf-tissue, find-tf-keyword, find-tf-pathway,
+        find-common-tf-genes (not covered)
         """
         target_arg = content.gets('target')
         pathway_arg = content.gets('pathway')
         keyword_arg = content.get('keyword')
         tissue_arg = content.get('tissue')
-        count_arg = content.get('count')
+        #count_arg = content.get('count')
         if all([target_arg,tissue_arg]):
             reply = self.respond_find_target_tfs_tissue(content)
-        elif all([target_arg,count_arg]):
-            reply = self.respond_find_common_tfs_genes(content)
+        #elif all([target_arg,count_arg]):
+            #reply = self.respond_find_common_tfs_genes(content)
         elif target_arg:
             reply = self.respond_find_target_tfs(content)
         elif pathway_arg:
@@ -175,28 +175,21 @@ class TFTA_Module(Bioagent):
         """
         Response content to find-pathway request, which includes:
         find-pathway-gene, find-pathway-db-gene, find-pathway-gene-keyword,
-        find-pathway-keyword, find-common-pathway-genes, is-pathway-gene,
-        find-common-pathway-genes-keyword, find-pathway-db-keyword.
+        find-pathway-keyword, find-pathway-db-keyword.
         """
         gene_arg = content.gets('gene')
         pathway_arg = content.gets('pathway')
         db_arg = content.get('database')
         keyword_arg = content.get('keyword')
-        count_arg = content.get('count')
-        if all([keyword_arg,gene_arg,count_arg]):
-            reply = self.respond_find_common_pathway_genes_keyword(content)
-        elif all([keyword_arg,gene_arg]):
+        #count_arg = content.get('count')
+        if all([keyword_arg,gene_arg]):
             reply = self.respond_find_pathway_gene_keyword(content)
         elif all([keyword_arg,db_arg]):
             reply = self.respond_find_pathway_db_keyword(content)
         elif keyword_arg:
             reply = self.respond_find_pathway_chemical(content)
-        elif all([pathway_arg,gene_arg]):
-            reply = self.respond_is_pathway_gene(content)
         elif all([gene_arg,db_arg]):
             reply = self.respond_find_pathway_db_gene(content)
-        elif all([gene_arg,count_arg]):
-            reply = self.respond_find_common_pathway_genes(content)
         elif gene_arg:
             reply = self.respond_find_pathway_gene(content)
         else:
@@ -206,24 +199,19 @@ class TFTA_Module(Bioagent):
     def respond_find_target(self, content):
         """
         Response content to find-target request, which includes these cases:
-        find-target-miran, find-tf-target, find-tf-target-tissue,
-        find-overlap-targets-tf-genes, find-gene-count-miRNA
+        find-tf-target, find-tf-target-tissue, find-target-miran (not covered) 
         """
         tf_arg = content.gets('tf')
         target_arg = content.gets('target')
         miRNA_arg = content.gets('miRNA')
         tissue_arg = content.get('tissue')
-        count_arg = content.get('count')
+        #count_arg = content.get('count')
         if all([tf_arg,tissue_arg]):
             reply = self.respond_find_tf_targets_tissue(content)
-        elif all([tf_arg,target_arg]):
-            reply = self.respond_find_overlap_targets_tf_genes(content)
         elif tf_arg:
             reply = self.respond_find_tf_targets(content)
-        elif all([miRNA_arg,count_arg]):
-            reply = self.respond_find_target_count_miRNA(content)
-        elif miRNA_arg:
-            reply = self.respond_find_target_miRNA(content)
+        #elif miRNA_arg:
+            #reply = self.respond_find_target_miRNA(content)
         else:
             reply = make_failure('UNKNOWN_TASK')
         return reply
@@ -255,6 +243,21 @@ class TFTA_Module(Bioagent):
             reply = self.respond_find_miRNA_count_target(content)
         elif target_arg:
             reply = self.respond_find_miRNA_target(content)
+        else:
+            reply = make_failure('UNKNOWN_TASK')
+        return reply
+        
+    def respond_find_common_pathway_genes2keyword(self, content):
+        """
+        Respond to find-common-pathway-genes, which covers:
+        find-common-pathway-genes, find-common-pathway-genes-keyword
+        """
+        target_arg = content.gets('target')
+        keyword_arg = content.get('keyword')
+        if all([target_arg, keyword_arg]):
+            reply = self.respond_find_common_pathway_genes_keyword(content)
+        elif target_arg:
+            reply = self.respond_find_common_pathway_genes(content)
         else:
             reply = make_failure('UNKNOWN_TASK')
         return reply
@@ -843,6 +846,8 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_KEYWORD')
             return reply
         target_arg = content.gets('gene')
+        if not target_arg:
+            target_arg = content.gets('target')
         try:
             targets = _get_targets(target_arg)
             target_names = []
