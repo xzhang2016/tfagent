@@ -77,6 +77,8 @@ class TFTA_Module(Bioagent):
             reply_content = self.respond_is_pathway_gene(content)
         elif task_str == 'FIND-TARGET-MIRNA':
             reply_content = self.respond_find_target_miRNA(content)
+        elif task_str == 'FIND-MIRNA-TARGET':
+            reply_content = self.respond_find_miRNA_target(content)
         elif task_str == 'IS-TF-TARGET':
             reply_content = self.respond_is_tf_target(content)
         elif task_str == 'FIND-TF-TARGET':
@@ -109,8 +111,6 @@ class TFTA_Module(Bioagent):
             reply_content = self.respond_find_tf_targets_tissue(content)
         elif task_str == 'FIND-TARGET-TF-TISSUE':
             reply_content = self.respond_find_target_tfs_tissue(content)
-        elif task_str == 'FIND-MIRNA-TARGET':
-            reply_content = self.respond_find_miRNA_target(content)
         elif task_str == 'FIND-EVIDENCE-MIRNA-TARGET':
             reply_content = self.respond_find_evidence_miRNA_target(content)
         elif task_str == 'FIND-PATHWAY-DB-KEYWORD':
