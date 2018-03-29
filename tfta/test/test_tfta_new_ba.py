@@ -95,7 +95,7 @@ class TestIsRegulation3(_IntegrationTest):
         # Here we create a KQML request that the TFTA needs to respond to
         target = ekb_kstring_from_text('STAT3')
         mirna = ekb_kstring_from_text('miR-20b-5p')
-        content = KQMLList('IS-REGULATION')
+        content = KQMLList('IS-MIRNA-TARGET')
         content.set('target', target)
         content.set('miRNA', mirna)
         return get_request(content), content
@@ -216,10 +216,10 @@ class TestFindTf4(_IntegrationTest):
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
         target = ekb_kstring_from_text('SRF, HRAS, elk1')
-        count = 'count'
-        content = KQMLList('FIND-TF')
+        #count = 'count'
+        content = KQMLList('FIND-COMMON-TF-GENES')
         content.set('target', target)
-        content.set('count', count)
+        #content.set('count', count)
         return get_request(content), content
         
     def check_response_to_message(self, output):
@@ -337,7 +337,7 @@ class TestFindTarget3(_IntegrationTest):
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
         mirna = ekb_kstring_from_text('miR-20b-5p')
-        content = KQMLList('FIND-TARGET')
+        content = KQMLList('FIND-TARGET-MIRNA')
         content.set('miRNA', mirna)
         return get_request(content), content
         
@@ -355,7 +355,7 @@ class TestFindTarget4(_IntegrationTest):
         # Here we create a KQML request that the TFTA needs to respond to
         mirna = ekb_kstring_from_text('miR-335-5p, miR-155-5p, miR-145-5p, miR-20a-5p')
         count = 'count'
-        content = KQMLList('FIND-TARGET')
+        content = KQMLList('FIND-GENE-COUNT-MIRNA')
         content.set('miRNA', mirna)
         content.set('count', count)
         return get_request(content), content
@@ -374,7 +374,7 @@ class TestFindTarget41(_IntegrationTest):
         # Here we create a KQML request that the TFTA needs to respond to
         mirna = ekb_kstring_from_text('miR-335-5p, miR-155-5p, miR-145-5p')
         count = 'count'
-        content = KQMLList('FIND-TARGET')
+        content = KQMLList('FIND-GENE-COUNT-MIRNA')
         content.set('miRNA', mirna)
         content.set('count', count)
         return get_request(content), content
@@ -527,11 +527,11 @@ class TestFindPathway4(_IntegrationTest):
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
-        gene = ekb_kstring_from_text('STAT3, SOCS3, IFNG, FOXO3, CREB5')
-        count = 'count'
-        content = KQMLList('FIND-PATHWAY')
-        content.set('gene', gene)
-        content.set('count', count)
+        target = ekb_kstring_from_text('STAT3, SOCS3, IFNG, FOXO3, CREB5')
+        #count = 'count'
+        content = KQMLList('find-common-pathway-genes')
+        content.set('target', target)
+        #content.set('count', count)
         return get_request(content), content
         
     def check_response_to_message(self, output):
@@ -600,13 +600,13 @@ class TestFindPathway6(_IntegrationTest):
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
-        gene = ekb_kstring_from_text('STAT3, SOCS3, CREB5')
+        target = ekb_kstring_from_text('STAT3, SOCS3, CREB5')
         keyword = 'immune'
-        count = 'count'
-        content = KQMLList('FIND-PATHWAY')
-        content.set('gene', gene)
+        #count = 'count'
+        content = KQMLList('FIND-COMMON-PATHWAY-GENES')
+        content.set('target', target)
         content.set('keyword', keyword)
-        content.set('count', count)
+        #content.set('count', count)
         return get_request(content), content
         
     def check_response_to_message(self, output):
@@ -622,7 +622,7 @@ class TestFindPathway7(_IntegrationTest):
         # Here we create a KQML request that the TFTA needs to respond to
         gene = ekb_kstring_from_text('SGK1')
         pathway = ekb_kstring_from_text('mTor pathway')
-        content = KQMLList('FIND-PATHWAY')
+        content = KQMLList('IS-PATHWAY-GENE')
         content.set('gene', gene)
         content.set('pathway', pathway)
         return get_request(content), content
