@@ -382,17 +382,17 @@ class TFTA:
                 for i in range(len(pids)):
                     pathwayName[pids[i]] = pn[i]
                     dblink[pids[i]] = dl[i]
-                for pthID in pathwayId:
-                    t = (pthID,)
+                for i in range(len(pathwayId)):
+                    t = (pathwayId[i],)
                     res1 = self.tfdb.execute("SELECT DISTINCT genesymbol FROM pathway2Genes "
                                              "WHERE pathwayID = ? AND isTF = 1 ORDER BY genesymbol", t).fetchall()
                     if res1:
                         tfs = [r[0] for r in res1]
-                        tflist[pthID] = tfs
+                        tflist[pathwayId[i]] = tfs
                     else:
-                        del pathwayName[pthID]
-                        del dblink[pthID]
-                        pathwayId.remove(pthID)
+                        del pathwayName[pathwayId[i]]
+                        del dblink[pathwayId[i]]
+                        pathwayId.pop(i)
             else:
                 raise PathwayNotFoundException
         return pathwayId,pathwayName,tflist,dblink
