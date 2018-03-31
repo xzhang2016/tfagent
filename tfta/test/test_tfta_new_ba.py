@@ -721,6 +721,23 @@ class TestFindMirna2(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('miRNAs')) == 23, output
         
+#find tissue
+#What tissues is STAT3 expressed in?
+class TestFindTissue1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTissue1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        gene = ekb_kstring_from_text('STAT3')
+        content = KQMLList('FIND-TISSUE')
+        content.set('gene', gene)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('tissue')) == 29, output
+
 
 if __name__ == '__main__':
     TestIsRegulation1().run_test()
