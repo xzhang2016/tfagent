@@ -663,7 +663,7 @@ class TestFindPathwayDbKeyword3(_TestFindPathwayDbKeyword):
 #What genes are regulated by elk1 and srf?
 #This query should send query to find-target for new ba or find-tf-target, but now we take 
 #it as a find-target-mirna query
-class TestFindTargetMirna2(_TestFindTargetMirna):
+class TestFindTargetMirna3(_TestFindTargetMirna):
     mirna = 'ELK1, SRF'
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
@@ -672,3 +672,4 @@ class TestFindTargetMirna2(_TestFindTargetMirna):
 
 if __name__ == '__main__':
     TestFindTfTarget1().run_test()
+    
