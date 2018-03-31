@@ -31,7 +31,7 @@ class TFTA_Module(Bioagent):
              'FIND-TARGET-TF-TISSUE', 'IS-PATHWAY-GENE','IS-MIRNA-TARGET', 
              'FIND-MIRNA-TARGET', 'FIND-TARGET-MIRNA', 'FIND-EVIDENCE-MIRNA-TARGET',
              'FIND-MIRNA-COUNT-GENE','FIND-GENE-COUNT-MIRNA',
-             'FIND-PATHWAY-DB-KEYWORD', 'FIND-TISSUE-GENE', 'IS-REGULATION',
+             'FIND-PATHWAY-DB-KEYWORD', 'FIND-TISSUE', 'IS-REGULATION',
              'FIND-TF', 'FIND-PATHWAY', 'FIND-TARGET', 'FIND-GENE', 'FIND-MIRNA']
 
     def __init__(self, **kwargs):
@@ -115,7 +115,7 @@ class TFTA_Module(Bioagent):
             reply_content = self.respond_find_evidence_miRNA_target(content)
         elif task_str == 'FIND-PATHWAY-DB-KEYWORD':
             reply_content = self.respond_find_pathway_db_keyword(content)
-        elif task_str == 'FIND-TISSUE-GENE':
+        elif task_str == 'FIND-TISSUE':
             reply_content = self.respond_find_tissue_gene(content)
         else:
             self.error_reply(msg, 'unknown request task ' + task_str)
