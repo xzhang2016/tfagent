@@ -7,6 +7,7 @@ import logging
 import sqlite3
 import numpy as np
 from collections import defaultdict
+import math
 
 logger = logging.getLogger('TFTA')
  
@@ -165,6 +166,43 @@ class TFTA:
             else:
                 raise TFNotFoundException	
         return tf_counts
+        
+    def find_common_tfs(self,target_names):
+        """
+        Return TFs regulating the given target list as well as the regulated targets by each TF
+        """
+        #query
+        tf_targets = defaultdict(list)
+        counts = defaultdict(int)
+        if self.tfdb is not None:
+            target_names = list(set(target_names))
+            thr = max(2, math.ceil(len(target_names)/2))
+            for target_name in target_names:
+                t = (target_name,)
+                res = self.tfdb.execute("SELECT DISTINCT TF FROM CombinedDB "
+                                        "WHERE Target = ? ", t).fetchall()
+                if res:
+                    tfs = [r[0] for r in res]
+                    for tf in tfs:
+                        tf_targets[tf].append(target_name)
+                        counts[tf] += 1
+            if len(tf_targets):
+                max_count = max(counts.values())
+                if max_count >= thr:
+                    #only consider the TFs which regulate at least thr targets
+                    for tf,c in counts.items():
+                        if c < thr:
+                            del tf_targets[tf]
+                elif max_count >= 2:
+                    #consider the TFs which regulate at least 2 targets
+                    for tf, c in counts.items():
+                        if c < 2:
+                            del tf_targets[tf]
+                else:
+                    raise TFNotFoundException
+            else:
+                raise TFNotFoundException
+        return tf_targets
 
     def find_tfs_tissue(self,target_names,tissue_name):
         """
