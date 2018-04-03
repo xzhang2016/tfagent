@@ -224,7 +224,7 @@ class TestFindTf4(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('tfs')) == 2, output
+        assert len(output.get('tfs')) == 3, output
         
 #What transcription factors are in common to the STAT3, SOCS3, and CREB5 genes?
 class TestFindTf41(_IntegrationTest):
@@ -234,15 +234,30 @@ class TestFindTf41(_IntegrationTest):
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
         target = ekb_kstring_from_text('STAT3, SOCS3, CREB5')
-        count = 'count'
-        content = KQMLList('FIND-TF')
+        content = KQMLList('FIND-COMMON-TF-GENES')
         content.set('target', target)
-        content.set('count', count)
         return get_request(content), content
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('tfs')) == 2, output
+        assert len(output.get('tfs')) == 3, output
+
+#What transcription factors are in common to the STAT3, SOCS3, IFNG, FOXO3, and CREB5 genes?        
+class TestFindTf42(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTf42, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('STAT3, IFNG, FOXO3, SOCS3, CREB5')
+        content = KQMLList('FIND-COMMON-TF-GENES')
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        print('len(output)=' + str(len(output.get('tfs'))))
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('tfs')) == 8, output
         
 #Which transcription factors are in the MAPK signaling pathway? (subtask: find-tf-pathway)
 class TestFindTf5(_IntegrationTest):
