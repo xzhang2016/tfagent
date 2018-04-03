@@ -72,7 +72,7 @@ class TFTA_Module(Bioagent):
         elif task_str == 'IS-MIRNA-TARGET':
             reply_content = self.respond_is_miRNA_target(content)
         elif task_str == 'FIND-COMMON-TF-GENES':
-            reply_content = self.respond_find_common_tfs_genes(content)
+            reply_content = self.respond_find_common_tfs_genes2(content)
         elif task_str == 'IS-PATHWAY-GENE':
             reply_content = self.respond_is_pathway_gene(content)
         elif task_str == 'FIND-TARGET-MIRNA':
@@ -763,6 +763,46 @@ class TFTA_Module(Bioagent):
         reply = KQMLList.from_string(
             '(SUCCESS :tfs (' + tf_list_str + '))')
         return reply
+        
+    def respond_find_common_tfs_genes2(self, content):
+        """
+        Response content to FIND-COMMON-TF-GENES request
+        For a given target list, reply the tfs regulating these genes
+        and the regulated targets by each TF
+        """
+        target_arg = content.gets('target')
+        try:
+            targets = _get_targets(target_arg)
+            target_names = []
+            for target in targets:
+                target_names.append(target.name)
+        except Exception as e:
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
+        try:
+            tf_targets = self.tfta.find_common_tfs(target_names)
+        except TFNotFoundException:
+            reply = make_failure('NO_TF_FOUND')
+            return reply
+        #cluster the tfs according to the targets
+        tf_clustered = cluster_dict_by_value2(tf_targets)
+        tf_list_str = ''
+        targets = list(tf_clustered.keys())
+        for tg in targets:
+            target_list = tg.split(',')
+            target_str = ''
+            for t in target_list:
+                target_str += '(:name %s) ' % t
+            target_str = ':target-list (' + target_str + ')'
+            tf_list = ''
+            for tf in tf_clustered[tg]:
+                tf_list += '(:name %s) ' % tf
+            tf_list = ':tf-list (' + tf_list + ') '
+            tf_list += target_str
+            tf_list_str += '(' + tf_list + ') '
+        reply = KQMLList.from_string(
+            '(SUCCESS :tfs (' + tf_list_str + '))')
+        return reply
 
     def respond_find_overlap_targets_tf_genes(self, content):
         """
@@ -1401,6 +1441,14 @@ def cluster_dict_by_value(d):
     for key, val in d:
         clusters[val].append(key)
     return clusters
+    
+def cluster_dict_by_value2(d):
+    #d is a defaultdict
+    clusters = defaultdict(list)
+    for key, val in d.items():
+        clusters[','.join(val)].append(key)
+    return clusters
+    
 
 if __name__ == "__main__":
     TFTA_Module(argv=sys.argv[1:])
