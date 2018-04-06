@@ -47,6 +47,7 @@ class TFTA:
         if os.path.isfile(tf_db_file):
             self.tfdb = sqlite3.connect(tf_db_file, check_same_thread=False)
             logger.info('Loaded TF-target database')
+            self.tfdb.row_factory = sqlite3.Row
         else:
             logger.error('TFTA could not load TF-target database.')
             self.tfdb = None;
@@ -674,6 +675,109 @@ class TFTA:
             else:
                 raise PathwayNotFoundException
         return pathwayName,externalId,source,dblink,counts
+
+    def find_common_pathway_genes(self, gene_names):
+        """
+        For a given gene list, find the pathways containing some of the genes,
+        and the corresponding genes contained in each of the pathways 
+        """
+        pathwayName = dict()
+        dblink = dict()
+        genes = defaultdict(list)
+        counts = defaultdict(int)
+        if self.tfdb is not None:
+            gene_names = list(set(gene_names))
+            thr = max(2, math.ceil(len(gene_names)/2))
+            for gene_name in gene_names:
+                t = (gene_name,)
+                res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
+                                         "WHERE genesymbol = ? ", t).fetchall()
+                if res1:
+                    pids = [r[0] for r in res1]
+                    for pid in pids:
+                        genes[pid].append(gene_name)
+                        counts[pid] += 1
+            if len(genes):
+                max_count = max(counts.values())
+                if max_count >= thr:
+                    #only consider pathways which contain at least thr given genes
+                    for pth, ct in counts.items():
+                        if ct < thr:
+                            del genes[pth]
+                elif max_count >= 2:
+                    #consider pathways which contain at least 2 given genes
+                    for pth, ct in counts.items():
+                        if ct < 2:
+                            del genes[pth]
+                else:
+                    raise PathwayNotFoundException
+            else:
+                raise PathwayNotFoundException
+            if len(genes):
+                for pth in genes.keys():
+                    t = (pth,)
+                    res = self.tfdb.execute("SELECT pathwayName, dblink FROM pathwayInfo "
+                                            "WHERE Id = ? ", t).fetchone()
+                    pathwayName[pth] = res['pathwayName']
+                    dblink[pth] = res['dblink']
+            else:
+                raise PathwayNotFoundException
+        return pathwayName, dblink, genes
+        
+    def find_common_pathway_genes_keyword(self, gene_names, keyword):
+        """
+        For a given gene list and keyword, find the pathways containing some of the genes,
+        and return the corresponding given genes in each of the pathways 
+        """
+        pathwayName = dict()
+        dblink = dict()
+        counts = defaultdict(int)
+        genes = defaultdict(list)
+        if self.tfdb is not None:
+            gene_names = list(set(gene_names))
+            thr = max(2, math.ceil(len(gene_names)/2))
+            for gene_name in gene_names:
+                t = (gene_name,)
+                res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
+                                         "WHERE genesymbol = ? ", t).fetchall()
+                if res1:
+                    pids = [r[0] for r in res1]
+                    for pid in pids:
+                        genes[pid].append(gene_name)
+                        counts[pid] += 1
+            if len(genes):
+                max_count = max(counts.values())
+                if max_count >= thr:
+                    #only consider pathways which contain at least thr given genes
+                    for pth, ct in counts.items():
+                        if ct < thr:
+                            del genes[pth]
+                elif max_count >= 2:
+                    #consider pathways which contain at least 2 given genes
+                    for pth, ct in counts.items():
+                        if ct < 2:
+                            del genes[pth]
+                else:
+                    raise PathwayNotFoundException
+            else:
+                raise PathwayNotFoundException
+            if len(genes):
+                regstr = '%' + keyword + ' %'
+                #pths = genes.keys()
+                for pth in list(genes.keys()):
+                    t = (pth, regstr)
+                    res = self.tfdb.execute("SELECT pathwayName, dblink FROM pathwayInfo "
+                                            "WHERE Id = ? AND pathwayName LIKE ?", t).fetchone()
+                    if res:
+                        pathwayName[pth] = res['pathwayName']
+                        dblink[pth] = res['dblink']
+                    else:
+                        del genes[pth]
+            else:
+                raise PathwayNotFoundException
+            if not len(genes):
+                raise PathwayNotFoundException
+        return pathwayName, dblink, genes
 
     def find_pathway_count_genes_keyword(self, gene_names, keyword):
         """
