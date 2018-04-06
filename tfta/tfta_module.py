@@ -255,9 +255,9 @@ class TFTA_Module(Bioagent):
         target_arg = content.gets('target')
         keyword_arg = content.get('keyword')
         if all([target_arg, keyword_arg]):
-            reply = self.respond_find_common_pathway_genes_keyword(content)
+            reply = self.respond_find_common_pathway_genes_keyword2(content)
         elif target_arg:
-            reply = self.respond_find_common_pathway_genes(content)
+            reply = self.respond_find_common_pathway_genes2(content)
         else:
             reply = make_failure('UNKNOWN_TASK')
         return reply
@@ -904,10 +904,85 @@ class TFTA_Module(Bioagent):
             reply = make_failure('PathwayNotFoundException')
             return reply
         path_list_str = ''
-        for pn,eid,src,dbl,ct in zip(pathwayName,externalId,source,dblink,counts):
+        for pn,dbl,ct in zip(pathwayName,dblink,counts):
             pnslash = '"' + pn +'"'
             dbl = '"' + dbl +'"'
             path_list_str += '(:name %s :dblink %s :count %d) ' % (pnslash, dbl, ct)
+        reply = KQMLList.from_string(
+               '(SUCCESS :pathways (' + path_list_str + '))')
+        return reply
+        
+    def respond_find_common_pathway_genes2(self, content):
+        """
+        response content to FIND-COMMON-PATHWAY-GENES request
+        """
+        target_arg = content.gets('target')
+        if not target_arg:
+            target_arg = content.gets('gene')
+        try:
+            targets = _get_targets(target_arg)
+            target_names = []
+            for tg in targets:
+                target_names.append(tg.name)
+        except Exception as e:
+            reply = make_failure('NO_GENE_NAME')
+            return reply
+        try:
+            pathwayName, dblink, genes = self.tfta.find_common_pathway_genes(target_names)
+        except PathwayNotFoundException:
+            reply = make_failure('PathwayNotFoundException')
+            return reply
+        path_list_str = ''
+        for pth in genes.keys():
+            pnslash = '"' + pathwayName[pth] +'"'
+            dbl = '"' + dblink[pth] +'"'
+            gene_list_str = ''
+            for g in genes[pth]:
+                gene_list_str += '(:name %s) ' % g
+            path_list_str += '(:name %s :dblink %s ' % (pnslash, dbl)
+            path_list_str += ':gene-list (' + gene_list_str + ')) '
+        reply = KQMLList.from_string(
+               '(SUCCESS :pathways (' + path_list_str + '))')
+        return reply
+
+    def respond_find_common_pathway_genes_keyword2(self, content):
+        """
+        Response content to FIND-COMMON-PATHWAY-GENES-KEYWORD request
+        """
+        keyword_arg = content.get('keyword')
+        try:
+            #keyword_name = keyword_arg.head()
+            keyword_name = keyword_arg.data
+        except Exception as e:
+            reply = make_failure('NO_KEYWORD')
+            return reply
+        target_arg = content.gets('gene')
+        if not target_arg:
+            target_arg = content.gets('target')
+        try:
+            targets = _get_targets(target_arg)
+            target_names = []
+            for tg in targets:
+                target_names.append(tg.name)
+            target_names = list(set(target_names))
+        except Exception as e:
+            reply = make_failure('NO_GENE_NAME')
+            return reply
+        try:
+            pathwayName,dblink,genes = \
+               self.tfta.find_common_pathway_genes_keyword(target_names, keyword_name)
+        except PathwayNotFoundException:
+            reply = make_failure('PathwayNotFoundException')
+            return reply
+        path_list_str = ''
+        for pth in genes.keys():
+            pnslash = '"' + pathwayName[pth] +'"'
+            dbl = '"' + dblink[pth] +'"'
+            gene_list_str = ''
+            for g in genes[pth]:
+                gene_list_str += '(:name %s) ' % g
+            path_list_str += '(:name %s :dblink %s ' % (pnslash, dbl)
+            path_list_str += ':gene-list (' + gene_list_str + ')) '
         reply = KQMLList.from_string(
                '(SUCCESS :pathways (' + path_list_str + '))')
         return reply
