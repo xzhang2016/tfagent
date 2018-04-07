@@ -38,12 +38,22 @@ class miRNANotFoundException(Exception):
 class TissueNotFoundException(Exception):
     def __init__(self, *args, **kwargs):
         Exception.__init__(self, *args, **kwargs)
- 
+
+def _make_go_map():
+    lines = open(_resource_dir + 'GO_mapping.txt', 'rt').readlines()
+    go_map = defaultdict(list)
+    for line in lines:
+        kin, goid = line.strip().split('\t')
+        go_map[kin].append(goid)
+    return go_map
+    
+go_map = _make_go_map()
+
 class TFTA:
     def __init__(self):
         logger.debug('Using resource folder: %s' % _resource_dir)
         #Load TF_target database
-        tf_db_file = _resource_dir + 'TF_target_v6_2.db'
+        tf_db_file = _resource_dir + 'TF_target_v6_3.db'
         if os.path.isfile(tf_db_file):
             self.tfdb = sqlite3.connect(tf_db_file, check_same_thread=False)
             logger.info('Loaded TF-target database')
@@ -74,6 +84,37 @@ class TFTA:
                     if r[0].upper() == target_name.upper():
                         return True
         return False
+        
+    def Is_gene_onto(self, kinase_name, gene_name):
+        """
+        Return true if the gene is a kinase
+        """
+        goids = go_map[kinase_name]
+        if not len(goids):
+            raise GONotFoundException
+        if self.tfdb is not None:
+            for go in goids:
+                t = (go, gene_name)
+                res = self.tfdb.execute("SELECT * FROM go2Genes WHERE termId = ? AND geneSymbol = ? ", t).fetchall()
+                if res:
+                    return True
+        return False
+        
+    def find_gene_onto(self, kinase_name, gene_names):
+        """
+        Return the genes which are kinases
+        """
+        goids = go_map[kinase_name]
+        if not len(goids):
+            raise GONotFoundException
+        kinase = []
+        if self.tfdb is not None:
+            for go in goids:
+                t = (go, )
+                res = self.tfdb.execute("SELECT geneSymbol FROM go2Genes WHERE termId = ? ", t).fetchall()
+                kinase += [r[0] for r in res]
+            kinase = list(set(kinase) & set(gene_names))
+        return kinase
 
     def Is_tf_target_tissue(self,tf_name,target_name,tissue_name):
         """
