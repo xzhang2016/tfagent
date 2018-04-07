@@ -1,0 +1,23 @@
+kinase	GO:0016301
+protein kinase	GO:0004672
+tyrosine kinase	GO:0004713
+serine kinase	GO:0004674
+threonine kinase	GO:0004674
+phosphatase	GO:0004725
+phosphatase	GO:0004722
+protease	GO:0008233
+receptor	GO:0038023
+tyrosine kinase receptor	GO:0004714
+histone demethylase	GO:0032452
+histone methylase	GO:0042054
+histone methyltransferase	GO:0042054
+demethylase	GO:0032451
+methylase	GO:0008276
+methyltransferase	GO:0008276
+steroid receptor	GO:0003707
+receptor tyrosine kinase	GO:0004714
+transcription factor	GO:0001071
+dna binding protein	GO:0001071
+serine phosphatase	GO:0004722
+threonine phosphatase	GO:0004722
+tyrosine phosphatase	GO:0004725
