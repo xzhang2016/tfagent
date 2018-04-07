@@ -550,8 +550,9 @@ class TestFindPathway4(_IntegrationTest):
         return get_request(content), content
         
     def check_response_to_message(self, output):
+        print('len(output)=' + str(len(output.get('pathways'))))
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('pathways')) == 69, output
+        assert len(output.get('pathways')) == 8, output
         
 #What signaling pathways are shared by STAT3 and SRF? (subtask: find-common-pathway-genes)
 class TestFindPathway41(_IntegrationTest):
@@ -625,6 +626,7 @@ class TestFindPathway6(_IntegrationTest):
         return get_request(content), content
         
     def check_response_to_message(self, output):
+        print('len(output)=' + str(len(output.get('pathways'))))
         assert output.head() == 'SUCCESS', output
         assert len(output.get('pathways')) == 2, output
         
@@ -753,6 +755,134 @@ class TestFindTissue1(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('tissue')) == 29, output
 
+#Is stat3 a kinase?    
+class TestIsGeneOnto1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestIsGeneOnto1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        gene = ekb_kstring_from_text('STAT3')
+        keyword = 'kinase'
+        content = KQMLList('is-gene-onto')
+        content.set('keyword', keyword)
+        content.set('gene', gene)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.get('result') == 'FALSE', output
+
+#Is stat3 a transcription factor?        
+class TestIsGeneOnto2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestIsGeneOnto2, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        gene = ekb_kstring_from_text('STAT3')
+        keyword = 'transcription factor'
+        content = KQMLList('is-gene-onto')
+        content.set('keyword', keyword)
+        content.set('gene', gene)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.get('result') == 'TRUE', output
+        
+#Is stat3 a protein kinase?
+class TestIsGeneOnto3(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestIsGeneOnto3, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        gene = ekb_kstring_from_text('STAT3')
+        keyword = 'protein kinase'
+        content = KQMLList('is-gene-onto')
+        content.set('keyword', keyword)
+        content.set('gene', gene)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.get('result') == 'FALSE', output
+        
+#Is jak1 a protein kinase?
+class TestIsGeneOnto4(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestIsGeneOnto4, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        gene = ekb_kstring_from_text('JAK1')
+        keyword = 'protein kinase'
+        content = KQMLList('is-gene-onto')
+        content.set('keyword', keyword)
+        content.set('gene', gene)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.get('result') == 'TRUE, output
+
+#Among STAT3, JAK1, JAK2, ELK1, and FOS, which are protein kinases?
+class TestFindGeneOnto1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindGeneOnto1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        gene = ekb_kstring_from_text('STAT3, JAK1, JAK2, ELK1, FOS')
+        keyword = 'protein kinase'
+        content = KQMLList('find-gene-onto')
+        content.set('keyword', keyword)
+        content.set('gene', gene)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        print('len(output)=' + str(len(output.get('genes'))))
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('genes')) == 2, output
+        
+#Among STAT3, JAK1, JAK2, ELK1, and FOS, which are kinases?
+class TestFindGeneOnto2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindGeneOnto2, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        gene = ekb_kstring_from_text('STAT3, JAK1, JAK2, ELK1, FOS')
+        keyword = 'kinase'
+        content = KQMLList('find-gene-onto')
+        content.set('keyword', keyword)
+        content.set('gene', gene)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        print('len(output)=' + str(len(output.get('genes'))))
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('genes')) == 2, output
+        
+#Among STAT3, JAK1, JAK2, ELK1, and FOS, which are histone demethylase?
+class TestFindGeneOnto3(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindGeneOnto3, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        gene = ekb_kstring_from_text('STAT3, JAK1, JAK2, ELK1, FOS, SMAD2, KDM4B')
+        keyword = 'histone demethylase'
+        content = KQMLList('find-gene-onto')
+        content.set('keyword', keyword)
+        content.set('gene', gene)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        print('len(output)=' + str(len(output.get('genes'))))
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('genes')) == 1, output
 
 if __name__ == '__main__':
     TestIsRegulation1().run_test()
