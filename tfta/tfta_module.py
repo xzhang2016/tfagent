@@ -32,7 +32,8 @@ class TFTA_Module(Bioagent):
              'FIND-MIRNA-TARGET', 'FIND-TARGET-MIRNA', 'FIND-EVIDENCE-MIRNA-TARGET',
              'FIND-MIRNA-COUNT-GENE','FIND-GENE-COUNT-MIRNA',
              'FIND-PATHWAY-DB-KEYWORD', 'FIND-TISSUE', 'IS-REGULATION',
-             'FIND-TF', 'FIND-PATHWAY', 'FIND-TARGET', 'FIND-GENE', 'FIND-MIRNA']
+             'FIND-TF', 'FIND-PATHWAY', 'FIND-TARGET', 'FIND-GENE', 'FIND-MIRNA',
+             'IS-GENE-ONTO', 'FIND-GENE-ONTO']
 
     def __init__(self, **kwargs):
         #Instantiate a singleton TFTA agent
@@ -79,6 +80,10 @@ class TFTA_Module(Bioagent):
             reply_content = self.respond_find_target_miRNA(content)
         elif task_str == 'FIND-MIRNA-TARGET':
             reply_content = self.respond_find_miRNA_target(content)
+        elif task_str == 'IS-GENE-ONTO':
+            reply_content = self.respond_is_gene_onto(content)
+        elif task_str == 'FIND-GENE-ONTO':
+            reply_content = self.respond_find_gene_onto(content)
         elif task_str == 'IS-TF-TARGET':
             reply_content = self.respond_is_tf_target(content)
         elif task_str == 'FIND-TF-TARGET':
@@ -261,7 +266,70 @@ class TFTA_Module(Bioagent):
         else:
             reply = make_failure('UNKNOWN_TASK')
         return reply
-            
+        
+    def respond_is_gene_onto(self, content):
+        """
+        Respond to is-gene-onto
+        """
+        try:
+            keyword_arg = content.get('keyword')
+            keyword_name = keyword_arg.data
+            keyword_name = keyword_name.lower()
+        except Exception as e:
+            reply = make_failure('NO_KEYWORD')
+            return reply
+        try:
+            gene_arg = content.gets('gene')
+            gene = _get_target(gene_arg)
+            gene_name = gene.name
+        except Exception as e:
+            reply = make_failure('NO_GENE_NAME')
+            return reply
+        try:
+            is_onto = self.tfta.Is_gene_onto(keyword_name, gene_name)
+        except GONotFoundException:
+            reply = make_failure('GO_NOT_FOUND')
+            return reply
+        reply = KQMLList('SUCCESS')
+        is_onto_str = 'TRUE' if is_onto else 'FALSE'
+        reply.set('result', is_onto_str)
+        return reply
+        
+    def respond_find_gene_onto(self, content):
+        """
+        Respond to find-gene-onto
+        """
+        try:
+            keyword_arg = content.get('keyword')
+            keyword_name = keyword_arg.data
+            keyword_name = keyword_name.lower()
+        except Exception as e:
+            reply = make_failure('NO_KEYWORD')
+            return reply
+        try:
+            gene_arg = content.gets('gene')
+            genes = _get_targets(gene_arg)
+            gene_names = []
+            for gene in genes:
+                gene_names.append(gene.name)
+        except Exception as e:
+            reply = make_failure('NO_GENE_NAME')
+            return reply
+        try:
+            results = self.tfta.find_gene_onto(keyword_name, gene_names)
+        except GONotFoundException:
+            reply = make_failure('GO_NOT_FOUND')
+            return reply
+        if len(results):
+            gene_list_str = ''
+            for res in results:
+                gene_list_str += '(:name %s) ' % res
+            reply = KQMLList.from_string(
+                '(SUCCESS :genes (' + gene_list_str + '))')
+        else:
+            reply = make_failure('NO_GENE_FOUND')
+        return reply
+        
     def respond_is_tf_target(self, content):
         """
         Response content to is-tf-target request.
