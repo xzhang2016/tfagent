@@ -13,3 +13,13 @@ It combines the following datasets into one:
 It includes 7 pathway databases: KEGG, Wikipathways, BioCarta, Reactome, HumanCyc, PharmGKB, SMPDB
 
 3) Gene Ontology database
+Currently use MSigDB.
+
+4) MirRNA database
+It's based on miRTarBase 7.0.
+
+5)Tissue specific gene expression
+It's based on Tiger dataset.
+
+6)Tissue specific gene regulation
+It's based on Tiger dataset and Neph2012, as well as literature search.
