@@ -37,7 +37,8 @@ class TFTA_Module(Bioagent):
 
     #keep the genes from the most recent previous call, which are used to input 
     #find-gene-onto if there's no gene input 
-    gene_list = ['STAT3', 'JAK1', 'JAK2', 'ELK1', 'FOS', 'SMAD2', 'KDM4B']
+    #gene_list = ['STAT3', 'JAK1', 'JAK2', 'ELK1', 'FOS', 'SMAD2', 'KDM4B']
+    gene_list = []
 
     def __init__(self, **kwargs):
         #Instantiate a singleton TFTA agent
