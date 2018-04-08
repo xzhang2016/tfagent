@@ -35,6 +35,10 @@ class TFTA_Module(Bioagent):
              'FIND-TF', 'FIND-PATHWAY', 'FIND-TARGET', 'FIND-GENE', 'FIND-MIRNA',
              'IS-GENE-ONTO', 'FIND-GENE-ONTO']
 
+    #keep the genes from the most recent previous call, which are used to input 
+    #find-gene-onto if there's no gene input 
+    gene_list = ['STAT3', 'JAK1', 'JAK2', 'ELK1', 'FOS', 'SMAD2', 'KDM4B']
+
     def __init__(self, **kwargs):
         #Instantiate a singleton TFTA agent
         self.tfta = TFTA()
@@ -313,8 +317,11 @@ class TFTA_Module(Bioagent):
             for gene in genes:
                 gene_names.append(gene.name)
         except Exception as e:
-            reply = make_failure('NO_GENE_NAME')
-            return reply
+            if self.gene_list:
+                gene_names = self.gene_list
+            else:
+                reply = make_failure('NO_GENE_NAME')
+                return reply
         try:
             results = self.tfta.find_gene_onto(keyword_name, gene_names)
         except GONotFoundException:
@@ -447,6 +454,7 @@ class TFTA_Module(Bioagent):
         f.write('This query used time(s):' + str(t01) + '\n')
         f.write('=============test end==================\n')
         f.close()
+        self.gene_list = target_names
         return reply
 
     def respond_find_tf_targets_tissue(self, content):
@@ -490,6 +498,7 @@ class TFTA_Module(Bioagent):
                 '(SUCCESS :targets (' + target_list_str + '))')
         else:
             reply = make_failure('NO_TARGET_FOUND')
+        self.gene_list = target_names
         return reply
 
     def respond_find_target_tfs(self, content):
@@ -519,6 +528,7 @@ class TFTA_Module(Bioagent):
                 '(SUCCESS :tfs (' + tf_list_str + '))')
         else:
             reply = make_failure('NO_TF_FOUND')
+        self.gene_list = tf_names
         return reply
 
     def respond_find_target_tfs_tissue(self, content):
@@ -567,6 +577,7 @@ class TFTA_Module(Bioagent):
                 '(SUCCESS :tfs (' + tf_list_str + '))')
         else:
             reply = make_failure('NO_TF_FOUND')
+        self.gene_list = tf_names
         return reply
 
     def respond_find_pathway_gene(self,content):
@@ -692,8 +703,10 @@ class TFTA_Module(Bioagent):
             return reply
         pathway_list_str = ''
         keys = list(tflist.keys())
+        temp_tfs = [] #track all the tfs
         if keys:
             for key in keys:
+                temp_tfs += tflist[key]
                 tf_list_str = ''
                 for tf in tflist[key]:
                     tf_list_str += '(:name %s) ' % tf
@@ -706,6 +719,7 @@ class TFTA_Module(Bioagent):
         else:
             reply = make_failure('PathwayNotFoundException')
             return reply
+        self.gene_list = list(set(temp_tfs))
         return reply
 
     def respond_find_gene_pathway(self, content):
@@ -726,7 +740,9 @@ class TFTA_Module(Bioagent):
             reply = make_failure('PathwayNotFoundException')
             return reply
         pathway_list_str = ''
+        temp_genes = []
         for pid in pathwayId:
+            temp_genes += genelist[pid]
             gene_list_str = ''
             for gene in genelist[pid]:
                 gene_list_str += '(:name %s) ' % gene
@@ -736,6 +752,7 @@ class TFTA_Module(Bioagent):
             pathway_list_str += '(:name %s :dblink %s :genes %s) ' % (pnslash, pwlink, gene_list_str)            
         reply = KQMLList.from_string(
                         '(SUCCESS :pathways (' + pathway_list_str + '))')
+        self.gene_list = list(set(temp_genes))
         return reply
 
     def respond_find_pathway_chemical(self, content):
@@ -784,8 +801,10 @@ class TFTA_Module(Bioagent):
             reply = make_failure('PathwayNotFoundException')
             return reply
         pathway_list_str = ''
+        temp_tfs = []
         for pid, pn, dl in zip(pathwayId, pathwayName, dblink):
             tf_list_str = ''
+            temp_tfs += tflist[pid]
             for tf in tflist[pid]:
                 tf_list_str += '(:name %s) ' % tf
             tf_list_str = '(' + tf_list_str + ')'
@@ -794,6 +813,7 @@ class TFTA_Module(Bioagent):
             pathway_list_str += '(:name %s :dblink %s :tfs %s) ' % (pnslash, dl, tf_list_str)
         reply = KQMLList.from_string(
             '(SUCCESS :pathways (' + pathway_list_str + '))')
+        self.gene_list = list(set(temp_tfs))
         return reply
 
     def respond_find_common_tfs_genes(self, content):
@@ -1277,7 +1297,8 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string(
                 '(SUCCESS :targets (' + target_list_str + '))')
         else:
-            reply = make_failure('NO_TARGET_FOUND')  
+            reply = make_failure('NO_TARGET_FOUND')
+        self.gene_list = target_names  
         return reply
         
     def respond_find_evidence_miRNA_target(self, content):
@@ -1348,6 +1369,7 @@ class TFTA_Module(Bioagent):
             target_str += '(:name %s :count %d :miRNA %s) ' % (t, ct, m_str)
         reply = KQMLList.from_string(
             '(SUCCESS :targets (' + target_str + '))')
+        self.gene_list = targets
         return reply
              
     def respond_find_miRNA_count_target(self, content):
