@@ -883,6 +883,26 @@ class TestFindGeneOnto3(_IntegrationTest):
         print('len(output)=' + str(len(output.get('genes'))))
         assert output.head() == 'SUCCESS', output
         assert len(output.get('genes')) == 1, output
+        
+#Among STAT3, JAK1, JAK2, ELK1, and FOS, which are histone demethylase?
+#test use gene list in class variable
+class TestFindGeneOnto4(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindGeneOnto4, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        #gene = ekb_kstring_from_text('STAT3, JAK1, JAK2, ELK1, FOS, SMAD2, KDM4B')
+        keyword = 'histone demethylase'
+        content = KQMLList('find-gene-onto')
+        content.set('keyword', keyword)
+        #content.set('gene', gene)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        print('len(output)=' + str(len(output.get('genes'))))
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('genes')) == 1, output
 
 if __name__ == '__main__':
     TestIsRegulation1().run_test()
