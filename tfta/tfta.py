@@ -895,9 +895,6 @@ class TFTA:
                 target_names.sort()
         else:
             target_names = []
-        #print("target_names=%s" % target_names)
-        #if '--' in target_names:
-            #target_names.remove('--')
         return target_names
 
     def find_overlap_targets_tfs_genes(self,tf_names,target_names):
