@@ -138,6 +138,25 @@ class TestFindTf11(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('tfs')) == 3
         
+#test sequencing query
+#Which of these genes are regulated by STAT3? (subtask: find-tf-target)
+class TestFindTarget1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTarget1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = ekb_kstring_from_text('STAT3')
+        of_targets = "A2M, ABCA2, AKAP12, AKT1, PBRM1, SMAD2,CEBPA"
+        content = KQMLList('FIND-TARGET')
+        content.set('tf', tf)
+        content.set('of-targets', of_targets)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('targets')) == 5, output
+        
 #Which transcription factors regulate frizzled8 in liver? (subtask: find-target-tf-tissue)
 class TestFindTf2(_IntegrationTest):
     def __init__(self, *args):
@@ -307,6 +326,25 @@ class TestFindTarget11(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('targets')) == 28
+        
+#test sequencing query
+#Which of these genes are regulated by STAT3? (subtask: find-tf-target)
+class TestFindTarget12(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTarget12, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = ekb_kstring_from_text('STAT3')
+        of_targets = "A2M, ABCA2, AKAP12, AKT1, PBRM1, SMAD2,CEBPA"
+        content = KQMLList('FIND-TARGET')
+        content.set('tf', tf)
+        content.set('of-targets', of_targets)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('targets')) == 5, output
         
 #What genes does stat3 regulate in lung? (subtask: find-tf-target-tissue)
 class TestFindTarget2(_IntegrationTest):
