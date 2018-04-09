@@ -863,7 +863,7 @@ class TestIsGeneOnto4(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert output.get('result') == 'TRUE, output
+        assert output.get('result') == 'TRUE', output
 
 #Among STAT3, JAK1, JAK2, ELK1, and FOS, which are protein kinases?
 class TestFindGeneOnto1(_IntegrationTest):
@@ -872,7 +872,7 @@ class TestFindGeneOnto1(_IntegrationTest):
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
-        gene = ekb_kstring_from_text('STAT3, JAK1, JAK2, ELK1, FOS')
+        gene = "STAT3, JAK1, JAK2, ELK1, FOS"
         keyword = 'protein kinase'
         content = KQMLList('find-gene-onto')
         content.set('keyword', keyword)
@@ -891,7 +891,7 @@ class TestFindGeneOnto2(_IntegrationTest):
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
-        gene = ekb_kstring_from_text('STAT3, JAK1, JAK2, ELK1, FOS')
+        gene = "STAT3, JAK1, JAK2, ELK1, FOS"
         keyword = 'kinase'
         content = KQMLList('find-gene-onto')
         content.set('keyword', keyword)
@@ -910,7 +910,7 @@ class TestFindGeneOnto3(_IntegrationTest):
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
-        gene = ekb_kstring_from_text('STAT3, JAK1, JAK2, ELK1, FOS, SMAD2, KDM4B')
+        gene = "STAT3, JAK1, JAK2, ELK1, FOS, SMAD2, KDM4B"
         keyword = 'histone demethylase'
         content = KQMLList('find-gene-onto')
         content.set('keyword', keyword)
@@ -930,11 +930,11 @@ class TestFindGeneOnto4(_IntegrationTest):
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
-        #gene = ekb_kstring_from_text('STAT3, JAK1, JAK2, ELK1, FOS, SMAD2, KDM4B')
-        keyword = 'histone demethylase'
+        gene = "STAT3, JAK1, JAK2, ELK1, FOS, SMAD2, KDM4B"
+        keyword = 'demethylase'
         content = KQMLList('find-gene-onto')
         content.set('keyword', keyword)
-        #content.set('gene', gene)
+        content.set('gene', gene)
         return get_request(content), content
         
     def check_response_to_message(self, output):
