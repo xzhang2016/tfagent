@@ -39,6 +39,8 @@ class TFTA_Module(Bioagent):
     #find-gene-onto if there's no gene input 
     #gene_list = ['STAT3', 'JAK1', 'JAK2', 'ELK1', 'FOS', 'SMAD2', 'KDM4B']
     gene_list = []
+    #keep track of TFs
+    #global_tf_list = []
 
     def __init__(self, **kwargs):
         #Instantiate a singleton TFTA agent
@@ -312,11 +314,13 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_KEYWORD')
             return reply
         try:
-            gene_arg = content.gets('gene')
-            genes = _get_targets(gene_arg)
-            gene_names = []
-            for gene in genes:
-                gene_names.append(gene.name)
+            gene_arg = content.get('gene')
+            gene_arg_str = gene_arg.data
+            gene_names = gene_arg_str.split(',')
+            #genes = _get_targets(gene_arg)
+            #gene_names = []
+            #for gene in genes:
+                #gene_names.append(gene.name)
         except Exception as e:
             if self.gene_list:
                 gene_names = self.gene_list
@@ -569,7 +573,13 @@ class TFTA_Module(Bioagent):
             tf_names = self.tfta.find_tfs_tissue(target_names, tissue_name)
         except TargetNotFoundException:
             reply = make_failure('TARGET_NOT_FOUND')
-            return reply      
+            return reply
+        #check if it's from a sequencing query (that is based on the previous one)
+        try:
+            of_tf_arg = content.get('of-tfs')
+            tf_value = of_tf_arg.data
+            if self.tf_list:
+                
         if len(tf_names):
             tf_list_str = ''
             for tf in tf_names:
@@ -579,6 +589,9 @@ class TFTA_Module(Bioagent):
         else:
             reply = make_failure('NO_TF_FOUND')
         self.gene_list = tf_names
+        
+                
+                
         return reply
 
     def respond_find_pathway_gene(self,content):
