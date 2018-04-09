@@ -520,6 +520,12 @@ class TFTA_Module(Bioagent):
         except Exception as e:
             reply = make_failure('NO_TARGET_NAME')
             return reply
+        #consider an optional parameter for sequencing query
+        of_tfs_names = []
+        of_tfs_arg = content.get('of-tfs')
+        if of_tfs_arg:
+            of_tfs_data = of_tfs_arg.data
+            of_tfs_names = of_tfs_data.split(',')
         try:
             tf_names = self.tfta.find_tfs(target_names)
         except TargetNotFoundException:
@@ -573,13 +579,7 @@ class TFTA_Module(Bioagent):
             tf_names = self.tfta.find_tfs_tissue(target_names, tissue_name)
         except TargetNotFoundException:
             reply = make_failure('TARGET_NOT_FOUND')
-            return reply
-        #check if it's from a sequencing query (that is based on the previous one)
-        try:
-            of_tf_arg = content.get('of-tfs')
-            tf_value = of_tf_arg.data
-            if self.tf_list:
-                
+            return reply         
         if len(tf_names):
             tf_list_str = ''
             for tf in tf_names:
