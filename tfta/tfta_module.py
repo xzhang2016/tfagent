@@ -439,12 +439,23 @@ class TFTA_Module(Bioagent):
                 tf_names.append(tf.name)
         except Exception as e:
             reply = make_failure('NO_TF_NAME')
-            return reply  
+            return reply
+        #consider an optional parameter for sequencing query
+        of_targets_names = []
+        of_targets_arg = content.get('of-targets')
+        if of_targets_arg:
+            of_targets_data = of_targets_arg.data
+            of_targets_data = of_targets_data.replace(' ', '')
+            of_targets_data = of_targets_data.upper()
+            of_targets_names = of_targets_data.split(',')  
         try:
             target_names = self.tfta.find_targets(tf_names)
         except TFNotFoundException:
             reply = make_failure('TF_NOT_FOUND')
             return reply
+        #check if it's a sequencing query
+        if of_targets_names:
+            target_names = list(set(of_targets_names) & set(target_names))
         if len(target_names):
             target_list_str = ''
             for tg in target_names:
@@ -489,12 +500,23 @@ class TFTA_Module(Bioagent):
             return reply
         if tissue_name not in self.tissue_list:
             reply = make_failure('INVALID_TISSUE')
-            return reply    
+            return reply
+        #consider an optional parameter for sequencing query
+        of_targets_names = []
+        of_targets_arg = content.get('of-targets')
+        if of_targets_arg:
+            of_targets_data = of_targets_arg.data
+            of_targets_data = of_targets_data.replace(' ', '')
+            of_targets_data = of_targets_data.upper()
+            of_targets_names = of_targets_data.split(',')    
         try:
             target_names = self.tfta.find_targets_tissue(tf_names, tissue_name)
         except TFNotFoundException:
             reply = make_failure('TF_NOT_FOUND')
-            return reply  
+            return reply
+        #check if it's a sequencing query
+        if of_targets_names:
+            target_names = list(set(of_targets_names) & set(target_names))  
         if len(target_names):
             target_list_str = ''
             for tg in target_names:
@@ -525,12 +547,17 @@ class TFTA_Module(Bioagent):
         of_tfs_arg = content.get('of-tfs')
         if of_tfs_arg:
             of_tfs_data = of_tfs_arg.data
+            of_tfs_data = of_tfs_data.replace(' ', '')
+            of_tfs_data = of_tfs_data.upper()
             of_tfs_names = of_tfs_data.split(',')
         try:
             tf_names = self.tfta.find_tfs(target_names)
         except TargetNotFoundException:
             reply = make_failure('TARGET_NOT_FOUND')
-            return reply   
+            return reply
+        #check if it's a sequencing query
+        if of_tfs_names:
+            tf_names = list(set(of_tfs_names) & set(tf_names))   
         if len(tf_names):    
             tf_list_str = ''
             for tf in tf_names:
@@ -574,12 +601,23 @@ class TFTA_Module(Bioagent):
             return reply
         if tissue_name not in self.tissue_list:
             reply = make_failure('INVALID_TISSUE')
-            return reply     
+            return reply
+        #consider an optional parameter for sequencing query
+        of_tfs_names = []
+        of_tfs_arg = content.get('of-tfs')
+        if of_tfs_arg:
+            of_tfs_data = of_tfs_arg.data
+            of_tfs_data = of_tfs_data.replace(' ', '')
+            of_tfs_data = of_tfs_data.upper()
+            of_tfs_names = of_tfs_data.split(',')
         try:
             tf_names = self.tfta.find_tfs_tissue(target_names, tissue_name)
         except TargetNotFoundException:
             reply = make_failure('TARGET_NOT_FOUND')
-            return reply         
+            return reply
+        #check if it's a sequencing query
+        if of_tfs_names:
+            tf_names = list(set(of_tfs_names) & set(tf_names))         
         if len(tf_names):
             tf_list_str = ''
             for tf in tf_names:
@@ -589,9 +627,6 @@ class TFTA_Module(Bioagent):
         else:
             reply = make_failure('NO_TF_FOUND')
         self.gene_list = tf_names
-        
-                
-                
         return reply
 
     def respond_find_pathway_gene(self,content):
