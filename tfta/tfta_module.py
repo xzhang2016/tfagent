@@ -316,6 +316,8 @@ class TFTA_Module(Bioagent):
         try:
             gene_arg = content.get('gene')
             gene_arg_str = gene_arg.data
+            gene_arg_str = gene_arg_str.replace(' ', '')
+            gene_arg_str = gene_arg_str.upper()
             gene_names = gene_arg_str.split(',')
             #genes = _get_targets(gene_arg)
             #gene_names = []
