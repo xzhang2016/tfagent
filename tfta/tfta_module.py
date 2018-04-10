@@ -319,8 +319,12 @@ class TFTA_Module(Bioagent):
             if '<ekb' in gene_arg or '<EKB' in gene_arg:
                 genes = _get_targets(gene_arg)
                 gene_names = []
+                fw = open('test-gene-onto.txt', 'a')
                 for gene in genes:
                     gene_names.append(gene.name)
+                    fw.write(gene.name + '\t')
+                fw.write('\n======================\n')
+                fw.close()
             else:
                 gene_arg_str = gene_arg.data
                 gene_arg_str = gene_arg_str.replace(' ', '')
