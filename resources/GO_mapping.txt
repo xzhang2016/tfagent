@@ -21,3 +21,5 @@ dna binding protein	GO:0001071
 serine phosphatase	GO:0004722
 threonine phosphatase	GO:0004722
 tyrosine phosphatase	GO:0004725
+serine/threonine kinase	GO:0004674
+serine/threonine phosphatase	GO:0004722
