@@ -320,7 +320,7 @@ class TFTA_Module(Bioagent):
                 genes = _get_targets(gene_arg)
                 gene_names = []
                 for gene in genes:
-                    gene_names.append(target.name)
+                    gene_names.append(gene.name)
             else:
                 gene_arg_str = gene_arg.data
                 gene_arg_str = gene_arg_str.replace(' ', '')
