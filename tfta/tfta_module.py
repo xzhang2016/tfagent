@@ -315,14 +315,17 @@ class TFTA_Module(Bioagent):
             return reply
         try:
             gene_arg = content.get('gene')
-            gene_arg_str = gene_arg.data
-            gene_arg_str = gene_arg_str.replace(' ', '')
-            gene_arg_str = gene_arg_str.upper()
-            gene_names = gene_arg_str.split(',')
-            #genes = _get_targets(gene_arg)
-            #gene_names = []
-            #for gene in genes:
-                #gene_names.append(gene.name)
+            #check if it's using ekb xml format
+            if '<ekb' in gene_arg or '<EKB' in gene_arg:
+                genes = _get_targets(gene_arg)
+                gene_names = []
+                for gene in genes:
+                    gene_names.append(target.name)
+            else:
+                gene_arg_str = gene_arg.data
+                gene_arg_str = gene_arg_str.replace(' ', '')
+                gene_arg_str = gene_arg_str.upper()
+                gene_names = gene_arg_str.split(',')
         except Exception as e:
             if self.gene_list:
                 gene_names = self.gene_list
