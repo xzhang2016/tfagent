@@ -552,6 +552,9 @@ class TFTA_Module(Bioagent):
         except Exception as e:
             reply = make_failure('NO_TARGET_NAME')
             return reply
+        if not len(target_names):
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
         #consider an optional parameter for sequencing query
         of_tfs_names = []
         of_tfs_arg = content.get('of-tfs')
