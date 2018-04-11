@@ -314,7 +314,7 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_KEYWORD')
             return reply
         try:
-            gene_arg = content.get('gene')
+            gene_arg = content.gets('gene')
             #check if it's using ekb xml format
             if '<ekb' in gene_arg or '<EKB' in gene_arg:
                 genes = _get_targets(gene_arg)
@@ -326,6 +326,7 @@ class TFTA_Module(Bioagent):
                 fw.write('\n======================\n')
                 fw.close()
             else:
+                gene_arg = content.get('gene')
                 gene_arg_str = gene_arg.data
                 gene_arg_str = gene_arg_str.replace(' ', '')
                 gene_arg_str = gene_arg_str.upper()
