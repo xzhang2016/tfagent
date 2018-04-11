@@ -450,6 +450,9 @@ class TFTA_Module(Bioagent):
         except Exception as e:
             reply = make_failure('NO_TF_NAME')
             return reply
+        if not len(tf_names):
+            reply = make_failure('NO_TF_NAME')
+            return reply
         #consider an optional parameter for sequencing query
         of_targets_names = []
         of_targets_arg = content.get('of-targets')
@@ -495,6 +498,9 @@ class TFTA_Module(Bioagent):
             for tf in tfs:
                 tf_names.append(tf.name)
         except Exception as e:
+            reply = make_failure('NO_TF_NAME')
+            return reply
+        if not len(tf_names):
             reply = make_failure('NO_TF_NAME')
             return reply
         try:
@@ -599,6 +605,9 @@ class TFTA_Module(Bioagent):
             f.write('\n' + '================' + '\n')
             f.close()
         except Exception as e:
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
+        if not len(target_names):
             reply = make_failure('NO_TARGET_NAME')
             return reply
         try:
