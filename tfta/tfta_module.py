@@ -665,6 +665,9 @@ class TFTA_Module(Bioagent):
         except Exception as e:
             reply = make_failure('NO_GENE_NAME')
             return reply
+        if not len(gene_names):
+            reply = make_failure('NO_GENE_NAME')
+            return reply
         try:
             pathwayName, dblink = \
                 self.tfta.find_pathways_from_genelist(gene_names)
@@ -700,6 +703,9 @@ class TFTA_Module(Bioagent):
             for gene in genes:
                 gene_names.append(gene.name)
         except Exception as e:
+            reply = make_failure('NO_GENE_NAME')
+            return reply
+        if not len(gene_names):
             reply = make_failure('NO_GENE_NAME')
             return reply
         try:
@@ -1165,7 +1171,10 @@ class TFTA_Module(Bioagent):
                 gene_names.append(gene.name)
         except Exception as e:
             reply = make_failure('NO_GENE_NAME')
-            return reply  
+            return reply
+        if not len(gene_names):
+              reply = make_failure('NO_GENE_NAME')
+              return reply
         try:
             pids, pathwayName, dblink = \
                 self.tfta.Is_pathway_gene(pathway_names, gene_names)
@@ -1287,7 +1296,10 @@ class TFTA_Module(Bioagent):
             target_name = target.name
         except Exception as e:
             reply = make_failure('NO_TARGET_NAME')
-            return reply        
+            return reply
+        if not len(target_name):
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
         try:
             is_target = self.tfta.Is_miRNA_target(miRNA_name[0], target_name)
         except miRNANotFoundException:
@@ -1313,7 +1325,10 @@ class TFTA_Module(Bioagent):
                 target_names.append(target.name)
         except Exception as e:
             reply = make_failure('NO_TARGET_NAME')
-            return reply        
+            return reply
+        if not len(target_names):
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
         try:
             miRNA_names = self.tfta.find_miRNA_target(target_names)
         except TargetNotFoundException:
@@ -1456,6 +1471,9 @@ class TFTA_Module(Bioagent):
         except Exception as e:
             reply = make_failure('NO_TARGET_NAME')
             return reply
+        if not len(target_names):
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
         try:
             mirnas,counts,genes = self.tfta.find_miRNA_count_gene(target_names)
         except miRNANotFoundException:
@@ -1521,6 +1539,9 @@ class TFTA_Module(Bioagent):
             gene = _get_target(gene_arg)
             gene_name = gene.name
         except Exception as e:
+            reply = make_failure('NO_GENE_NAME')
+            return reply
+        if not len(gene_name):
             reply = make_failure('NO_GENE_NAME')
             return reply
         try:
