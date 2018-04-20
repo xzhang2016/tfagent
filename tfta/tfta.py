@@ -557,7 +557,9 @@ class TFTA:
                 if len(overlap_genes) < len(gene_names):
                     del pname[pthID]
                     del plink[pthID]
-                    upid.remove(pthID)    
+                    upid.remove(pthID)
+            if not len(upid):
+                raise PathwayNotFoundException
             return upid, pname, plink
 
     def find_pathways_from_genelist_keyword(self,gene_names, keyword):
