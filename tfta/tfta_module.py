@@ -34,13 +34,10 @@ class TFTA_Module(Bioagent):
              'FIND-PATHWAY-DB-KEYWORD', 'FIND-TISSUE', 'IS-REGULATION',
              'FIND-TF', 'FIND-PATHWAY', 'FIND-TARGET', 'FIND-GENE', 'FIND-MIRNA',
              'IS-GENE-ONTO', 'FIND-GENE-ONTO']
-
     #keep the genes from the most recent previous call, which are used to input 
     #find-gene-onto if there's no gene input 
     #gene_list = ['STAT3', 'JAK1', 'JAK2', 'ELK1', 'FOS', 'SMAD2', 'KDM4B']
     gene_list = []
-    #keep track of TFs
-    #global_tf_list = []
 
     def __init__(self, **kwargs):
         #Instantiate a singleton TFTA agent
@@ -53,90 +50,6 @@ class TFTA_Module(Bioagent):
         #now just do nothing here, but to avoid error message senting out
         pass
 
-    def receive_request(self, msg, content):
-        """If a "request" message is received, decode the task and
-        the content and call the appropriate function to prepare the
-        response. A reply message is then sent back.
-        """
-        task_str = content.head().upper()
-        if task_str == 'IS-REGULATION':
-            reply_content = self.respond_is_regulation(content)
-        elif task_str == 'FIND-TF':
-            reply_content = self.respond_find_tf(content)
-        elif task_str == 'FIND-PATHWAY':
-            reply_content = self.respond_find_pathway(content)
-        elif task_str == 'FIND-TARGET':
-            reply_content = self.respond_find_target(content)
-        elif task_str == 'FIND-GENE':
-            reply_content = self.respond_find_gene(content)
-        elif task_str == 'FIND-MIRNA':
-            reply_content = self.respond_find_miRNA(content)
-        elif task_str == 'FIND-COMMON-PATHWAY-GENES':
-            reply_content = self.respond_find_common_pathway_genes2keyword(content)
-        elif task_str == 'FIND-MIRNA-COUNT-GENE':
-            reply_content = self.respond_find_miRNA_count_target(content)
-        elif task_str == 'FIND-GENE-COUNT-MIRNA':
-            reply_content = self.respond_find_target_count_miRNA(content)
-        elif task_str == 'IS-MIRNA-TARGET':
-            reply_content = self.respond_is_miRNA_target(content)
-        elif task_str == 'FIND-COMMON-TF-GENES':
-            reply_content = self.respond_find_common_tfs_genes2(content)
-        elif task_str == 'IS-PATHWAY-GENE':
-            reply_content = self.respond_is_pathway_gene(content)
-        elif task_str == 'FIND-TARGET-MIRNA':
-            reply_content = self.respond_find_target_miRNA(content)
-        elif task_str == 'FIND-MIRNA-TARGET':
-            reply_content = self.respond_find_miRNA_target(content)
-        elif task_str == 'IS-GENE-ONTO':
-            reply_content = self.respond_is_gene_onto(content)
-        elif task_str == 'FIND-GENE-ONTO':
-            reply_content = self.respond_find_gene_onto(content)
-        elif task_str == 'IS-TF-TARGET':
-            reply_content = self.respond_is_tf_target(content)
-        elif task_str == 'FIND-TF-TARGET':
-            reply_content = self.respond_find_tf_targets(content)
-        elif task_str == 'FIND-TARGET-TF':
-            reply_content = self.respond_find_target_tfs(content)
-        elif task_str == 'FIND-PATHWAY-GENE':
-            reply_content = self.respond_find_pathway_gene(content)
-        elif task_str == 'FIND-PATHWAY-GENE-KEYWORD':
-            reply_content = self.respond_find_pathway_gene_keyword(content)
-        elif task_str == 'FIND-PATHWAY-DB-GENE':
-            reply_content = self.respond_find_pathway_db_gene(content)
-        elif task_str == 'FIND-TF-PATHWAY':
-            reply_content = self.respond_find_tf_pathway(content)
-        elif task_str == 'FIND-GENE-PATHWAY':
-            reply_content = self.respond_find_gene_pathway(content)
-        elif task_str == 'FIND-PATHWAY-KEYWORD':
-            reply_content = self.respond_find_pathway_chemical(content)
-        elif task_str == 'FIND-TF-KEYWORD':
-            reply_content = self.respond_find_tf_chemical(content)
-        elif task_str == 'FIND-OVERLAP-TARGETS-TF-GENES':
-            reply_content = self.respond_find_overlap_targets_tf_genes(content)
-        elif task_str == 'FIND-COMMON-PATHWAY-GENES-KEYWORD':
-            reply_content = self.respond_find_common_pathway_genes_keyword(content)
-        elif task_str == 'FIND-GENE-GO-TF':
-            reply_content = self.respond_find_genes_go_tf2(content)
-        elif task_str == 'IS-TF-TARGET-TISSUE':
-            reply_content = self.respond_is_tf_target_tissue(content)
-        elif task_str == 'FIND-TF-TARGET-TISSUE':
-            reply_content = self.respond_find_tf_targets_tissue(content)
-        elif task_str == 'FIND-TARGET-TF-TISSUE':
-            reply_content = self.respond_find_target_tfs_tissue(content)
-        elif task_str == 'FIND-EVIDENCE-MIRNA-TARGET':
-            reply_content = self.respond_find_evidence_miRNA_target(content)
-        elif task_str == 'FIND-PATHWAY-DB-KEYWORD':
-            reply_content = self.respond_find_pathway_db_keyword(content)
-        elif task_str == 'FIND-TISSUE':
-            reply_content = self.respond_find_tissue_gene(content)
-        else:
-            self.error_reply(msg, 'unknown request task ' + task_str)
-            return
-
-        reply_msg = KQMLPerformative('reply')
-        reply_msg.set('content', reply_content)
-        self.reply(msg, reply_msg)
-        
     def respond_is_regulation(self, content):
         """
         Response content to is-regulation request which includes:
@@ -319,12 +232,12 @@ class TFTA_Module(Bioagent):
             if '<ekb' in gene_arg or '<EKB' in gene_arg:
                 genes = _get_targets(gene_arg)
                 gene_names = []
-                fw = open('test-gene-onto.txt', 'a')
+                #fw = open('test-gene-onto.txt', 'a')
                 for gene in genes:
                     gene_names.append(gene.name)
-                    fw.write(gene.name + '\t')
-                fw.write('\n======================\n')
-                fw.close()
+                    #fw.write(gene.name + '\t')
+                #fw.write('\n======================\n')
+                #fw.close()
             else:
                 gene_arg = content.get('gene')
                 gene_arg_str = gene_arg.data
@@ -1555,6 +1468,54 @@ class TFTA_Module(Bioagent):
         reply = KQMLList.from_string(
             '(SUCCESS :tissue (' + tissue_str + '))')
         return reply
+        
+    task_func = {'IS-REGULATION':respond_is_regulation, 'FIND-TF':respond_find_tf,
+                 'FIND-PATHWAY':respond_find_pathway, 'FIND-TARGET':respond_find_target,
+                 'FIND-GENE':respond_find_gene, 'FIND-MIRNA':respond_find_miRNA,
+                 'FIND-COMMON-PATHWAY-GENES':respond_find_common_pathway_genes2keyword,
+                 'FIND-MIRNA-COUNT-GENE':respond_find_miRNA_count_target,
+                 'FIND-GENE-COUNT-MIRNA':respond_find_target_count_miRNA,
+                 'IS-MIRNA-TARGET':respond_is_miRNA_target,
+                 'FIND-COMMON-TF-GENES':respond_find_common_tfs_genes2,
+                 'IS-PATHWAY-GENE':respond_is_pathway_gene,
+                 'FIND-TARGET-MIRNA':respond_find_target_miRNA,
+                 'FIND-MIRNA-TARGET':respond_find_miRNA_target,
+                 'IS-GENE-ONTO':respond_is_gene_onto,
+                 'FIND-GENE-ONTO':respond_find_gene_onto,
+                 'IS-TF-TARGET':respond_is_tf_target,
+                 'FIND-TF-TARGET':respond_find_tf_targets,
+                 'FIND-TARGET-TF':respond_find_target_tfs,
+                 'FIND-PATHWAY-GENE':respond_find_pathway_gene,
+                 'FIND-PATHWAY-GENE-KEYWORD':respond_find_pathway_gene_keyword,
+                 'FIND-PATHWAY-DB-GENE':respond_find_pathway_db_gene,
+                 'FIND-TF-PATHWAY':respond_find_tf_pathway,
+                 'FIND-GENE-PATHWAY':respond_find_gene_pathway,
+                 'FIND-PATHWAY-KEYWORD':respond_find_pathway_chemical,
+                 'FIND-TF-KEYWORD':respond_find_tf_chemical,
+                 'FIND-OVERLAP-TARGETS-TF-GENES':respond_find_overlap_targets_tf_genes,
+                 'FIND-COMMON-PATHWAY-GENES-KEYWORD':respond_find_common_pathway_genes_keyword,
+                 'FIND-GENE-GO-TF':respond_find_genes_go_tf2,
+                 'IS-TF-TARGET-TISSUE':respond_is_tf_target_tissue,
+                 'FIND-TF-TARGET-TISSUE':respond_find_tf_targets_tissue,
+                 'FIND-TARGET-TF-TISSUE':respond_find_target_tfs_tissue,
+                 'FIND-EVIDENCE-MIRNA-TARGET':respond_find_evidence_miRNA_target,
+                 'FIND-PATHWAY-DB-KEYWORD':respond_find_pathway_db_keyword,
+                 'FIND-TISSUE':respond_find_tissue_gene}
+    
+    def receive_request(self, msg, content):
+        """If a "request" message is received, decode the task and
+        the content and call the appropriate function to prepare the
+        response. A reply message is then sent back.
+        """
+        task_str = content.head().upper()
+        try:
+            reply_content = self.task_func[task_str](self, content)
+        except KeyError:
+            self.error_reply(msg, 'unknown request task ' + task_str)
+            return
+        reply_msg = KQMLPerformative('reply')
+        reply_msg.set('content', reply_content)
+        self.reply(msg, reply_msg)
 
 def _get_target(target_str):
     tp = TripsProcessor(target_str)
