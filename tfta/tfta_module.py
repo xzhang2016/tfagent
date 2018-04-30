@@ -12,6 +12,7 @@ logger = logging.getLogger('TFTA')
 from kqml import KQMLModule, KQMLPerformative, KQMLList
 from .tfta import TFTA, TFNotFoundException, TargetNotFoundException, PathwayNotFoundException 
 from .tfta import GONotFoundException, miRNANotFoundException, TissueNotFoundException
+from .tfta import KinaseNotFoundException
 from indra.sources.trips.processor import TripsProcessor
 from collections import defaultdict
 from bioagents import Bioagent
@@ -33,7 +34,7 @@ class TFTA_Module(Bioagent):
              'FIND-MIRNA-COUNT-GENE','FIND-GENE-COUNT-MIRNA',
              'FIND-PATHWAY-DB-KEYWORD', 'FIND-TISSUE', 'IS-REGULATION',
              'FIND-TF', 'FIND-PATHWAY', 'FIND-TARGET', 'FIND-GENE', 'FIND-MIRNA',
-             'IS-GENE-ONTO', 'FIND-GENE-ONTO']
+             'IS-GENE-ONTO', 'FIND-GENE-ONTO', 'FIND-KINASE-REGULATION']
     #keep the genes from the most recent previous call, which are used to input 
     #find-gene-onto if there's no gene input 
     #gene_list = ['STAT3', 'JAK1', 'JAK2', 'ELK1', 'FOS', 'SMAD2', 'KDM4B']
@@ -1469,6 +1470,82 @@ class TFTA_Module(Bioagent):
             '(SUCCESS :tissue (' + tissue_str + '))')
         return reply
         
+    def respond_find_kinase_target(self, content):
+        """
+        Response to find-kinase-regulation with only target parameter
+        """
+        try:
+            target_arg = content.gets('target')
+            targets = _get_targets(target_arg)
+            target_names = []
+            for target in targets:
+                target_names.append(target.name)
+        except Exception as e:
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
+        if not len(target_names):
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
+        try:
+            kinases = self.tfta.find_kinase_target(target_names)
+        except KinaseNotFoundException:
+            reply = make_failure('NO_KINASE_FOUND')
+            return reply
+        kinase_str = ''
+        for kn in kinases:
+            kinase_str += '(:name %s) ' % kn
+        reply = KQMLList.from_string(
+            '(SUCCESS :kinase (' + kinase_str + '))')
+        return reply
+        
+    def respond_find_kinase_target_keyword(self, content):
+        """
+        Response to find-kinase-regulation with target and keyword parameter
+        """
+        try:
+            target_arg = content.gets('target')
+            targets = _get_targets(target_arg)
+            target_names = []
+            for target in targets:
+                target_names.append(target.name)
+        except Exception as e:
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
+        if not len(target_names):
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
+        try:
+            keyword_arg = content.get('keyword')
+            keyword_name = keyword_arg.data
+        except Exception as e:
+            reply = make_failure('NO_KEYWORD')
+            return reply
+        try:
+            kinases = self.tfta.find_kinase_target_keyword(target_names, keyword_name)
+        except KinaseNotFoundException:
+            reply = make_failure('NO_KINASE_FOUND')
+            return reply
+        kinase_str = ''
+        for kn in kinases:
+            kinase_str += '(:name %s) ' % kn
+        reply = KQMLList.from_string(
+            '(SUCCESS :kinase (' + kinase_str + '))')
+        return reply
+        
+    def respond_find_kinase_regulation(self, content):
+        """
+        Response to FIND-KINASE-REGULATION
+        """
+        target_arg = content.gets('target')
+        keyword_arg = content.get('keyword')
+        if all([target_arg, keyword_arg]):
+            reply = self.respond_find_kinase_target_keyword(content)
+        elif target_arg:
+            reply = self.respond_find_kinase_target(content)
+        else:
+            reply = make_failure('UNKNOW_TASK')
+        return reply
+        
     task_func = {'IS-REGULATION':respond_is_regulation, 'FIND-TF':respond_find_tf,
                  'FIND-PATHWAY':respond_find_pathway, 'FIND-TARGET':respond_find_target,
                  'FIND-GENE':respond_find_gene, 'FIND-MIRNA':respond_find_miRNA,
@@ -1500,7 +1577,8 @@ class TFTA_Module(Bioagent):
                  'FIND-TARGET-TF-TISSUE':respond_find_target_tfs_tissue,
                  'FIND-EVIDENCE-MIRNA-TARGET':respond_find_evidence_miRNA_target,
                  'FIND-PATHWAY-DB-KEYWORD':respond_find_pathway_db_keyword,
-                 'FIND-TISSUE':respond_find_tissue_gene}
+                 'FIND-TISSUE':respond_find_tissue_gene,
+                 'FIND-KINASE-REGULATION':respond_find_kinase_regulation}
     
     def receive_request(self, msg, content):
         """If a "request" message is received, decode the task and
