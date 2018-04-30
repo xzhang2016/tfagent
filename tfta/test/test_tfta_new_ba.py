@@ -305,6 +305,22 @@ class TestFindTf13(_IntegrationTest):
         assert output.head() == 'FAILURE', output
         assert output.get('reason') == 'TARGET_NOT_FOUND', output
         
+##what transcription factors regulate SOS?
+class TestFindTf14(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTf14, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('SOS')
+        content = KQMLList('FIND-TF')
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason') == 'NO_TARGET_NAME', output
+        
 #Which transcription factors regulate frizzled8 in liver? (subtask: find-target-tf-tissue)
 class TestFindTf2(_IntegrationTest):
     def __init__(self, *args):
@@ -1610,6 +1626,143 @@ class TestFindGeneOnto41(_IntegrationTest):
         print('len(output)=' + str(len(output.get('genes'))))
         assert output.head() == 'SUCCESS', output
         assert len(output.get('genes')) == 1, output
+        
+#Which kinases regulate the cfos gene?
+class TestFindKinaseReg1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindKinaseReg1, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('cfos')
+        print(target)
+        content = KQMLList('FIND-KINASE-REGULATION')
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('kinase')) == 5, output
+        
+#test gene family
+#Which kinases regulate the MEK gene?
+class TestFindKinaseReg11(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindKinaseReg11, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('mek')
+        print(target)
+        content = KQMLList('FIND-KINASE-REGULATION')
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason') == 'NO_TARGET_NAME', output
+        
+#Which kinases regulate the AKT gene?
+class TestFindKinaseReg12(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindKinaseReg12, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('akt')
+        print(target)
+        content = KQMLList('FIND-KINASE-REGULATION')
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason') == 'NO_KINASE_FOUND', output
+    
+#Which kinases negatively regulate the cfos gene?
+class TestFindKinaseReg2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindKinaseReg2, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('cfos')
+        keyword = 'down'
+        print(target)
+        content = KQMLList('FIND-KINASE-REGULATION')
+        content.set('target', target)
+        content.set('keyword', keyword)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('kinase')) == 3, output
+        
+#Which kinases positively regulate the cfos gene?
+class TestFindKinaseReg21(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindKinaseReg21, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('cfos')
+        keyword = 'up'
+        print(target)
+        content = KQMLList('FIND-KINASE-REGULATION')
+        content.set('target', target)
+        content.set('keyword', keyword)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('kinase')) == 2, output
+        
+#test gene family
+#Which kinases positively regulate the MEK gene?
+class TestFindKinaseReg22(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindKinaseReg22, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('MEK')
+        keyword = 'up'
+        print(target)
+        content = KQMLList('FIND-KINASE-REGULATION')
+        content.set('target', target)
+        content.set('keyword', keyword)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason') == 'NO_TARGET_NAME', output
+
+#Which kinases positively regulate the AKT gene?
+class TestFindKinaseReg23(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindKinaseReg23, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('AKT')
+        keyword = 'up'
+        print(target)
+        content = KQMLList('FIND-KINASE-REGULATION')
+        content.set('target', target)
+        content.set('keyword', keyword)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason') == 'NO_KINASE_FOUND', output
+
 
 if __name__ == '__main__':
     TestIsRegulation1().run_test()
