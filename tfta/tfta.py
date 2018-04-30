@@ -38,6 +38,8 @@ class miRNANotFoundException(Exception):
 class TissueNotFoundException(Exception):
     def __init__(self, *args, **kwargs):
         Exception.__init__(self, *args, **kwargs)
+        
+class KinaseNotFoundException(Exception): pass
 
 def _make_go_map():
     lines = open(_resource_dir + 'GO_mapping.txt', 'rt').readlines()
@@ -1376,6 +1378,62 @@ class TFTA:
             else:
                 raise TissueNotFoundException
         return tissue_names
+        
+    def find_kinase_target(self, target_names):
+        """
+        For given genes, return the kinases that regulate them
+        """
+        kinase_names = []
+        if self.tfdb is not None:
+            t = (target_names[0],)
+            res = self.tfdb.execute("SELECT DISTINCT kinase FROM kinaseReg "
+                                    "WHERE target = ? ", t).fetchall()
+            if res:
+                kinase_names = [r[0] for r in res]
+            else:
+                raise KinaseNotFoundException 
+            if len(target_names)>1:
+                for i in range(1,len(target_names)):
+                    t = (target_names[i],)
+                    res = self.tfdb.execute("SELECT DISTINCT kinase FROM kinaseReg "
+                                            "WHERE target = ? ", t).fetchall()
+                    if res:
+                        kinase_names = list(set(kinase_names) & set([r[0] for r in res]))
+                    else:
+                        raise KinaseNotFoundException
+            if len(kinase_names):
+                kinase_names.sort()
+            else:
+                raise KinaseNotFoundException
+        return kinase_names
+        
+    def find_kinase_target_keyword(self, target_names, keyword_name):
+        """
+        For given genes and keyword, return kinases that regulate them with keyword (up or down) mode
+        """
+        kinase_names = []
+        if self.tfdb is not None:
+            t = (target_names[0], keyword_name)
+            res = self.tfdb.execute("SELECT DISTINCT kinase FROM kinaseReg "
+                                    "WHERE target = ? AND direction LIKE ? ", t).fetchall()
+            if res:
+                kinase_names = [r[0] for r in res]
+            else:
+                raise KinaseNotFoundException 
+            if len(target_names)>1:
+                for i in range(1,len(target_names)):
+                    t = (target_names[i],)
+                    res = self.tfdb.execute("SELECT DISTINCT kinase FROM kinaseReg "
+                                            "WHERE target = ? AND direction LIKE ? ", t).fetchall()
+                    if res:
+                        kinase_names = list(set(kinase_names) & set([r[0] for r in res]))
+                    else:
+                        raise KinaseNotFoundException
+            if len(kinase_names):
+                kinase_names.sort()
+            else:
+                raise KinaseNotFoundException
+        return kinase_names
 
 
 #test functions
