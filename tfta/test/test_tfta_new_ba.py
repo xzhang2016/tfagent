@@ -320,7 +320,10 @@ class TestFindTf14(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
         assert output.get('reason') == 'NO_TARGET_NAME', output
-        
+
+#TEST USING FULL GENE NAME
+
+
 #Which transcription factors regulate frizzled8 in liver? (subtask: find-target-tf-tissue)
 class TestFindTf2(_IntegrationTest):
     def __init__(self, *args):
@@ -1763,6 +1766,169 @@ class TestFindKinaseReg23(_IntegrationTest):
         assert output.head() == 'FAILURE', output
         assert output.get('reason') == 'NO_KINASE_FOUND', output
 
+##What regulates insulin?
+class TestFindTf15(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTf15, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('insulin')
+        print(target, '\n')
+        target_arg = ekb_from_text('insulin')
+        get_gene_symbol(target_arg)
+        content = KQMLList('FIND-TF')
+        content.set('target', target)
+       
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('tfs')) == 27, output
+        
+##What regulates cofilin? (which was taken as a protein, then get COF1)
+class TestFindTf16(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTf16, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('cofilin')
+        print(target, '\n')
+        target_arg = ekb_from_text('cofilin')
+        get_gene_symbol(target_arg)
+        content = KQMLList('FIND-TF')
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason') == 'TARGET_NOT_FOUND', output
+
+##What regulates cofilin gene? (which was taken as a protein, then get COF1)
+class TestFindTf17(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTf17, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('cofilin gene')
+        print(target, '\n')
+        target_arg = ekb_from_text('cofilin gene')
+        get_gene_symbol(target_arg)
+        content = KQMLList('FIND-TF')
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason') == 'TARGET_NOT_FOUND', output
+        
+##What regulates cofilin 1? (CFL1)
+class TestFindTf18(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTf18, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('cofilin 1')
+        print(target, '\n')
+        target_arg = ekb_from_text('cofilin 1')
+        get_gene_symbol(target_arg)
+        content = KQMLList('FIND-TF')
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('tfs')) == 17, output
+
+##What regulates insulin?
+class TestFindTf15(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTf15, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target_arg = ekb_from_text('insulin')
+        print(target_arg, '\n')
+        get_gene_symbol(target_arg)
+        content = KQMLList('FIND-TF')
+        content.set('target', KQMLString(target_arg))
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('tfs')) == 27, output
+
+##what transcription factors does miR-124-3p regulate? 
+class TestFindTfMirna1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTfMirna1, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna_arg = ekb_from_text('miR-124-3p')
+        print(mirna_arg, '\n')
+        content = KQMLList('FIND-TF-MIRNA')
+        content.set('miRNA', KQMLString(mirna_arg))
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('tfs'))=", str(len(output.get('tfs'))))
+        assert len(output.get('tfs')) == 276, output
+
+##what transcription factors does miR-200c regulate? 
+class TestFindTfMirna11(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTfMirna11, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna_arg = ekb_from_text('miR-200c')
+        print(mirna_arg, '\n')
+        content = KQMLList('FIND-TF-MIRNA')
+        content.set('miRNA', KQMLString(mirna_arg))
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        #print("len(output.get('tfs'))=", str(len(output.get('tfs'))))
+        assert output.get('reason') == 'MIRNA_NOT_FOUND', output
+        
+##what transcription factors does miR-200c-3p regulate? 
+class TestFindTfMirna12(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTfMirna12, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna_arg = ekb_from_text('miR-200c-3p')
+        print(mirna_arg, '\n')
+        content = KQMLList('FIND-TF-MIRNA')
+        content.set('miRNA', KQMLString(mirna_arg))
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('tfs'))=", str(len(output.get('tfs'))))
+        assert len(output.get('tfs')) == 57, output
+
+
+#
+def get_gene_symbol(target_arg):
+        agent = []
+        targets = []
+        ont1 = ['ONT::PROTEIN', 'ONT::GENE-PROTEIN', 'ONT::GENE']
+        tp = TripsProcessor(target_arg)
+        for term in tp.tree.findall('TERM'):
+            if term.find('type').text in ont1:
+                term_id = term.attrib['id']
+                agent.append(tp._get_agent_by_id(term_id, None))
+        for ag in agent:
+            targets.append(ag.name)
+        print('targets=' + ','.join(targets))
 
 if __name__ == '__main__':
     TestIsRegulation1().run_test()
