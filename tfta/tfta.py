@@ -1180,6 +1180,25 @@ class TFTA:
                 target_names.sort()       
         return target_names
         
+    def find_tf_miRNA(self, miRNA_names):
+        """
+        Return TFs regulated by the given miRNAs
+        example: what transcription factors does miR-124-3p regulate? 
+        """
+        target_names = self.find_target_miRNA(miRNA_names)
+        tf_names = []
+        #get TF list
+        if len(target_names):
+            res = self.tfdb.execute("SELECT DISTINCT TF FROM CombinedDB").fetchall()
+            tf_names = list(set(target_names) & set([r[0] for r in res]))
+        else:
+            raise TFNotFoundException
+        if len(tf_names):
+            tf_names.sort()
+        else:
+            raise TFNotFoundException
+        return tf_names
+        
     def find_evidence_miRNA_target(self, miRNA_name, target_name):
         """
         Return experimental evidence that the given miRNA regulates the target
