@@ -34,7 +34,8 @@ class TFTA_Module(Bioagent):
              'FIND-MIRNA-COUNT-GENE','FIND-GENE-COUNT-MIRNA',
              'FIND-PATHWAY-DB-KEYWORD', 'FIND-TISSUE', 'IS-REGULATION',
              'FIND-TF', 'FIND-PATHWAY', 'FIND-TARGET', 'FIND-GENE', 'FIND-MIRNA',
-             'IS-GENE-ONTO', 'FIND-GENE-ONTO', 'FIND-KINASE-REGULATION']
+             'IS-GENE-ONTO', 'FIND-GENE-ONTO', 'FIND-KINASE-REGULATION',
+             'FIND-TF-MIRNA']
     #keep the genes from the most recent previous call, which are used to input 
     #find-gene-onto if there's no gene input 
     #gene_list = ['STAT3', 'JAK1', 'JAK2', 'ELK1', 'FOS', 'SMAD2', 'KDM4B']
@@ -1546,6 +1547,48 @@ class TFTA_Module(Bioagent):
             reply = make_failure('UNKNOW_TASK')
         return reply
         
+    def respond_find_tf_miRNA(self, content):
+        """
+        Response to FIND-TF-MIRNA
+        """
+        try:
+            miRNA_arg = content.gets('miRNA')
+            miRNA_names = _get_miRNA_name(miRNA_arg)
+        except Exception as e:
+            reply = make_failure('NO_MIRNA_NAME')
+            return reply
+        if not len(miRNA_names):
+            reply = make_failure('NO_MIRNA_NAME')
+            return reply 
+        try:
+            tf_names = self.tfta.find_tf_miRNA(miRNA_names)
+        except miRNANotFoundException:
+            #for user clarification
+            if len(miRNA_names) == 1:
+                try:
+                    clari_mirna = self.tfta.get_similar_miRNAs(miRNA_names[0])
+                    c_str = ''
+                    for c in clari_mirna:
+                        c_str += '(:name %s) ' % c
+                    reply = make_failure_clarification('MIRNA_NOT_FOUND', '(' + c_str + ')')
+                    return reply
+                except miRNANotFoundException:
+                    reply = make_failure('NO_SIMILAR_MIRNA')
+                    return reply
+            else:
+                reply = make_failure('MIRNA_NOT_FOUND')
+                return reply
+        except TFNotFoundException:
+            reply = make_failure('NO_TF_FOUND')
+            return reply
+        tf_list_str = ''
+        for tf in tf_names:
+            tf_list_str += '(:name %s) ' % tf
+        reply = KQMLList.from_string(
+            '(SUCCESS :tfs (' + tf_list_str + '))')
+        self.gene_list = tf_names  
+        return reply
+        
     task_func = {'IS-REGULATION':respond_is_regulation, 'FIND-TF':respond_find_tf,
                  'FIND-PATHWAY':respond_find_pathway, 'FIND-TARGET':respond_find_target,
                  'FIND-GENE':respond_find_gene, 'FIND-MIRNA':respond_find_miRNA,
@@ -1578,7 +1621,8 @@ class TFTA_Module(Bioagent):
                  'FIND-EVIDENCE-MIRNA-TARGET':respond_find_evidence_miRNA_target,
                  'FIND-PATHWAY-DB-KEYWORD':respond_find_pathway_db_keyword,
                  'FIND-TISSUE':respond_find_tissue_gene,
-                 'FIND-KINASE-REGULATION':respond_find_kinase_regulation}
+                 'FIND-KINASE-REGULATION':respond_find_kinase_regulation,
+                 'FIND-TF-MIRNA':respond_find_tf_miRNA}
     
     def receive_request(self, msg, content):
         """If a "request" message is received, decode the task and
