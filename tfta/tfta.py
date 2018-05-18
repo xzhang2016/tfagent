@@ -8,6 +8,8 @@ import sqlite3
 import numpy as np
 from collections import defaultdict
 import math
+from indra.sources.indra_db_rest.client_api import get_statements
+from indra.tools.assemble_corpus import filter_evidence_source
 
 logger = logging.getLogger('TFTA')
  
@@ -1453,6 +1455,24 @@ class TFTA:
             else:
                 raise KinaseNotFoundException
         return kinase_names
+        
+        #-------------------------------------------------------
+        #methods for querying indra database
+        def find_evidence_indraDB(self, subj, obj, stmt_types):
+            """
+            subj: str, HGNC symbol
+            obj: str, HGNC symbol
+            stmt_type: list[str], list of statement type
+            """
+            statements = []
+            evidence = []
+            for stype in stmt_types:
+                stmts = get_statements(subject=subj, object=obj, stmt_type=stype)
+                if len(stmts):
+                    stmts_filtered = filter_evidence_source(stmts, ['reach'], policy='one')
+                    if len(stmts_filtered):
+                        statements += stmts_filtered
+            return statements
 
 
 #test functions
