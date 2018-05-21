@@ -1456,16 +1456,16 @@ class TFTA:
                 raise KinaseNotFoundException
         return kinase_names
         
-        #-------------------------------------------------------
-        #methods for querying indra database
-        def find_evidence_indraDB(self, subj, obj, stmt_types):
+        #---------------------------------------------#
+        #--------methods for querying indra database--#
+        #---------------------------------------------#
+        def find_evidence_indraDB(self, subj=None, obj=None, stmt_types=None):
             """
             subj: str, HGNC symbol
             obj: str, HGNC symbol
             stmt_type: list[str], list of statement type
             """
             statements = []
-            evidence = []
             for stype in stmt_types:
                 stmts = get_statements(subject=subj, object=obj, stmt_type=stype)
                 if len(stmts):
@@ -1473,7 +1473,43 @@ class TFTA:
                     if len(stmts_filtered):
                         statements += stmts_filtered
             return statements
-
+            
+        def find_tf_indra(self, stmts):
+            """
+            stmts: indra statements
+            return the list of TFs from the subject of the stmts, as well as other subjects
+            """
+            tfs = set()
+            nontfs = set()
+            subjects = set()
+            for stmt in stmts:
+                subj = stmt.subj
+                if subj is not None:
+                    subjects.add(subj.name)
+            #get all the tfs in the db
+            if self.tfdb is not None:
+                res = self.tfdb.execute("SELECT DISTINCT tf FROM transFactor").fetchall()
+                all_tfs = set([r[0] for r in res])
+            else:
+                all_tfs = set()
+            tfs = subjects.intersection(all_tfs)
+            nontfs = subjects - all_tfs
+            return tfs, nontfs
+       '''    
+        def find_subject_indraDB(self, obj, stmt_types):
+            """
+            obj: str, HGNC symbol
+            stmt_type: list[str], list of statement type
+            """
+            statements = []
+            for stype in stmt_types:
+                stmts = get_statements(object=obj, stmt_type=stype)
+                if len(stmts):
+                    stmts_filtered = filter_evidence_source(stmts, ['reach'], policy='one')
+                    if len(stmts_filtered):
+                        statements += stmts_filtered
+            return statements
+'''
 
 #test functions
 #if __name__ == "__main__":
