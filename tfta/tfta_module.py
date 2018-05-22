@@ -17,6 +17,9 @@ from indra.sources.trips.processor import TripsProcessor
 from collections import defaultdict
 from bioagents import Bioagent
 
+stmt_type_map = {'increase':['IncreaseAmount'], 'decrease':['DecreaseAmount'],
+                 'regulate':['IncreaseAmount', 'DecreaseAmount']}
+
 class TFTA_Module(Bioagent):
     """TFTA module is used to receive and decode messages and send
     responses from and to other agents in the system."""
@@ -35,7 +38,7 @@ class TFTA_Module(Bioagent):
              'FIND-PATHWAY-DB-KEYWORD', 'FIND-TISSUE', 'IS-REGULATION',
              'FIND-TF', 'FIND-PATHWAY', 'FIND-TARGET', 'FIND-GENE', 'FIND-MIRNA',
              'IS-GENE-ONTO', 'FIND-GENE-ONTO', 'FIND-KINASE-REGULATION',
-             'FIND-TF-MIRNA']
+             'FIND-TF-MIRNA', 'FIND-REGULATION']
     #keep the genes from the most recent previous call, which are used to input 
     #find-gene-onto if there's no gene input 
     #gene_list = ['STAT3', 'JAK1', 'JAK2', 'ELK1', 'FOS', 'SMAD2', 'KDM4B']
@@ -1589,6 +1592,58 @@ class TFTA_Module(Bioagent):
         self.gene_list = tf_names  
         return reply
         
+    def respond_find_regulation(self, content):
+        """
+        Response to find-regulation request
+        For example: what regulate MYC?
+        """
+        try:
+            target_arg = content.gets('target')
+            targets = _get_targets(target_arg)
+            target_names = []
+            for target in targets:
+                target_names.append(target.name)
+        except Exception as e:
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
+        if not len(target_names):
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
+        target_names = list(set(target_names))
+        try:
+            keyword_arg = content.get('keyword')
+            keyword_name = keyword_arg.data
+        except Exception as e:
+            reply = make_failure('NO_KEYWORD')
+            return reply
+        stmt_types = stmt_type_map[keyword_name.lower()]
+        lit_messages = self.get_tf_indra(target_names, stmt_types)
+        try:
+            tf_names = self.tfta.find_tfs(target_names)
+        except TargetNotFoundException:
+            if len(lit_messages):
+                reply = KQMLList.from_string(
+                        '(SUCCESS :regulators (' + lit_messages + '))')
+            else:
+                reply = make_failure('TARGET_NOT_FOUND')
+            return reply
+        if len(tf_names):
+            messages = ''
+            messages += wrap_message(':tf-db', tf_names)
+            if len(lit_messages):
+                messages += lit_messages
+            reply = KQMLList.from_string(
+                '(SUCCESS :regulators (' + messages + '))')
+        else:
+            if len(lit_messages):
+                reply = KQMLList.from_string(
+                        '(SUCCESS :regulators (' + lit_messages + '))')
+            else:
+                reply = make_failure('NO_TF_FOUND')
+        self.gene_list = tf_names
+        return reply
+            
+        
     task_func = {'IS-REGULATION':respond_is_regulation, 'FIND-TF':respond_find_tf,
                  'FIND-PATHWAY':respond_find_pathway, 'FIND-TARGET':respond_find_target,
                  'FIND-GENE':respond_find_gene, 'FIND-MIRNA':respond_find_miRNA,
@@ -1622,7 +1677,8 @@ class TFTA_Module(Bioagent):
                  'FIND-PATHWAY-DB-KEYWORD':respond_find_pathway_db_keyword,
                  'FIND-TISSUE':respond_find_tissue_gene,
                  'FIND-KINASE-REGULATION':respond_find_kinase_regulation,
-                 'FIND-TF-MIRNA':respond_find_tf_miRNA}
+                 'FIND-TF-MIRNA':respond_find_tf_miRNA,
+                 'FIND-REGULATION':respond_find_regulation}
     
     def receive_request(self, msg, content):
         """If a "request" message is received, decode the task and
@@ -1638,6 +1694,32 @@ class TFTA_Module(Bioagent):
         reply_msg = KQMLPerformative('reply')
         reply_msg.set('content', reply_content)
         self.reply(msg, reply_msg)
+        
+    def get_tf_indra(self, target_names, stmt_types):
+        """
+        wrap message for multiple targets case
+        target_names: list
+        stmt_types: statement type
+        """
+        lit_messages = ''
+        tfs = defaultdict(set)
+        nontfs = defaultdict(set)
+        for target in target_names:
+            stmts = self.tfta.find_evidence_indraDB(obj=target, stmt_types=stmt_types)
+            if len(stmts):
+                tfs[target], nontfs[target] = self.tfta.find_tf_indra(stmts)
+        #take the intersection
+        ftfs = tfs[target_names[0]]
+        fnontfs = nontfs[target_names[0]]
+        if len(target_names)>1:
+            for i in range(1, len(target_names)):
+                ftfs = ftfs.intersection(tfs[target_names[i]])
+                fnontfs = fnontfs.intersection(nontfs[target_names[i]])
+        if len(ftfs):
+            lit_messages += wrap_message(':tf-literature', ftfs)
+        if len(fnontfs):
+            lit_messages += wrap_message(':nontf-literature', fnontfs)
+        return lit_messages
 
 def _get_target(target_str):
     tp = TripsProcessor(target_str)
@@ -1789,6 +1871,36 @@ def cluster_dict_by_value2(d):
         clusters[','.join(val)].append(key)
     return clusters
     
+def wrap_message(descr, data):  
+    tf_list_str = ''
+    for tf in data:
+        tf_list_str += '(:name %s) ' % tf
+    return descr + ' (' + tf_list_str + ') '
+
+def _get_tf_indra(target_names, stmt_types):
+    """
+    wrap message for multiple targets case
+    target_names: list
+    stmt_types: statement type
+    """
+    lit_messages = ''
+    tfs = defaultdict(set)
+    nontfs = defaultdict(set)
+    for target in target_names:
+        stmts = self.tfta.find_evidence_indraDB(obj=target, stmt_types=stmt_types)
+        if len(stmts):
+            tfs[target], nontfs[target] = self.tfta.find_tf_indra(stmts)
+    #take the intersection
+    ftfs = tfs[target_names[0]]
+    fnontfs = nontfs[target_names[0]]
+    for i in range(1, len(target_names)):
+        ftfs = ftfs.intersection(tfs[target_names[i]])
+        fnontfs = fnontfs.intersection(nontfs[target_names[i]])
+    if len(ftfs):
+        lit_messages += wrap_message(':tf-literature', ftfs)
+    if len(fnontfs):
+        lit_messages += wrap_message(':nontf-literature', nontfs)
+    return lit_messages
 
 if __name__ == "__main__":
     TFTA_Module(argv=sys.argv[1:])
