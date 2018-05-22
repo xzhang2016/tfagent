@@ -1513,7 +1513,7 @@ class TFTA:
             for ev in evis:
                 source_api = ev.source_api
                 pmid = ev.pmid
-                text = ev.pmid
+                text = ev.text
                 evidences.add((source_api, pmid, text))
         return evidences
             
