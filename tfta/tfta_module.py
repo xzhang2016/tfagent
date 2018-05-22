@@ -38,7 +38,7 @@ class TFTA_Module(Bioagent):
              'FIND-PATHWAY-DB-KEYWORD', 'FIND-TISSUE', 'IS-REGULATION',
              'FIND-TF', 'FIND-PATHWAY', 'FIND-TARGET', 'FIND-GENE', 'FIND-MIRNA',
              'IS-GENE-ONTO', 'FIND-GENE-ONTO', 'FIND-KINASE-REGULATION',
-             'FIND-TF-MIRNA', 'FIND-REGULATION']
+             'FIND-TF-MIRNA', 'FIND-REGULATION', 'FIND-EVIDENCE']
     #keep the genes from the most recent previous call, which are used to input 
     #find-gene-onto if there's no gene input 
     #gene_list = ['STAT3', 'JAK1', 'JAK2', 'ELK1', 'FOS', 'SMAD2', 'KDM4B']
@@ -1616,7 +1616,11 @@ class TFTA_Module(Bioagent):
         except Exception as e:
             reply = make_failure('NO_KEYWORD')
             return reply
-        stmt_types = stmt_type_map[keyword_name.lower()]
+        try:
+            stmt_types = stmt_type_map[keyword_name.lower()]
+        except KeyError as e:
+            reply = make_failure('INVALID_KEYWORD')
+            return reply
         lit_messages = self.get_tf_indra(target_names, stmt_types)
         try:
             tf_names = self.tfta.find_tfs(target_names)
@@ -1641,6 +1645,56 @@ class TFTA_Module(Bioagent):
             else:
                 reply = make_failure('NO_TF_FOUND')
         self.gene_list = tf_names
+        return reply
+    
+    def respond_find_evidence(self, content):
+        """
+        response to find-evidence request
+        for example: show me evidence that IL6 increase the amount of SOCS1.
+        Only consider one-one case
+        """
+        try:
+            regulator_arg = content.gets('regulator')
+            regulator = _get_target(regulator_arg)
+            regulator_name = regulator.name
+        except Exception as e:
+            reply = make_failure('NO_REGULATOR_NAME')
+            return reply
+        if not regulator_name:
+            reply = make_failure('NO_REGULATOR_NAME')
+            return reply
+        try:
+            target_arg = content.gets('target')
+            target = _get_target(target_arg)
+            target_name = target.name
+        except Exception as e:
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
+        if not target_name:
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
+        try:
+            keyword_arg = content.get('keyword')
+            keyword_name = keyword_arg.data
+        except Exception as e:
+            reply = make_failure('NO_KEYWORD')
+            return reply
+        try:
+            stmt_types = stmt_type_map[keyword_name.lower()]
+        except KeyError as e:
+            reply = make_failure('INVALID_KEYWORD')
+            return reply
+        stmts = self.tfta.find_statement_indraDB(subj=regulator_name, obj=target_name, stmt_types=stmt_types)
+        if len(stmts):
+            evidences = self.tfta.find_evidence_indra(stmts)
+            if len(evidences):
+                evi_message = wrap_evidence_message(':evidence', evidences)
+                reply = KQMLList.from_string(
+                        '(SUCCESS ' + evi_message + ')')
+            else:
+                reply = make_failure('NO_EVIDENCE_FOUND')
+        else:
+            reply = make_failure('NO_EVIDENCE_FOUND')
         return reply
             
         
@@ -1678,7 +1732,8 @@ class TFTA_Module(Bioagent):
                  'FIND-TISSUE':respond_find_tissue_gene,
                  'FIND-KINASE-REGULATION':respond_find_kinase_regulation,
                  'FIND-TF-MIRNA':respond_find_tf_miRNA,
-                 'FIND-REGULATION':respond_find_regulation}
+                 'FIND-REGULATION':respond_find_regulation,
+                 'FIND-EVIDENCE':respond_find_evidence}
     
     def receive_request(self, msg, content):
         """If a "request" message is received, decode the task and
@@ -1705,7 +1760,7 @@ class TFTA_Module(Bioagent):
         tfs = defaultdict(set)
         nontfs = defaultdict(set)
         for target in target_names:
-            stmts = self.tfta.find_evidence_indraDB(obj=target, stmt_types=stmt_types)
+            stmts = self.tfta.find_statement_indraDB(obj=target, stmt_types=stmt_types)
             if len(stmts):
                 tfs[target], nontfs[target] = self.tfta.find_tf_indra(stmts)
         #take the intersection
@@ -1877,30 +1932,27 @@ def wrap_message(descr, data):
         tf_list_str += '(:name %s) ' % tf
     return descr + ' (' + tf_list_str + ') '
 
-def _get_tf_indra(target_names, stmt_types):
+def wrap_evidence_message(descr, evids):
     """
-    wrap message for multiple targets case
-    target_names: list
-    stmt_types: statement type
+    descr: descriptor, for example: ':evidence'
+    evids: set of tuple(source_api, pmid, text)
     """
-    lit_messages = ''
-    tfs = defaultdict(set)
-    nontfs = defaultdict(set)
-    for target in target_names:
-        stmts = self.tfta.find_evidence_indraDB(obj=target, stmt_types=stmt_types)
-        if len(stmts):
-            tfs[target], nontfs[target] = self.tfta.find_tf_indra(stmts)
-    #take the intersection
-    ftfs = tfs[target_names[0]]
-    fnontfs = nontfs[target_names[0]]
-    for i in range(1, len(target_names)):
-        ftfs = ftfs.intersection(tfs[target_names[i]])
-        fnontfs = fnontfs.intersection(nontfs[target_names[i]])
-    if len(ftfs):
-        lit_messages += wrap_message(':tf-literature', ftfs)
-    if len(fnontfs):
-        lit_messages += wrap_message(':nontf-literature', nontfs)
-    return lit_messages
+    limit = 10
+    evi_message = ''
+    ind = 0
+    for ev in evids:
+        if all(ev) and ind < limit:
+            evi_message += '('
+            evi_message += ':source_api ' + ev[0]
+            evi_message += ' :pmid ' + ev[1]
+            evi_message += ' :text ' + '"' + ev[2] + '"'
+            evi_message += ') '
+            ind += 1
+        else:
+            break
+    evi_message = descr + ' (' + evi_message + ')'
+    return evi_message
+    
 
 if __name__ == "__main__":
     TFTA_Module(argv=sys.argv[1:])
