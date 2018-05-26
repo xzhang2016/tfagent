@@ -18,7 +18,7 @@ from collections import defaultdict
 from bioagents import Bioagent
 
 stmt_type_map = {'increase':['IncreaseAmount'], 'decrease':['DecreaseAmount'],
-                 'regulate':['IncreaseAmount', 'DecreaseAmount']}
+                 'regulate':['RegulateAmount']}
 
 class TFTA_Module(Bioagent):
     """TFTA module is used to receive and decode messages and send
@@ -70,8 +70,6 @@ class TFTA_Module(Bioagent):
             reply = self.respond_is_tf_target_tissue(content)
         elif all([tf_arg,target_arg]):
             reply = self.respond_is_tf_target(content)
-        #elif all([mirna_arg,target_arg]):
-            #reply = self.respond_is_miRNA_target(content)
         else:
             reply = make_failure('UNKNOW_TASK')
         return reply
@@ -237,12 +235,8 @@ class TFTA_Module(Bioagent):
             if '<ekb' in gene_arg or '<EKB' in gene_arg:
                 genes = _get_targets(gene_arg)
                 gene_names = []
-                #fw = open('test-gene-onto.txt', 'a')
                 for gene in genes:
                     gene_names.append(gene.name)
-                    #fw.write(gene.name + '\t')
-                #fw.write('\n======================\n')
-                #fw.close()
             else:
                 gene_arg = content.get('gene')
                 gene_arg_str = gene_arg.data
@@ -267,13 +261,14 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string(
                 '(SUCCESS :genes (' + gene_list_str + '))')
         else:
-            reply = make_failure('NO_GENE_FOUND')
+            reply = KQMLList.from_string('(SUCCESS :genes NIL)')
         return reply
         
     def respond_is_tf_target(self, content):
         """
         Response content to is-tf-target request.
         """
+        literature = False
         tf_arg = content.gets('tf')
         try:
             tf = _get_target(tf_arg)
@@ -288,17 +283,27 @@ class TFTA_Module(Bioagent):
         except Exception as e:
             reply = make_failure('NO_TARGET_NAME')
             return reply
+        #check if it exists in literature
+        stmts = self.tfta.find_statement_indraDB(subj=tf_name, obj=target_name, stmt_types=['RegulateAmount'])
+        if len(stmts):
+            literature = True
+        #check the db
         try:
             is_target = self.tfta.Is_tf_target(tf_name, target_name)
         except TFNotFoundException:
-            reply = make_failure('TF_NOT_FOUND')
-            return reply
+            if not literature:
+                reply = make_failure('TF_NOT_FOUND')
+                return reply
         except TargetNotFoundException:
-            reply = make_failure('TARGET_NOT_FOUND')
-            return reply
+            if not literature:
+                reply = make_failure('TARGET_NOT_FOUND')
+                return reply
+        result = is_target or literature
         reply = KQMLList('SUCCESS')
-        is_target_str = 'TRUE' if is_target else 'FALSE'
+        is_target_str = 'TRUE' if result else 'FALSE'
         reply.set('result', is_target_str)
+        reply.set('db', 'TRUE' if is_target else 'FALSE')
+        reply.set('literature', 'TRUE' if literature else 'FALSE')
         return reply
 
     tissue_list = ['bladder','blood','bone','bone_marrow','brain','cervix',
@@ -307,7 +312,6 @@ class TFTA_Module(Bioagent):
                    'peripheral_nervous_system','placenta','prostate','skin',
                    'small_intestine','soft_tissue','spleen','stomach',
                    'testis','thymus','tongue','uterus']
-
 
     def respond_is_tf_target_tissue(self, content):
         """
