@@ -1753,22 +1753,31 @@ class TFTA_Module(Bioagent):
         """
         lit_messages = ''
         tfs = defaultdict(set)
-        nontfs = defaultdict(set)
+        others = defaultdict(set)
+        mirnas = defaultdict(set)
+        genes = defaultdict(set)
         for target in target_names:
             stmts = self.tfta.find_statement_indraDB(obj=target, stmt_types=stmt_types)
             if len(stmts):
-                tfs[target], nontfs[target] = self.tfta.find_tf_indra(stmts)
+                tfs[target], genes[target], mirnas[target], others[target] = self.tfta.find_tf_indra(stmts)
         #take the intersection
         ftfs = tfs[target_names[0]]
-        fnontfs = nontfs[target_names[0]]
+        fmirnas = mirnas[target_names[0]]
+        fothers = others[target_names[0]]
+        fgenes = genes[target_names[0]]
         if len(target_names)>1:
             for i in range(1, len(target_names)):
                 ftfs = ftfs.intersection(tfs[target_names[i]])
-                fnontfs = fnontfs.intersection(nontfs[target_names[i]])
+                fmirnas = fmirnas.intersection(mirnas[target_names[i]])
+                fothers = fothers.intersection(others[target_names[i]])
         if len(ftfs):
             lit_messages += wrap_message(':tf-literature', ftfs)
-        if len(fnontfs):
-            lit_messages += wrap_message(':nontf-literature', fnontfs)
+        if len(fgenes):
+            lit_messages += wrap_message(':gene-literature', fgenes)
+        if len(fmirnas):
+            lit_messages += wrap_message(':miRNA-literature', fmirnas)
+        if len(fothers):
+            lit_messages += wrap_message(':other-literature', fothers)
         return lit_messages
 
 def _get_target(target_str):
