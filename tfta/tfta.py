@@ -53,6 +53,24 @@ def _make_go_map():
     
 go_map = _make_go_map()
 
+def _get_mirna_indra():
+    lines = open(_resource_dir + 'mirna_indra_regulateAmount.txt', 'rt').readlines()
+    mirna_indra = set()
+    for line in lines:
+        mirna_indra.add(line.strip())
+    return mirna_indra
+
+mirna_indra_set = _get_mirna_indra()
+
+def _get_hgnc_genes():
+    lines = open(_resource_dir + 'hgnc_official_symbol_20180518.txt', 'rt').readlines()
+    hgnc_genes = set()
+    for line in lines:
+        hgnc_genes.add(line.strip())
+    return hgnc_genes
+    
+hgnc_genes_set = _get_hgnc_genes()
+
 class TFTA:
     def __init__(self):
         logger.debug('Using resource folder: %s' % _resource_dir)
@@ -1482,8 +1500,6 @@ class TFTA:
         stmts: indra statements
         return the list of TFs from the subject of the stmts, as well as other subjects
         """
-        tfs = set()
-        nontfs = set()
         subjects = set()
         for stmt in stmts:
             subj = stmt.subj
@@ -1496,8 +1512,12 @@ class TFTA:
         else:
             all_tfs = set()
         tfs = subjects.intersection(all_tfs)
-        nontfs = subjects - all_tfs
-        return tfs, nontfs
+        nontfs = subjects - tfs
+        mirnas = nontfs.intersection(mirna_indra_set)
+        others = nontfs - mirnas
+        genes = others.intersection(hgnc_genes_set)
+        others = others - genes
+        return tfs, genes, mirnas, others
        
     def find_evidence_indra(self, stmts):
         """
