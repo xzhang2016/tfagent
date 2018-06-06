@@ -1474,6 +1474,25 @@ class TFTA:
                 raise KinaseNotFoundException
         return kinase_names
         
+    def find_gene_tissue(self, tissue_name):
+        """
+        For a given tissue, return genes expressed in this tissue
+        """
+        gene_names = []
+        if self.tfdb is not None:
+            regstr = '%' + tissue_name + '%'
+            t = (regstr,)
+            res = self.tfdb.execute("SELECT DISTINCT genesymbol FROM geneTissue "
+                                    "WHERE tissue LIKE ? ", t).fetchall()
+            if res:
+                gene_names = [r[0] for r in res]
+            else:
+                raise TissueNotFoundException
+        gene_names = list(set(gene_names) & hgnc_genes_set)
+        if len(gene_names):
+            gene_names.sort()
+        return gene_names
+        
     #---------------------------------------------#
     #--------methods for querying indra database--#
     #---------------------------------------------#
@@ -1516,8 +1535,8 @@ class TFTA:
         mirnas = nontfs.intersection(mirna_indra_set)
         others = nontfs - mirnas
         genes = others.intersection(hgnc_genes_set)
-        others = others - genes
-        return tfs, genes, mirnas, others
+        other = others - genes
+        return tfs, genes, mirnas, other
        
     def find_evidence_indra(self, stmts):
         """
