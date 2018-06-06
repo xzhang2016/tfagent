@@ -1451,7 +1451,7 @@ class TFTA_Module(Bioagent):
         #without gene parameter, then return all the tissues
         if not gene_arg:
             tissue_str = ''
-            for ts in tissue_list:
+            for ts in self.tissue_list:
                 tissue_str += '(:name %s) ' % ts
             reply = KQMLList.from_string(
                     '(SUCCESS :tissue (' + tissue_str + '))')
