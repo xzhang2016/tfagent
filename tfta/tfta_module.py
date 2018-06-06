@@ -1447,9 +1447,17 @@ class TFTA_Module(Bioagent):
         """
         Response to FIND-TISSUE-GENE task
         """
+        gene_arg = content.gets('gene')
+        #without gene parameter, then return all the tissues
+        if not gene_arg:
+            tissue_str = ''
+            for ts in tissue_list:
+                tissue_str += '(:name %s) ' % ts
+            reply = KQMLList.from_string(
+                    '(SUCCESS :tissue (' + tissue_str + '))')
+            return reply
         try:
-            gene_arg = content.gets('gene')
-            gene = _get_target(gene_arg)
+            gene = _get_targets(gene_arg)
             gene_name = gene.name
         except Exception as e:
             reply = make_failure('NO_GENE_NAME')
