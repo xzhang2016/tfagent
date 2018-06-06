@@ -23,3 +23,6 @@ It's based on Tiger dataset.
 
 6)Tissue specific gene regulation
 It's based on Tiger dataset and Neph2012, as well as literature search.
+
+7) kinase regulation
+It's based on enrichr (http://amp.pharm.mssm.edu/Enrichr/#stats)
