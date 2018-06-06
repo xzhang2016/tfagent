@@ -38,7 +38,7 @@ class TFTA_Module(Bioagent):
              'FIND-PATHWAY-DB-KEYWORD', 'FIND-TISSUE', 'IS-REGULATION',
              'FIND-TF', 'FIND-PATHWAY', 'FIND-TARGET', 'FIND-GENE', 'FIND-MIRNA',
              'IS-GENE-ONTO', 'FIND-GENE-ONTO', 'FIND-KINASE-REGULATION',
-             'FIND-TF-MIRNA', 'FIND-REGULATION', 'FIND-EVIDENCE']
+             'FIND-TF-MIRNA', 'FIND-REGULATION', 'FIND-EVIDENCE', 'FIND-GENE-TISSUE']
     #keep the genes from the most recent previous call, which are used to input 
     #find-gene-onto if there's no gene input 
     #gene_list = ['STAT3', 'JAK1', 'JAK2', 'ELK1', 'FOS', 'SMAD2', 'KDM4B']
@@ -1700,6 +1700,54 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string('(SUCCESS :evidence NIL)')
         return reply
             
+    def respond_find_gene_tissue(self, content):
+        """
+        respond to find-gene-tissue request
+        for example: which of these are expressed in liver?(subsequent query)
+        what genes are expressed in liver?
+        """
+        try:
+            tissue_arg = content.get('tissue')
+            #tissue_name = tissue_arg.head()
+            tissue_name = tissue_arg.data
+            #tissue_name = trim_quotes(tissue_name)
+            tissue_name = tissue_name.lower()
+            tissue_name = tissue_name.replace(' ', '_')
+            tissue_name = tissue_name.replace('-', '_')
+        except Exception as e:
+            reply = make_failure('NO_TISSUE_NAME')
+            return reply
+        if tissue_name not in self.tissue_list:
+            reply = make_failure('INVALID_TISSUE')
+            return reply
+        try:
+            gene_list = self.tfta.find_gene_tissue(tissue_name)
+        except TissueNotFoundException:
+            reply = KQMLList.from_string('(SUCCESS :genes NIL)')
+            return reply
+        #check if it's a subsequent query with optional parameter
+        gene_arg = content.get('gene')
+        ogenes = []
+        if gene_arg is not None:
+            gene_arg_str = gene_arg.data
+            gene_arg_str = gene_arg_str.replace(' ', '')
+            gene_arg_str = gene_arg_str.upper()
+            ogenes = gene_arg_str.split(',')
+        if len(ogenes):
+            results = list(set(gene_list) & set(ogenes))
+        else:
+            results = gene_list
+        if len(results):
+            results.sort()
+            gene_str = ''
+            for g in results:
+                g_str = '"' + g + '"'
+                gene_str += '(:name %s) ' % g
+            reply = KQMLList.from_string(
+            '(SUCCESS :genes (' + gene_str + '))')
+        else:
+            reply = KQMLList.from_string('(SUCCESS :genes NIL)')
+        return reply
         
     task_func = {'IS-REGULATION':respond_is_regulation, 'FIND-TF':respond_find_tf,
                  'FIND-PATHWAY':respond_find_pathway, 'FIND-TARGET':respond_find_target,
@@ -1736,7 +1784,8 @@ class TFTA_Module(Bioagent):
                  'FIND-KINASE-REGULATION':respond_find_kinase_regulation,
                  'FIND-TF-MIRNA':respond_find_tf_miRNA,
                  'FIND-REGULATION':respond_find_regulation,
-                 'FIND-EVIDENCE':respond_find_evidence}
+                 'FIND-EVIDENCE':respond_find_evidence,
+                 'FIND-GENE-TISSUE':respond_find_gene_tissue}
     
     def receive_request(self, msg, content):
         """If a "request" message is received, decode the task and
@@ -1778,6 +1827,7 @@ class TFTA_Module(Bioagent):
                 ftfs = ftfs.intersection(tfs[target_names[i]])
                 fmirnas = fmirnas.intersection(mirnas[target_names[i]])
                 fothers = fothers.intersection(others[target_names[i]])
+                fgenes = fgenes.intersection(genes[target_names[i]])
         if len(ftfs):
             lit_messages += wrap_message(':tf-literature', ftfs)
         if len(fgenes):
