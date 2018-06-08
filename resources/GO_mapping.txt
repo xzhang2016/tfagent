@@ -1,6 +1,6 @@
-kinase	GO:0016301
-protein kinase	GO:0004672
-tyrosine kinase	GO:0004713
+kinase	kinase
+protein kinase	kinase
+tyrosine kinase	tyrosine kinase
 serine kinase	GO:0004674
 threonine kinase	GO:0004674
 phosphatase	GO:0004725
