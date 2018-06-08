@@ -75,7 +75,7 @@ class TFTA:
     def __init__(self):
         logger.debug('Using resource folder: %s' % _resource_dir)
         #Load TF_target database
-        tf_db_file = _resource_dir + 'TF_target_v6_4.db'
+        tf_db_file = _resource_dir + 'TF_target_v7.db'
         if os.path.isfile(tf_db_file):
             self.tfdb = sqlite3.connect(tf_db_file, check_same_thread=False)
             logger.info('Loaded TF-target database')
@@ -111,8 +111,9 @@ class TFTA:
         """
         Return true if the gene is a kinase
         """
-        goids = go_map[kinase_name]
-        if not len(goids):
+        try:
+            goids = go_map[kinase_name]
+        except KeyError:
             raise GONotFoundException
         if self.tfdb is not None:
             for go in goids:
@@ -126,8 +127,9 @@ class TFTA:
         """
         Return the genes which are kinases
         """
-        goids = go_map[kinase_name]
-        if not len(goids):
+        try:
+            goids = go_map[kinase_name]
+        except KeyError:
             raise GONotFoundException
         kinase = []
         if self.tfdb is not None:
@@ -1511,6 +1513,7 @@ class TFTA:
                     if len(stmts_filtered):
                         statements += stmts_filtered
         except Exception as e:
+            #print(e)
             return statements
         return statements
             
