@@ -1619,35 +1619,39 @@ class TFTA_Module(Bioagent):
         except Exception as e:
             reply = make_failure('NO_KEYWORD')
             return reply
+        #literature result
         try:
             stmt_types = stmt_type_map[keyword_name.lower()]
         except KeyError as e:
             reply = make_failure('INVALID_KEYWORD')
             return reply
         lit_messages = self.get_tf_indra(target_names, stmt_types)
+        #kinase regualtion
+        kin_messages = self.get_kinase_regulation(target_names, keyword_name.lower())
+        #db result
         try:
             tf_names = self.tfta.find_tfs(target_names)
         except TargetNotFoundException:
-            if len(lit_messages):
+            messages = _combine_messages([kin_messages, lit_messages])
+            if len(messages):
                 reply = KQMLList.from_string(
-                        '(SUCCESS :regulators (' + lit_messages + '))')
+                        '(SUCCESS :regulators (' + messages + '))')
             else:
-                reply = make_failure('TARGET_NOT_FOUND')
+                reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
             return reply
         if len(tf_names):
-            messages = ''
-            messages += wrap_message(':tf-db', tf_names)
-            if len(lit_messages):
-                messages += lit_messages
+            tf_messages = wrap_message(':tf-db', tf_names)
+            messages = _combine_messages([tf_messages, kin_messages, lit_messages])
             reply = KQMLList.from_string(
                 '(SUCCESS :regulators (' + messages + '))')
         else:
-            if len(lit_messages):
+            messages = _combine_messages([kin_messages, lit_messages])
+            if len(messages):
                 reply = KQMLList.from_string(
-                        '(SUCCESS :regulators (' + lit_messages + '))')
+                        '(SUCCESS :regulators (' + messages + '))')
             else:
                 reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
-        self.gene_list = tf_names
+        #self.gene_list = tf_names
         return reply
     
     def respond_find_evidence(self, content):
@@ -1837,6 +1841,27 @@ class TFTA_Module(Bioagent):
         if len(fothers):
             lit_messages += wrap_message(':other-literature', fothers)
         return lit_messages
+        
+    def get_kinase_regulation(self, target_names, keyword_name):
+        """
+        target_names: list
+        keyword_name: string
+        """
+        kin_messages = ''
+        kinase_names = []
+        if keyword_name == 'regulate':
+            try:
+                kinase_names = self.tfta.find_kinase_target(target_names)
+            except KinaseNotFoundException:
+                return kin_messages
+        else:
+            try:
+                kinase_names = self.tfta.find_kinase_target_keyword(target_names, keyword_name)
+            except KinaseNotFoundException:
+                return kin_messages
+        if len(kinase_names):
+            kin_messages += wrap_message(':kinase-db', kinase_names)
+        return kin_messages
 
 def _get_target(target_str):
     tp = TripsProcessor(target_str)
@@ -1988,7 +2013,10 @@ def cluster_dict_by_value2(d):
         clusters[','.join(val)].append(key)
     return clusters
     
-def wrap_message(descr, data):  
+def wrap_message(descr, data):
+    if type(data) is set:
+        data = list(data)
+    data.sort()  
     tf_list_str = ''
     for tf in data:
         tf_list_str += '(:name %s) ' % tf
@@ -2015,6 +2043,12 @@ def wrap_evidence_message(descr, evids):
     evi_message = descr + ' (' + evi_message + ')'
     return evi_message
     
+def _combine_messages(mess_list):
+    messages = ''
+    for mess in mess_list:
+        if len(mess):
+            messages += mess
+    return messages
 
 if __name__ == "__main__":
     TFTA_Module(argv=sys.argv[1:])
