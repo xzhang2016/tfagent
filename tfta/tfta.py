@@ -138,6 +138,8 @@ class TFTA:
                 res = self.tfdb.execute("SELECT geneSymbol FROM go2Genes WHERE termId = ? ", t).fetchall()
                 kinase += [r[0] for r in res]
             kinase = list(set(kinase) & set(gene_names))
+        if len(kinase):
+            kinase.sort()
         return kinase
 
     def Is_tf_target_tissue(self,tf_name,target_name,tissue_name):
