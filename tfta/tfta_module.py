@@ -1457,7 +1457,7 @@ class TFTA_Module(Bioagent):
                     '(SUCCESS :tissue (' + tissue_str + '))')
             return reply
         try:
-            gene = _get_targets(gene_arg)
+            gene = _get_target(gene_arg)
             gene_name = gene.name
         except Exception as e:
             reply = make_failure('NO_GENE_NAME')
@@ -1842,6 +1842,22 @@ class TFTA_Module(Bioagent):
             lit_messages += wrap_message(':other-literature', fothers)
         return lit_messages
         
+    def _send_table_to_provenance(self, stmts, nl_question):
+        """Post a concise table listing statements found."""
+        html_str = '<h4>Statements matching: %s</h4>\n' % nl_question
+        html_str += '<table style="width:100%">\n'
+        row_list = ['<th>Source</th><th>Interactions</th><th>Target</th>']
+        for stmt in stmts:
+            sub_ag, obj_ag = stmt.agent_list()
+            row_list.append('<td>%s</td><td>%s</td><td>%s</td>'
+                            % (sub_ag, type(stmt).__name__, obj_ag))
+        html_str += '\n'.join(['  <tr>%s</tr>\n' % row_str
+                               for row_str in row_list])
+        html_str += '</table>'
+        content = KQMLList('add-provenance')
+        content.sets('html', html_str)
+        return self.tell(content)
+        
     def get_kinase_regulation(self, target_names, keyword_name):
         """
         target_names: list
@@ -2019,6 +2035,7 @@ def wrap_message(descr, data):
     data.sort()  
     tf_list_str = ''
     for tf in data:
+        tf_str = '"' + tf + '"'
         tf_list_str += '(:name %s) ' % tf
     return descr + ' (' + tf_list_str + ') '
 
