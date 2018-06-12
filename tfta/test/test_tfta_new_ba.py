@@ -1451,6 +1451,23 @@ class TestFindTissue13(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('tissue'))=", len(output.get('tissue')))
         assert len(output.get('tissue')) == 30, output
+        
+#What tissues is frizzled8 expressed in?
+class TestFindTissue1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTissue1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        gene = ekb_kstring_from_text('frizzled8')
+        content = KQMLList('FIND-TISSUE')
+        content.set('gene', gene)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('tissue'))=", str(len(output.get('tissue'))))
+        assert len(output.get('tissue')) == 14, output
 
 #Is stat3 a kinase?    
 class TestIsGeneOnto1(_IntegrationTest):
@@ -2266,6 +2283,43 @@ class TestIsTissueGene2(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         assert output.get('result') == 'TRUE', output
         
+###Is kras expressed in brain? 
+class TestIsTissueGene3(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestIsTissueGene3, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target_arg = ekb_from_text('kras')
+        #print(target_arg, '\n')
+        target = get_gene_symbol(target_arg)
+        content = KQMLList('IS-GENE-TISSUE')
+        content.set('gene', KQMLString(target_arg))
+        content.set('tissue', 'brain')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.get('result') == 'TRUE', output
+        
+###Is frizzled8 expressed in liver? 
+class TestIsTissueGene4(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestIsTissueGene4, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target_arg = ekb_from_text('frizzled8')
+        #print(target_arg, '\n')
+        target = get_gene_symbol(target_arg)
+        content = KQMLList('IS-GENE-TISSUE')
+        content.set('gene', KQMLString(target_arg))
+        content.set('tissue', 'liver')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.get('result') == 'FALSE', output
         
 #
 def get_gene_symbol(target_arg):
