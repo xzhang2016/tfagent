@@ -290,11 +290,11 @@ class TFTA_Module(Bioagent):
             is_target = self.tfta.Is_tf_target(tf_name, target_name)
         except TFNotFoundException:
             if not literature:
-                reply = make_failure('TF_NOT_FOUND')
+                reply = KQMLList.from_string('(SUCCESS :result FALSE :db FALSE :literature FALSE)')
                 return reply
         except TargetNotFoundException:
             if not literature:
-                reply = make_failure('TARGET_NOT_FOUND')
+                reply = KQMLList.from_string('(SUCCESS :result FALSE :db FALSE :literature FALSE)')
                 return reply
         result = is_target or literature
         reply = KQMLList('SUCCESS')
@@ -346,10 +346,10 @@ class TFTA_Module(Bioagent):
         try:
             is_target = self.tfta.Is_tf_target_tissue(tf_name, target_name, tissue_name)
         except TFNotFoundException:
-            reply = make_failure('TF_NOT_FOUND')
+            reply = KQMLList.from_string('(SUCCESS :result FALSE)')
             return reply
         except TargetNotFoundException:
-            reply = make_failure('TARGET_NOT_FOUND')
+            reply = KQMLList.from_string('(SUCCESS :result FALSE)')
             return reply
         reply = KQMLList('SUCCESS')
         is_target_str = 'TRUE' if is_target else 'FALSE'
@@ -384,7 +384,7 @@ class TFTA_Module(Bioagent):
         try:
             target_names = self.tfta.find_targets(tf_names)
         except TFNotFoundException:
-            reply = make_failure('TF_NOT_FOUND')
+            reply = KQMLList.from_string('(SUCCESS :targets NIL)')
             return reply
         #check if it's a sequencing query
         if of_targets_names:
@@ -442,7 +442,7 @@ class TFTA_Module(Bioagent):
         try:
             target_names = self.tfta.find_targets_tissue(tf_names, tissue_name)
         except TFNotFoundException:
-            reply = make_failure('TF_NOT_FOUND')
+            reply = KQMLList.from_string('(SUCCESS :targets NIL)')
             return reply
         #check if it's a sequencing query
         if of_targets_names:
@@ -486,7 +486,7 @@ class TFTA_Module(Bioagent):
         try:
             tf_names = self.tfta.find_tfs(target_names)
         except TargetNotFoundException:
-            reply = make_failure('TARGET_NOT_FOUND')
+            reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
             return reply
         #check if it's a sequencing query
         if of_tfs_names:
@@ -549,7 +549,7 @@ class TFTA_Module(Bioagent):
         try:
             tf_names = self.tfta.find_tfs_tissue(target_names, tissue_name)
         except TargetNotFoundException:
-            reply = make_failure('TARGET_NOT_FOUND')
+            reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
             return reply
         #check if it's a sequencing query
         if of_tfs_names:
@@ -690,7 +690,7 @@ class TFTA_Module(Bioagent):
             pathwayId,pathwayName,tflist,dblink = \
                 self.tfta.find_tfs_from_pathwayName(pathway_names)
         except PathwayNotFoundException:
-            reply = make_failure('PathwayNotFoundException')
+            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
         pathway_list_str = ''
         keys = list(tflist.keys())
@@ -911,7 +911,7 @@ class TFTA_Module(Bioagent):
             overlap_targets = \
                 self.tfta.find_overlap_targets_tfs_genes(tf_names, target_names)
         except TFNotFoundException:
-            reply = make_failure('TF_NOT_FOUND')
+            reply = KQMLList.from_string('(SUCCESS :targets NIL)')
             return reply
         if len(overlap_targets):
             target_list_str = ''
@@ -1132,10 +1132,10 @@ class TFTA_Module(Bioagent):
             go_ids,go_types,go_names,go_genes = \
                 self.tfta.find_genes_GO_tf(keyword, tf_names)
         except TFNotFoundException:
-            reply = make_failure('TF_NOT_FOUND')
+            reply = KQMLList.from_string('(SUCCESS :go-terms NIL)')
             return reply
         except GONotFoundException:
-            reply = make_failure('GOTERM_NOT_FOUND')
+            reply = KQMLList.from_string('(SUCCESS :go-terms NIL)')
             return reply           
         go_list_str = ''
         for gid,gn in zip(go_ids, go_names):
@@ -1176,7 +1176,7 @@ class TFTA_Module(Bioagent):
             go_ids,go_types,go_names,go_genes = \
                 self.tfta.find_genes_GO_tf2(goid, tf_names)
         except TFNotFoundException:
-            reply = make_failure('TF_NOT_FOUND')
+            reply = KQMLList.from_string('(SUCCESS :go-terms NIL)')
             return reply
         except GONotFoundException:
             reply = KQMLList.from_string('(SUCCESS :go-terms NIL)')
@@ -1217,10 +1217,10 @@ class TFTA_Module(Bioagent):
         try:
             is_target = self.tfta.Is_miRNA_target(miRNA_name[0], target_name)
         except miRNANotFoundException:
-            reply = make_failure('MIRNA_NOT_FOUND')
+            reply = KQMLList.from_string('(SUCCESS :is-miRNA-target FALSE)')
             return reply
         except TargetNotFoundException:
-            reply = make_failure('TARGET_NOT_FOUND')
+            reply = KQMLList.from_string('(SUCCESS :is-miRNA-target FALSE)')
             return reply            
         reply = KQMLList('SUCCESS')
         is_target_str = 'TRUE' if is_target else 'FALSE'
@@ -1246,7 +1246,7 @@ class TFTA_Module(Bioagent):
         try:
             miRNA_names = self.tfta.find_miRNA_target(target_names)
         except TargetNotFoundException:
-            reply = make_failure('TARGET_NOT_FOUND')
+            reply = KQMLList.from_string('(SUCCESS :miRNAs NIL)') 
             return reply            
         if len(miRNA_names):
             miRNA_list_str = ''
@@ -1288,7 +1288,7 @@ class TFTA_Module(Bioagent):
                     reply = make_failure('NO_SIMILAR_MIRNA')
                     return reply
             else:
-                reply = make_failure('MIRNA_NOT_FOUND')
+                reply = KQMLList.from_string('(SUCCESS :targets NIL)')
                 return reply
         if len(target_names):
             target_list_str = ''
@@ -1322,10 +1322,10 @@ class TFTA_Module(Bioagent):
             experiments,supportType,pmlink = \
                 self.tfta.find_evidence_miRNA_target(miRNA_name[0], target_name)
         except miRNANotFoundException:
-            reply = make_failure('MIRNA_NOT_FOUND')
+            reply = KQMLList.from_string('(SUCCESS :evidence NIL)')
             return reply
         except TargetNotFoundException:
-            reply = make_failure('TARGET_NOT_FOUND')
+            reply = KQMLList.from_string('(SUCCESS :evidence NIL)')
             return reply            
         if len(experiments):
             evidence_list_str = ''
@@ -1354,7 +1354,7 @@ class TFTA_Module(Bioagent):
         try:
             targets,counts,mrna = self.tfta.find_gene_count_miRNA(miRNA_names)
         except miRNANotFoundException:
-            reply = make_failure('MIRNA_NOT_FOUND')
+            reply = KQMLList.from_string('(SUCCESS :targets NIL)')
             return reply
         except TargetNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
@@ -1394,7 +1394,7 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string('(SUCCESS :miRNAs NIL)')
             return reply
         except TargetNotFoundException:
-            reply = make_failure('TARGET_NOT_FOUND')
+            reply = KQMLList.from_string('(SUCCESS :miRNAs NIL)')
             return reply            
         mirna_str = ''
         for m,ct in zip(mirnas,counts):
@@ -1583,7 +1583,7 @@ class TFTA_Module(Bioagent):
                     reply = make_failure('NO_SIMILAR_MIRNA')
                     return reply
             else:
-                reply = make_failure('MIRNA_NOT_FOUND')
+                reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
                 return reply
         except TFNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
