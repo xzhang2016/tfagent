@@ -1962,6 +1962,7 @@ class TestFindTfMirna12(_IntegrationTest):
         print("len(output.get('tfs'))=", str(len(output.get('tfs'))))
         assert len(output.get('tfs')) == 57, output
 
+#FIND-REGULATION
 ###what regulate myc? 
 class TestFindRegulation1(_IntegrationTest):
     def __init__(self, *args):
@@ -2020,8 +2021,55 @@ class TestFindRegulation2(_IntegrationTest):
         print("type(output.get('regulators'))=",type(output.get('regulators')))
         assert len(output.get('regulators')) == 8, output
 
+###what regulate GLUL? 
+class TestFindRegulation3(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindRegulation3, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target_arg = ekb_from_text('GLUL')
+        #print(target_arg, '\n')
+        target = get_gene_symbol(target_arg)
+        content = KQMLList('FIND-REGULATION')
+        content.set('target', KQMLString(target_arg))
+        content.set('keyword', 'regulate')
+        return get_request(content), content
         
-##kras regulate frizzled8? 
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('regulators'))=", str(len(output.get('regulators'))))
+        if output.get('regulators').get('tf-db') is not None:
+            print("len(output.get('regulators').get('tf-db'))=", str(len(output.get('regulators').get('tf-db'))))
+        if output.get('regulators').get('tf-literature') is not None:
+            print("len(output.get('regulators').get('tf-literature'))=", str(len(output.get('regulators').get('tf-literature'))))
+        assert len(output.get('regulators')) == 10, output
+        
+###what regulate GFAP? 
+class TestFindRegulation4(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindRegulation4, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target_arg = ekb_from_text('GFAP')
+        #print(target_arg, '\n')
+        target = get_gene_symbol(target_arg)
+        content = KQMLList('FIND-REGULATION')
+        content.set('target', KQMLString(target_arg))
+        content.set('keyword', 'regulate')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('regulators'))=", str(len(output.get('regulators'))))
+        if output.get('regulators').get('tf-db') is not None:
+            print("len(output.get('regulators').get('tf-db'))=", str(len(output.get('regulators').get('tf-db'))))
+        if output.get('regulators').get('tf-literature') is not None:
+            print("len(output.get('regulators').get('tf-literature'))=", str(len(output.get('regulators').get('tf-literature'))))
+        assert len(output.get('regulators')) == 10, output
+        
+##Show me evidence that kras regulate frizzled8? 
 class TestFindEvidence1(_IntegrationTest):
     def __init__(self, *args):
         super(TestFindEvidence1, self).__init__(TFTA_Module)
@@ -2045,7 +2093,7 @@ class TestFindEvidence1(_IntegrationTest):
         #print("len(output.get('evidence').get('source_api'))=", str(len(output.get('evidence').get('source_api'))))
         assert len(output.get('evidence')) == 2, output
         
-##kras increase frizzled8? 
+##show me evidence that kras increase frizzled8? 
 class TestFindEvidence2(_IntegrationTest):
     def __init__(self, *args):
         super(TestFindEvidence2, self).__init__(TFTA_Module)
@@ -2070,7 +2118,7 @@ class TestFindEvidence2(_IntegrationTest):
         #print("len(output.get('evidence').get('source_api'))=", str(len(output.get('evidence').get('source_api'))))
         assert len(output.get('evidence')) == 1, output
         
-    ##kras decrease frizzled8? 
+##show me evidence that kras decrease frizzled8? 
 class TestFindEvidence3(_IntegrationTest):
     def __init__(self, *args):
         super(TestFindEvidence3, self).__init__(TFTA_Module)
@@ -2178,6 +2226,47 @@ class TestFindGeneTissue11(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('genes'))=", len(output.get('genes')))
         assert len(output.get('genes')) == 4, output
+        
+#IS-TISSUE-GENE
+###Is stat3 expressed in liver? 
+class TestIsTissueGene1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestIsTissueGene1, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target_arg = ekb_from_text('stat3')
+        #print(target_arg, '\n')
+        target = get_gene_symbol(target_arg)
+        content = KQMLList('IS-TISSUE-GENE')
+        content.set('gene', KQMLString(target_arg))
+        content.set('tissue', 'liver')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.get('result') == 'TRUE', output
+        
+###Is kras expressed in liver? 
+class TestIsTissueGene2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestIsTissueGene2, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target_arg = ekb_from_text('kras')
+        #print(target_arg, '\n')
+        target = get_gene_symbol(target_arg)
+        content = KQMLList('IS-TISSUE-GENE')
+        content.set('gene', KQMLString(target_arg))
+        content.set('tissue', 'liver')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.get('result') == 'TRUE', output
+        
+        
 #
 def get_gene_symbol(target_arg):
         agent = []
@@ -2192,8 +2281,8 @@ def get_gene_symbol(target_arg):
             targets.append(ag.name)
         print('targets=' + ','.join(targets))
         
-########################################
-##UNIT TEST
+#########################################
+##UNIT TEST##############################
 def test_find_tf_indra():
     tfta = TFTA()
     stmts = tfta.find_statement_indraDB(obj='MYC', stmt_types=['IncreaseAmount'])
