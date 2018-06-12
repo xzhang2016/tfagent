@@ -1497,6 +1497,19 @@ class TFTA:
             gene_names.sort()
         return gene_names
         
+    def is_tissue_gene(self, tissue_name, gene_name):
+        """
+        For a given gene and a tissue, return if this gene is expressed in this tissue
+        """
+        if self.tfdb is not None:
+            t = (tissue_name, gene_name)
+            res = self.tfdb.execute("SELECT DISTINCT genesymbol FROM geneTissue "
+                                    "WHERE tissue LIKE ? AND genesymbol = ?", t).fetchall()
+            if res:
+                return True
+            else:
+                return False
+        
     #---------------------------------------------#
     #--------methods for querying indra database--#
     #---------------------------------------------#
