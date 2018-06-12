@@ -2238,7 +2238,7 @@ class TestIsTissueGene1(_IntegrationTest):
         target_arg = ekb_from_text('stat3')
         #print(target_arg, '\n')
         target = get_gene_symbol(target_arg)
-        content = KQMLList('IS-TISSUE-GENE')
+        content = KQMLList('IS-GENE-TISSUE')
         content.set('gene', KQMLString(target_arg))
         content.set('tissue', 'liver')
         return get_request(content), content
@@ -2257,7 +2257,7 @@ class TestIsTissueGene2(_IntegrationTest):
         target_arg = ekb_from_text('kras')
         #print(target_arg, '\n')
         target = get_gene_symbol(target_arg)
-        content = KQMLList('IS-TISSUE-GENE')
+        content = KQMLList('IS-GENE-TISSUE')
         content.set('gene', KQMLString(target_arg))
         content.set('tissue', 'liver')
         return get_request(content), content
