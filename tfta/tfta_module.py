@@ -39,7 +39,7 @@ class TFTA_Module(Bioagent):
              'FIND-TF', 'FIND-PATHWAY', 'FIND-TARGET', 'FIND-GENE', 'FIND-MIRNA',
              'IS-GENE-ONTO', 'FIND-GENE-ONTO', 'FIND-KINASE-REGULATION',
              'FIND-TF-MIRNA', 'FIND-REGULATION', 'FIND-EVIDENCE', 'FIND-GENE-TISSUE',
-             'IS-TISSUE-GENE']
+             'IS-GENE-TISSUE']
     #keep the genes from the most recent previous call, which are used to input 
     #find-gene-onto if there's no gene input 
     #gene_list = ['STAT3', 'JAK1', 'JAK2', 'ELK1', 'FOS', 'SMAD2', 'KDM4B']
@@ -1830,7 +1830,7 @@ class TFTA_Module(Bioagent):
                  'FIND-REGULATION':respond_find_regulation,
                  'FIND-EVIDENCE':respond_find_evidence,
                  'FIND-GENE-TISSUE':respond_find_gene_tissue,
-                 'IS-TISSUE-GENE':respond_is_tissue_gene}
+                 'IS-GENE-TISSUE':respond_is_tissue_gene}
     
     def receive_request(self, msg, content):
         """If a "request" message is received, decode the task and
