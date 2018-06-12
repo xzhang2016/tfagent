@@ -38,7 +38,8 @@ class TFTA_Module(Bioagent):
              'FIND-PATHWAY-DB-KEYWORD', 'FIND-TISSUE', 'IS-REGULATION',
              'FIND-TF', 'FIND-PATHWAY', 'FIND-TARGET', 'FIND-GENE', 'FIND-MIRNA',
              'IS-GENE-ONTO', 'FIND-GENE-ONTO', 'FIND-KINASE-REGULATION',
-             'FIND-TF-MIRNA', 'FIND-REGULATION', 'FIND-EVIDENCE', 'FIND-GENE-TISSUE']
+             'FIND-TF-MIRNA', 'FIND-REGULATION', 'FIND-EVIDENCE', 'FIND-GENE-TISSUE',
+             'IS-TISSUE-GENE']
     #keep the genes from the most recent previous call, which are used to input 
     #find-gene-onto if there's no gene input 
     #gene_list = ['STAT3', 'JAK1', 'JAK2', 'ELK1', 'FOS', 'SMAD2', 'KDM4B']
@@ -1753,6 +1754,45 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string('(SUCCESS :genes NIL)')
         return reply
         
+    def respond_is_tissue_gene(self, content):
+        """
+        Respond to is-tissue-gene request
+        Is stat3 expressed in liver?
+        """
+        try:
+            tissue_arg = content.get('tissue')
+            #tissue_name = tissue_arg.head()
+            tissue_name = tissue_arg.data
+            #tissue_name = trim_quotes(tissue_name)
+            tissue_name = tissue_name.lower()
+            tissue_name = tissue_name.replace(' ', '_')
+            tissue_name = tissue_name.replace('-', '_')
+        except Exception as e:
+            reply = make_failure('NO_TISSUE_NAME')
+            return reply
+        if tissue_name not in self.tissue_list:
+            reply = make_failure('INVALID_TISSUE')
+            return reply
+        try:
+            gene_arg = content.gets('gene')
+            gene = _get_target(gene_arg)
+            gene_name = gene.name
+        except Exception as e:
+            reply = make_failure('NO_GENE_NAME')
+            return reply
+        if not gene_name:
+            reply = make_failure('NO_GENE_NAME')
+            return reply
+        try:
+            is_express = self.tfta.is_tissue_gene(tissue_name, gene_name)
+        except Exception as e:
+            reply = KQMLList.from_string('(SUCCESS :result FALSE)')
+            return reply
+        reply = KQMLList('SUCCESS')
+        is_express_str = 'TRUE' if is_express else 'FALSE'
+        reply.set('result', is_express_str)
+        return reply
+        
     task_func = {'IS-REGULATION':respond_is_regulation, 'FIND-TF':respond_find_tf,
                  'FIND-PATHWAY':respond_find_pathway, 'FIND-TARGET':respond_find_target,
                  'FIND-GENE':respond_find_gene, 'FIND-MIRNA':respond_find_miRNA,
@@ -1789,7 +1829,8 @@ class TFTA_Module(Bioagent):
                  'FIND-TF-MIRNA':respond_find_tf_miRNA,
                  'FIND-REGULATION':respond_find_regulation,
                  'FIND-EVIDENCE':respond_find_evidence,
-                 'FIND-GENE-TISSUE':respond_find_gene_tissue}
+                 'FIND-GENE-TISSUE':respond_find_gene_tissue,
+                 'IS-TISSUE-GENE':respond_is_tissue_gene}
     
     def receive_request(self, msg, content):
         """If a "request" message is received, decode the task and
