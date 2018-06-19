@@ -83,6 +83,8 @@ class TFTA:
         else:
             logger.error('TFTA could not load TF-target database.')
             self.tfdb = None;
+        #for exclusive query
+        self.tissue_gene_exclusive = defaultdict(set)
             
     def __del__(self):
         self.tfdb.close()
@@ -1492,7 +1494,21 @@ class TFTA:
                 gene_names = [r[0] for r in res]
             else:
                 raise TissueNotFoundException
-        gene_names = list(set(gene_names) & hgnc_genes_set)
+        #gene_names = list(set(gene_names) & hgnc_genes_set)
+        if len(gene_names):
+            gene_names.sort()
+        return gene_names
+        
+    def find_gene_tissue_exclusive(self, tissue_name):
+        """
+        For a given tissue, return genes exclusively expressed in this tissue
+        """
+        gene_names = []
+        if not len(self.tissue_gene_exclusive):
+            self.tissue_gene_exclusive = self.map_exclusive_tissue_gene()
+        if tissue_name in self.tissue_gene_exclusive:
+            gene_names = list(self.tissue_gene_exclusive[tissue_name])
+        #gene_names = list(set(gene_names) & hgnc_genes_set)
         if len(gene_names):
             gene_names.sort()
         return gene_names
@@ -1509,7 +1525,52 @@ class TFTA:
                 return True
             else:
                 return False
-        
+    
+    def is_tissue_gene_exclusive(self, tissue_name, gene_name):
+        """
+        For a given gene and a tissue, return if this gene is expressed in this tissue
+        """
+        if self.tfdb is not None:
+            t = (gene_name,)
+            res = self.tfdb.execute("SELECT DISTINCT genesymbol, tissue FROM geneTissue "
+                                    "WHERE genesymbol = ?", t).fetchall()
+            if res:
+                tissues = set([r[1] for r in res])
+                if len(tissues) == 1 and tissue_name in tissues:
+                    return True
+                else:
+                    return False
+            else:
+                return False
+                
+    def map_exclusive_tissue_gene(self):
+        """
+        Add a new column, exclusive, to make easy for querying gene expressions exclusively in one tissue
+        """
+        gene_exp_all = defaultdict(set)
+        gene_exp_exclusive = defaultdict(set)
+        if self.tfdb is not None:
+            res = self.tfdb.execute("SELECT DISTINCT tissue FROM geneTissue").fetchall()
+            tissues = [r[0] for r in res]
+            #print('tissues: ', ','.join(tissues))
+            #print('number of tissues: ', len(tissues))
+            for tiss in tissues:
+                t = (tiss,)
+                res = self.tfdb.execute("SELECT DISTINCT genesymbol FROM geneTissue "
+                                    "WHERE tissue LIKE ?", t).fetchall()
+                gene_exp_all[tiss] = set([r[0] for r in res])
+            #get exclusively expressed genes
+            for i in range(len(tissues)):
+                temp = gene_exp_all[tissues[i]]
+                for j in range(len(tissues)):
+                    if j != i:
+                        temp = temp - gene_exp_all[tissues[j]]
+                #print('tissue ' + tissues[i] + ' have %d exclusively expressively expressed genes' % len(temp))
+                if len(temp):
+                    gene_exp_exclusive[tissues[i]] = temp
+        return gene_exp_exclusive
+            
+    
     #---------------------------------------------#
     #--------methods for querying indra database--#
     #---------------------------------------------#
@@ -1575,8 +1636,7 @@ class TFTA:
         return evidences
             
     
-        
-
 #test functions
 #if __name__ == "__main__":
-    #a=TFTA()	
+    #a = TFTA()
+    
