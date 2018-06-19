@@ -1725,11 +1725,24 @@ class TFTA_Module(Bioagent):
         if tissue_name not in self.tissue_list:
             reply = make_failure('INVALID_TISSUE')
             return reply
+        #optional keyword
         try:
-            gene_list = self.tfta.find_gene_tissue(tissue_name)
-        except TissueNotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :genes NIL)')
-            return reply
+            keyword_arg = content.get('keyword')
+            keyword_name = keyword_arg.data
+        except Exception as e:
+            keyword_name = ''
+        if len(keyword_name):
+            try:
+                gene_list = self.tfta.find_gene_tissue_exclusive(tissue_name)
+            except TissueNotFoundException:
+                reply = KQMLList.from_string('(SUCCESS :genes NIL)')
+                return reply
+        else:
+            try:
+                gene_list = self.tfta.find_gene_tissue(tissue_name)
+            except TissueNotFoundException:
+                reply = KQMLList.from_string('(SUCCESS :genes NIL)')
+                return reply
         #check if it's a subsequent query with optional parameter
         gene_arg = content.get('gene')
         ogenes = []
@@ -1754,7 +1767,7 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string('(SUCCESS :genes NIL)')
         return reply
         
-    def respond_is_tissue_gene(self, content):
+    def respond_is_gene_tissue(self, content):
         """
         Respond to is-tissue-gene request
         Is stat3 expressed in liver?
@@ -1783,11 +1796,24 @@ class TFTA_Module(Bioagent):
         if not gene_name:
             reply = make_failure('NO_GENE_NAME')
             return reply
+        #optional keyword
         try:
-            is_express = self.tfta.is_tissue_gene(tissue_name, gene_name)
+            keyword_arg = content.get('keyword')
+            keyword_name = keyword_arg.data
         except Exception as e:
-            reply = KQMLList.from_string('(SUCCESS :result FALSE)')
-            return reply
+            keyword_name = ''
+        if len(keyword_name):
+            try:
+                is_express = self.tfta.is_tissue_gene_exclusive(tissue_name, gene_name)
+            except Exception as e:
+                reply = KQMLList.from_string('(SUCCESS :result FALSE)')
+                return reply
+        else:
+            try:
+                is_express = self.tfta.is_tissue_gene(tissue_name, gene_name)
+            except Exception as e:
+                reply = KQMLList.from_string('(SUCCESS :result FALSE)')
+                return reply
         reply = KQMLList('SUCCESS')
         is_express_str = 'TRUE' if is_express else 'FALSE'
         reply.set('result', is_express_str)
@@ -1830,7 +1856,7 @@ class TFTA_Module(Bioagent):
                  'FIND-REGULATION':respond_find_regulation,
                  'FIND-EVIDENCE':respond_find_evidence,
                  'FIND-GENE-TISSUE':respond_find_gene_tissue,
-                 'IS-GENE-TISSUE':respond_is_tissue_gene}
+                 'IS-GENE-TISSUE':respond_is_gene_tissue}
     
     def receive_request(self, msg, content):
         """If a "request" message is received, decode the task and
