@@ -39,7 +39,7 @@ class TFTA_Module(Bioagent):
              'FIND-TF', 'FIND-PATHWAY', 'FIND-TARGET', 'FIND-GENE', 'FIND-MIRNA',
              'IS-GENE-ONTO', 'FIND-GENE-ONTO', 'FIND-KINASE-REGULATION',
              'FIND-TF-MIRNA', 'FIND-REGULATION', 'FIND-EVIDENCE', 'FIND-GENE-TISSUE',
-             'IS-GENE-TISSUE']
+             'IS-GENE-TISSUE', 'FIND-KINASE-PATHWAY']
     #keep the genes from the most recent previous call, which are used to input 
     #find-gene-onto if there's no gene input 
     #gene_list = ['STAT3', 'JAK1', 'JAK2', 'ELK1', 'FOS', 'SMAD2', 'KDM4B']
@@ -711,6 +711,37 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
         self.gene_list = list(set(temp_tfs))
+        return reply
+        
+    def respond_find_kinase_pathway(self, content):
+        """
+        Response content to FIND_KINASE_PATHWAY request
+        For a given pathway name, reply the kinases within the pathway
+        """
+        pathway_arg = content.gets('pathway')
+        pathway_names = _get_pathway_name(pathway_arg)
+        pathway_names = trim_word(pathway_names, 'pathway')
+        if not len(pathway_names):
+            reply = make_failure('NO_PATHWAY_NAME')
+            return reply    
+        try:
+            pathwayName, kinaselist, dblink = \
+                self.tfta.find_kinase_from_pathwayName(pathway_names)
+        except PathwayNotFoundException:
+            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+            return reply
+        pathway_list_str = ''
+        keys = kinaselist.keys()
+        for key in keys:
+            kinase_list_str = ''
+            for kinase in kinaselist[key]:
+                kinase_list_str += '(:name %s) ' % kinase
+            kinase_list_str = '(' + kinase_list_str + ')'
+            pn = '"' + pathwayName[key] + '"'
+            dl = '"' + dblink[key] + '"'
+            pathway_list_str += '(:name %s :dblink %s :kinase %s) ' % (pn, dl, kinase_list_str)
+        reply = KQMLList.from_string(
+                '(SUCCESS :pathways (' + pathway_list_str + '))')
         return reply
 
     def respond_find_gene_pathway(self, content):
@@ -1856,7 +1887,8 @@ class TFTA_Module(Bioagent):
                  'FIND-REGULATION':respond_find_regulation,
                  'FIND-EVIDENCE':respond_find_evidence,
                  'FIND-GENE-TISSUE':respond_find_gene_tissue,
-                 'IS-GENE-TISSUE':respond_is_gene_tissue}
+                 'IS-GENE-TISSUE':respond_is_gene_tissue,
+                 'FIND-KINASE-PATHWAY':respond_find_kinase_pathway}
     
     def receive_request(self, msg, content):
         """If a "request" message is received, decode the task and
