@@ -2475,6 +2475,43 @@ def get_gene_symbol(target_arg):
             targets.append(ag.name)
         print('targets=' + ','.join(targets))
         
+#FIND-KINASE-PATHWAY
+#What kinases are in the MAPK signaling pathway?
+class TestFindKinasePathway1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindKinasePathway1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        pathway = ekb_kstring_from_text('MAPK')
+        print(pathway)
+        content = KQMLList('FIND-KINASE-PATHWAY')
+        content.set('pathway', pathway)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", len(output.get('pathways')))
+        assert len(output.get('pathways')) == 23, output
+        
+#What kinases are in the immune system pathway?
+class TestFindKinasePathway2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindKinasePathway2, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        pathway = ekb_kstring_from_text('immune system')
+        print(pathway)
+        content = KQMLList('FIND-KINASE-PATHWAY')
+        content.set('pathway', pathway)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", len(output.get('pathways')))
+        assert len(output.get('pathways')) == 4, output
+        
 #########################################
 ##UNIT TEST##############################
 def test_find_tf_indra():
