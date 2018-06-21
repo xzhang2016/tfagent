@@ -188,6 +188,19 @@ class TFTA_Module(Bioagent):
             reply = make_failure('UNKNOWN_TASK')
         return reply
         
+    def respond_find_regulation(self, content):
+        """
+        Respond to find-regulation
+        """
+        #target_arg = content.gets('target')
+        #keyword_arg = content.get('keyword')
+        source_arg = content.get('source')
+        if source_arg:
+            reply = self.respond_find_regulation_source(content)
+        else:
+            reply = self.respond_find_regulation_all(content)
+        return reply
+        
     def respond_is_gene_onto(self, content):
         """
         Respond to is-gene-onto
@@ -1626,8 +1639,62 @@ class TFTA_Module(Bioagent):
             '(SUCCESS :tfs (' + tf_list_str + '))')
         self.gene_list = tf_names  
         return reply
+    
+    def respond_find_regulation_source(self, content):
+        """
+        Respond to find-regulation
+        """
+        try:
+            target_arg = content.gets('target')
+            targets = _get_targets(target_arg)
+            target_names = []
+            for target in targets:
+                target_names.append(target.name)
+        except Exception as e:
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
+        if not len(target_names):
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
+        target_names = list(set(target_names))
+        try:
+            keyword_arg = content.get('keyword')
+            keyword_name = keyword_arg.data
+        except Exception as e:
+            reply = make_failure('NO_KEYWORD')
+            return reply
+        try:
+            source_arg = content.get('source')
+            source_name = source_arg.data
+        except Exception as e:
+            reply = make_failure('INVALID_SOURCE')
+            return reply
+        if source_name.lower() == 'literature':
+            #literature result
+            try:
+                stmt_types = stmt_type_map[keyword_name.lower()]
+            except KeyError as e:
+                reply = make_failure('INVALID_KEYWORD')
+                return reply
+            lit_messages = self.get_tf_indra(target_names, stmt_types)
+            if len(lit_messages):
+                reply = KQMLList.from_string(
+                        '(SUCCESS :regulators (' + lit_messages + '))')
+            else:
+                reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
+        elif source_name.lower() == 'geo rnai':
+            #kinase regualtion
+            kin_messages = self.get_kinase_regulation(target_names, keyword_name.lower())
+            if len(kin_messages):
+                reply = KQMLList.from_string(
+                        '(SUCCESS :regulators (' + kin_messages + '))')
+            else:
+                reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
+        else:
+            reply = make_failure('INVALID_SOURCE')
+        return reply
         
-    def respond_find_regulation(self, content):
+    def respond_find_regulation_all(self, content):
         """
         Response to find-regulation request
         For example: what regulate MYC?
