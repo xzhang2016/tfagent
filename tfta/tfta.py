@@ -477,7 +477,10 @@ class TFTA:
             pn = []
             dl = []
             for pathway_name in pathway_names:
-                regstr = '%' + pathway_name + ' %'
+                if pathway_name == 'immune system':
+                    regstr = '%' + pathway_name + '%'
+                else:
+                    regstr = '%' + pathway_name + ' %'
                 t = (regstr,)
                 res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
                                         "WHERE pathwayName LIKE ? ", t).fetchall()
@@ -504,6 +507,48 @@ class TFTA:
             else:
                 raise PathwayNotFoundException
         return pathwayId,pathwayName,tflist,dblink
+        
+    def find_kinase_from_pathwayName(self,pathway_names):
+        """
+        Return kinases within the given pathway
+        """
+        pathwayId = []
+        pathwayName = dict()
+        dblink = dict()
+        kinaselist = dict()
+        if self.tfdb is not None:
+            #get kinases
+            t = ('kinase',)
+            res = self.tfdb.execute("SELECT DISTINCT geneSymbol FROM go2Genes "
+                                        "WHERE termId = ? ", t).fetchall()
+            kinases = set([r[0] for r in res])
+            for pathway_name in pathway_names:
+                if pathway_name == 'immune system':
+                    regstr = '%' + pathway_name + '%'
+                else:
+                    regstr = '%' + pathway_name + ' %'
+                t = (regstr,)
+                res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
+                                        "WHERE pathwayName LIKE ? ", t).fetchall()
+                if res:
+                    for r in res:
+                        pathwayName[r[0]] = r[1]
+                        dblink[r[0]] = r[2]
+            if len(pathwayName):
+                pathwayId = pathwayName.keys()
+                for pthID in pathwayId:
+                    t = (pthID,)
+                    res1 = self.tfdb.execute("SELECT DISTINCT genesymbol FROM pathway2Genes "
+                                             "WHERE pathwayID = ? ", t).fetchall()
+                    kins = list(kinases & set([r[0] for r in res1]))
+                    if len(kins):
+                        kins.sort()
+                        kinaselist[pthID] = kins
+            else:
+                raise PathwayNotFoundException
+            if not len(kinaselist):
+                raise PathwayNotFoundException
+        return pathwayName, kinaselist, dblink
 
     def find_pathways_from_genelist(self,gene_names):
         """
