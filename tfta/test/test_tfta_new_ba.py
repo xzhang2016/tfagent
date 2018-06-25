@@ -2131,6 +2131,51 @@ class TestFindRegulation6(_IntegrationTest):
             print("len(output.get('regulators').get('tf-literature'))=", str(len(output.get('regulators').get('tf-literature'))))
         assert len(output.get('regulators')) == 2, output
         
+###What are the regulators of MAPK14 in bladder?
+class TestFindRegulation7(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindRegulation7, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target_arg = ekb_from_text('MAPK14')
+        #print(target_arg, '\n')
+        target = get_gene_symbol(target_arg)
+        content = KQMLList('FIND-REGULATION')
+        content.set('target', KQMLString(target_arg))
+        #content.set('keyword', 'regulate')
+        content.set('tissue', 'bladder')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        #print("len(output.get('regulators'))=", str(len(output.get('regulators'))))
+        print(output.get('regulators').get('tf-db'))
+        print("len(output.get('regulators'))=", len(output.get('regulators')))
+        assert len(output.get('regulators')) == 2, output
+        
+###What are the regulators of SMURF2 in liver?
+class TestFindRegulation8(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindRegulation8, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target_arg = ekb_from_text('SMURF2')
+        #print(target_arg, '\n')
+        target = get_gene_symbol(target_arg)
+        content = KQMLList('FIND-REGULATION')
+        content.set('target', KQMLString(target_arg))
+        #content.set('keyword', 'regulate')
+        content.set('tissue', 'liver')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        #print("len(output.get('regulators'))=", str(len(output.get('regulators'))))
+        print(output.get('regulators'))
+        assert output.get('regulators') == 'NIL', output
+        
 #FIND-EVIDENCE
 ##Show me evidence that kras regulate frizzled8? 
 class TestFindEvidence1(_IntegrationTest):
