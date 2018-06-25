@@ -61,12 +61,10 @@ class TFTA_Module(Bioagent):
         Response content to is-regulation request which includes:
         is-tf-target
         is-tf-target-tissue
-        is-mirna-target (not covered here)
         """
         tf_arg = content.gets('tf')
         target_arg = content.gets('target')
         tissue_arg = content.get('tissue')
-        mirna_arg = content.gets('mirna')
         if all([tf_arg,target_arg,tissue_arg]):
             reply = self.respond_is_tf_target_tissue(content)
         elif all([tf_arg,target_arg]):
@@ -195,7 +193,16 @@ class TFTA_Module(Bioagent):
         #target_arg = content.gets('target')
         #keyword_arg = content.get('keyword')
         source_arg = content.get('source')
-        if source_arg:
+        tissue_arg = content.get('tissue')
+        if tissue_arg:
+            temp_reply = self.respond_find_target_tfs_tissue(content)
+            tf_str = temp_reply.get('tfs')
+            if len(tf_str) > 3:
+                reply = KQMLList.from_string(
+                    '(SUCCESS :regulators (:tf-db ' + tf_str.to_string() + '))')
+            else:
+                reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
+        elif source_arg:
             reply = self.respond_find_regulation_source(content)
         else:
             reply = self.respond_find_regulation_all(content)
@@ -526,11 +533,6 @@ class TFTA_Module(Bioagent):
             target_names = []
             for target in targets:
                 target_names.append(target.name)
-            #debug: tract the target_names
-            f = open('targets-find-tfs-tissue.txt', 'a')
-            f.write(';'.join(target_names))
-            f.write('\n' + '================' + '\n')
-            f.close()
         except Exception as e:
             reply = make_failure('NO_TARGET_NAME')
             return reply
@@ -1725,7 +1727,7 @@ class TFTA_Module(Bioagent):
             reply = make_failure('INVALID_KEYWORD')
             return reply
         lit_messages = self.get_tf_indra(target_names, stmt_types)
-        #kinase regualtion
+        #kinase regualation
         kin_messages = self.get_kinase_regulation(target_names, keyword_name.lower())
         #db result
         try:
