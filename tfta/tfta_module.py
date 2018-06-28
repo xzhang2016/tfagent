@@ -76,23 +76,14 @@ class TFTA_Module(Bioagent):
     def respond_find_tf(self, content):
         """
         Response content to find-tf request which includes:
-        find-target-tf, find-target-tf-tissue, find-tf-keyword, find-tf-pathway
+        find-target-tf, find-target-tf-tissue
         """
         target_arg = content.gets('target')
-        pathway_arg = content.gets('pathway')
-        keyword_arg = content.get('keyword')
         tissue_arg = content.get('tissue')
-        #count_arg = content.get('count')
         if all([target_arg,tissue_arg]):
             reply = self.respond_find_target_tfs_tissue(content)
-        #elif all([target_arg,count_arg]):
-            #reply = self.respond_find_common_tfs_genes(content)
         elif target_arg:
             reply = self.respond_find_target_tfs(content)
-        elif pathway_arg:
-            reply = self.respond_find_tf_pathway(content)
-        elif keyword_arg:
-            reply = self.respond_find_tf_chemical(content)
         else:
             reply = make_failure('UNKNOW_TASK')
         return reply
@@ -100,8 +91,7 @@ class TFTA_Module(Bioagent):
     def respond_find_pathway(self, content):
         """
         Response content to find-pathway request, which includes:
-        find-pathway-gene, find-pathway-db-gene, find-pathway-gene-keyword,
-        find-pathway-keyword, find-pathway-db-keyword.
+        find-pathway-gene, find-pathway-db-gene, find-pathway-gene-keyword.
         """
         gene_arg = content.gets('gene')
         pathway_arg = content.gets('pathway')
@@ -110,10 +100,6 @@ class TFTA_Module(Bioagent):
         #count_arg = content.get('count')
         if all([keyword_arg,gene_arg]):
             reply = self.respond_find_pathway_gene_keyword(content)
-        elif all([keyword_arg,db_arg]):
-            reply = self.respond_find_pathway_db_keyword(content)
-        elif keyword_arg:
-            reply = self.respond_find_pathway_chemical(content)
         elif all([gene_arg,db_arg]):
             reply = self.respond_find_pathway_db_gene(content)
         elif gene_arg:
@@ -125,11 +111,10 @@ class TFTA_Module(Bioagent):
     def respond_find_target(self, content):
         """
         Response content to find-target request, which includes these cases:
-        find-tf-target, find-tf-target-tissue, find-target-miran (not covered) 
+        find-tf-target, find-tf-target-tissue. 
         """
         tf_arg = content.gets('tf')
         target_arg = content.gets('target')
-        miRNA_arg = content.gets('miRNA')
         tissue_arg = content.get('tissue')
         #count_arg = content.get('count')
         if all([tf_arg,tissue_arg]):
@@ -143,15 +128,18 @@ class TFTA_Module(Bioagent):
     def respond_find_gene(self, content):
         """
         Response content to find-gene request, which includes:
-        find-gene-pathway, find-gene-go-tf
+        find-gene-pathway, find-tf-pathway, find-kinase-pathway
         """
-        pathway_arg = content.gets('pathway')
-        goid_arg = content.get('goid')
-        tf_arg = content.gets('tf')
-        if all([goid_arg,tf_arg]):
-            reply = self.respond_find_genes_go_tf2(content)
-        elif pathway_arg:
+        #pathway_arg = content.gets('pathway')
+        subtype_arg = content.get('subtype')
+        subtype_name = subtype_arg.data
+        subtype_name = subtype_name.lower()
+        if subtype_name == 'tf':
+            reply = self.respond_find_tf_pathway(content)
+        elif subtype_name == 'gene':
             reply = self.respond_find_gene_pathway(content)
+        elif subtype_name == 'kinase':
+            reply = self.respond_find_kinase_pathway(content)
         else:
             reply = make_failure('UNKNOWN_TASK')
         return reply
