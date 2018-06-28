@@ -105,8 +105,8 @@ class TestIsRegulation23(_IntegrationTest):
         return get_request(content), content
         
     def check_response_to_message(self, output):
-        assert output.head() == 'FAILURE', output
-        assert output.gets('reason') == 'TARGET_NOT_FOUND', output
+        assert output.head() == 'SUCCESS', output
+        assert output.gets('result') == 'FALSE', output
         
 #Does AKT regulate the c-fos gene in the lung? (subtask: is-tf-target-tissue)
 class TestIsRegulation24(_IntegrationTest):
@@ -125,8 +125,8 @@ class TestIsRegulation24(_IntegrationTest):
         return get_request(content), content
         
     def check_response_to_message(self, output):
-        assert output.head() == 'FAILURE', output
-        assert output.gets('reason') == 'TF_NOT_FOUND', output
+        assert output.head() == 'SUCCESS', output
+        assert output.gets('result') == 'FALSE', output
         
 #Does STAT3 regulate the c-fos gene in the breast cancer? (subtask: is-tf-target-tissue)
 class TestIsRegulation25(_IntegrationTest):
@@ -181,8 +181,8 @@ class TestIsRegulation31(_IntegrationTest):
         return get_request(content), content
         
     def check_response_to_message(self, output):
-        assert output.head() == 'FAILURE', output
-        assert output.get('reason') == 'TARGET_NOT_FOUND', output
+        assert output.head() == 'SUCCESS', output
+        assert output.get('is-miRNA-target') == 'FALSE', output
         
 #test gene family as input
 ##Does MEK regulate the c-fos gene? (subtask: is-tf-target)
@@ -200,8 +200,8 @@ class TestIsRegulation4(_IntegrationTest):
         return get_request(content), content
         
     def check_response_to_message(self, output):
-        assert output.head() == 'FAILURE', output
-        assert output.gets('reason') == 'TF_NOT_FOUND', output
+        assert output.head() == 'SUCCESS', output
+        assert output.get('result') == 'FALSE', output
         
 ##Does STAT3 regulate the MEK gene? (subtask: is-tf-target)
 class TestIsRegulation41(_IntegrationTest):
@@ -218,8 +218,8 @@ class TestIsRegulation41(_IntegrationTest):
         return get_request(content), content
         
     def check_response_to_message(self, output):
-        assert output.head() == 'FAILURE', output
-        assert output.gets('reason') == 'TARGET_NOT_FOUND', output
+        assert output.head() == 'SUCCESS', output
+        assert output.gets('result') == 'FALSE', output
         
 ##Does AKT regulate the MEK gene? (subtask: is-tf-target)
 class TestIsRegulation42(_IntegrationTest):
@@ -236,8 +236,8 @@ class TestIsRegulation42(_IntegrationTest):
         return get_request(content), content
         
     def check_response_to_message(self, output):
-        assert output.head() == 'FAILURE', output
-        assert output.gets('reason') == 'TARGET_NOT_FOUND', output
+        assert output.head() == 'SUCCESS', output
+        assert output.get('result') == 'FALSE', output
         
 ##does srf regulate acta1?
 class TestIsRegulation43(_IntegrationTest):
@@ -329,8 +329,8 @@ class TestFindTf13(_IntegrationTest):
         return get_request(content), content
         
     def check_response_to_message(self, output):
-        assert output.head() == 'FAILURE', output
-        assert output.get('reason') == 'TARGET_NOT_FOUND', output
+        assert output.head() == 'SUCCESS', output
+        assert output.get('tfs') == 'NIL', output
         
 ##what transcription factors regulate SOS?
 class TestFindTf14(_IntegrationTest):
@@ -366,8 +366,8 @@ class TestFindTf2(_IntegrationTest):
         return get_request(content), content
         
     def check_response_to_message(self, output):
-        assert output.head() == 'FAILURE', output
-        assert output.get('reason') == 'TARGET_NOT_FOUND', output
+        assert output.head() == 'SUCCESS', output
+        assert output.get('tfs') == 'NIL', output
         
 #Which transcription factors regulate mapk14 in bladder? (subtask: find-target-tf-tissue)
 class TestFindTf21(_IntegrationTest):
@@ -423,8 +423,8 @@ class TestFindTf23(_IntegrationTest):
         return get_request(content), content
         
     def check_response_to_message(self, output):
-        assert output.head() == 'FAILURE', output
-        assert output.get('reason') == 'TARGET_NOT_FOUND', output
+        assert output.head() == 'SUCCESS', output
+        assert output.get('tfs') == 'NIL', output
 
 #Which transcription factors regulate MEK in liver?
 class TestFindTf24(_IntegrationTest):
@@ -471,15 +471,15 @@ class TestFindTf3(_IntegrationTest):
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
-        keyword = 'calcium'
-        content = KQMLList('FIND-TF')
-        content.set('keyword', keyword)
+        keyword = ekb_kstring_from_text('calcium regulated pathways')
+        content = KQMLList('FIND-TF-PATHWAY')
+        content.set('pathway', keyword)
         return get_request(content), content
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('pathways'))=", str(len(output.get('pathways'))))
-        assert len(output.get('pathways')) == 3, output
+        assert len(output.get('pathways')) == 2, output
         
 #What transcription factors are shared by the SRF, HRAS, and elk1 genes? (subtask: find-common-tf-genes)
 class TestFindTf4(_IntegrationTest):
@@ -573,7 +573,7 @@ class TestFindTf5(_IntegrationTest):
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
         pathway = ekb_kstring_from_text('MAPK')
-        content = KQMLList('FIND-TF')
+        content = KQMLList('FIND-TF-PATHWAY')
         content.set('pathway', pathway)
         return get_request(content), content
         
@@ -663,8 +663,8 @@ class TestFindTarget14(_IntegrationTest):
         return get_request(content), content
         
     def check_response_to_message(self, output):
-        assert output.head() == 'FAILURE', output
-        assert output.get('reason') == 'TF_NOT_FOUND', output
+        assert output.head() == 'SUCCESS', output
+        assert output.get('targets') == 'NIL', output
         
 #What genes does stat3 regulate in lung? (subtask: find-tf-target-tissue)
 class TestFindTarget2(_IntegrationTest):
@@ -735,8 +735,8 @@ class TestFindTarget23(_IntegrationTest):
         return get_request(content), content
         
     def check_response_to_message(self, output):
-        assert output.head() == 'FAILURE', output
-        assert output.get('reason') == 'TF_NOT_FOUND', output
+        assert output.head() == 'SUCCESS', output
+        assert output.get('targets') == 'NIL', output
         
 #What genes does miR-20b-5p target? (subtask: find-target-mirna)
 class TestFindTarget3(_IntegrationTest):
@@ -803,6 +803,7 @@ class TestFindGene1(_IntegrationTest):
         pathway = ekb_kstring_from_text('MAPK')
         content = KQMLList('FIND-GENE')
         content.set('pathway', pathway)
+        content.set('subtype', 'gene')
         return get_request(content), content
         
     def check_response_to_message(self, output):
@@ -819,6 +820,7 @@ class TestFindGene11(_IntegrationTest):
         pathway = ekb_kstring_from_text('il-12')
         content = KQMLList('FIND-GENE')
         content.set('pathway', pathway)
+        content.set('subtype', 'gene')
         return get_request(content), content
         
     def check_response_to_message(self, output):
@@ -835,6 +837,7 @@ class TestFindGene12(_IntegrationTest):
         pathway = ekb_kstring_from_text('immune system')
         content = KQMLList('FIND-GENE')
         content.set('pathway', pathway)
+        content.set('subtype', 'gene')
         return get_request(content), content
         
     def check_response_to_message(self, output):
@@ -988,7 +991,7 @@ class TestFindPathway3(_IntegrationTest):
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
         keyword = 'calcium'
-        content = KQMLList('FIND-PATHWAY')
+        content = KQMLList('FIND-PATHWAY-KEYWORD')
         content.set('keyword', keyword)
         return get_request(content), content
         
@@ -1273,7 +1276,7 @@ class TestFindPathway8(_IntegrationTest):
         # Here we create a KQML request that the TFTA needs to respond to
         database = 'KEGG'
         keyword = 'immune'
-        content = KQMLList('FIND-PATHWAY')
+        content = KQMLList('FIND-PATHWAY-DB-KEYWORD')
         content.set('database', database)
         content.set('keyword', keyword)
         return get_request(content), content
@@ -1291,7 +1294,7 @@ class TestFindPathway81(_IntegrationTest):
         # Here we create a KQML request that the TFTA needs to respond to
         database = 'KEGG'
         keyword = 'immune system'
-        content = KQMLList('FIND-PATHWAY')
+        content = KQMLList('FIND-PATHWAY-DB-KEYWORD')
         content.set('database', database)
         content.set('keyword', keyword)
         return get_request(content), content
@@ -1309,7 +1312,7 @@ class TestFindPathway82(_IntegrationTest):
         # Here we create a KQML request that the TFTA needs to respond to
         database = 'reactome'
         keyword = 'immune system'
-        content = KQMLList('FIND-PATHWAY')
+        content = KQMLList('FIND-PATHWAY-DB-KEYWORD')
         content.set('database', database)
         content.set('keyword', keyword)
         return get_request(content), content
@@ -1364,8 +1367,8 @@ class TestFindMirna12(_IntegrationTest):
         return get_request(content), content
         
     def check_response_to_message(self, output):
-        assert output.head() == 'FAILURE', output
-        assert output.get('reason') == 'TARGET_NOT_FOUND', output
+        assert output.head() == 'SUCCESS', output
+        assert output.get('miRNAs') == 'NIL', output
         
 #What miRNAs most frequently regulate EGFR, SRF, STAT3, JAK2, and SMAD3?
 #(subtask: FIND-MIRNA-COUNT-GENE)
@@ -1401,7 +1404,7 @@ class TestFindTissue1(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('tissue')) == 29, output
+        assert len(output.get('tissue')) == 1, output
 
 #What tissues is MEK expressed in?
 class TestFindTissue11(_IntegrationTest):
@@ -1453,9 +1456,9 @@ class TestFindTissue13(_IntegrationTest):
         assert len(output.get('tissue')) == 30, output
         
 #What tissues is frizzled8 expressed in?
-class TestFindTissue1(_IntegrationTest):
+class TestFindTissue14(_IntegrationTest):
     def __init__(self, *args):
-        super(TestFindTissue1, self).__init__(TFTA_Module)
+        super(TestFindTissue14, self).__init__(TFTA_Module)
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
@@ -1467,7 +1470,7 @@ class TestFindTissue1(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('tissue'))=", str(len(output.get('tissue'))))
-        assert len(output.get('tissue')) == 14, output
+        assert len(output.get('tissue')) == 2, output
 
 #Is stat3 a kinase?    
 class TestIsGeneOnto1(_IntegrationTest):
@@ -1866,8 +1869,8 @@ class TestFindTf16(_IntegrationTest):
         return get_request(content), content
         
     def check_response_to_message(self, output):
-        assert output.head() == 'FAILURE', output
-        assert output.get('reason') == 'TARGET_NOT_FOUND', output
+        assert output.head() == 'SUCCESS', output
+        assert output.get('tfs') == 'NIL', output
 
 ##What regulates cofilin gene? (which was taken as a protein, then get COF1)
 class TestFindTf17(_IntegrationTest):
@@ -1885,8 +1888,8 @@ class TestFindTf17(_IntegrationTest):
         return get_request(content), content
         
     def check_response_to_message(self, output):
-        assert output.head() == 'FAILURE', output
-        assert output.get('reason') == 'TARGET_NOT_FOUND', output
+        assert output.head() == 'SUCCESS', output
+        assert output.get('tfs') == 'NIL', output
         
 ##What regulates cofilin 1? (CFL1)
 class TestFindTf18(_IntegrationTest):
@@ -2314,7 +2317,7 @@ class TestFindGeneTissue1(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('genes'))=", len(output.get('genes')))
-        assert len(output.get('genes')) == 10239, output
+        assert len(output.get('genes')) == 317, output
         
 #among stat3,srf, kras, and hras, what genes are expressed in liver? 
 class TestFindGeneTissue11(_IntegrationTest):
@@ -2333,7 +2336,7 @@ class TestFindGeneTissue11(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('genes'))=", len(output.get('genes')))
-        assert len(output.get('genes')) == 4, output
+        assert len(output.get('genes')) == 3, output
         
 #what genes are exclusively expressed in liver? 
 class TestFindGeneTissue12(_IntegrationTest):
@@ -2353,7 +2356,7 @@ class TestFindGeneTissue12(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('genes'))=", len(output.get('genes')))
-        assert len(output.get('genes')) == 5, output
+        assert len(output.get('genes')) == 142, output
         
 #what genes are exclusively expressed in brain? 
 class TestFindGeneTissue13(_IntegrationTest):
@@ -2373,7 +2376,7 @@ class TestFindGeneTissue13(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('genes'))=", len(output.get('genes')))
-        assert len(output.get('genes')) == 3, output
+        assert len(output.get('genes')) == 172, output
         
 #IS-TISSUE-GENE
 ###Is stat3 expressed in liver? 
@@ -2393,7 +2396,7 @@ class TestIsTissueGene1(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert output.get('result') == 'TRUE', output
+        assert output.get('result') == 'FALSE', output
         
 ###Is kras expressed in liver? 
 class TestIsTissueGene2(_IntegrationTest):
@@ -2412,7 +2415,7 @@ class TestIsTissueGene2(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert output.get('result') == 'TRUE', output
+        assert output.get('result') == 'FALSE', output
         
 ###Is kras expressed in brain? 
 class TestIsTissueGene3(_IntegrationTest):
@@ -2431,7 +2434,7 @@ class TestIsTissueGene3(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert output.get('result') == 'TRUE', output
+        assert output.get('result') == 'FALSE', output
         
 ###Is frizzled8 expressed in liver? 
 class TestIsTissueGene4(_IntegrationTest):
@@ -2623,7 +2626,7 @@ def test_map_exclusive_tissue_gene():
     tfta = TFTA()
     gene_exp_exclusive = tfta.map_exclusive_tissue_gene()
     print('len(gene_exp_exclusive)=', len(gene_exp_exclusive))
-    assert(len(gene_exp_exclusive) == 14)
+    assert(len(gene_exp_exclusive) == 30)
     
 
 if __name__ == '__main__':
