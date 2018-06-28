@@ -1462,7 +1462,7 @@ class TFTA:
         if self.tfdb is not None:
             t = (gene_name,)
             res = self.tfdb.execute("SELECT DISTINCT tissue FROM geneTissue "
-                                    "WHERE genesymbol = ? ", t).fetchall()
+                                    "WHERE genesymbol = ? AND enrichment > 5 ", t).fetchall()
             if res:
                 tissue_names = [r[0] for r in res]
             else:
@@ -1534,7 +1534,7 @@ class TFTA:
             regstr = '%' + tissue_name + '%'
             t = (regstr,)
             res = self.tfdb.execute("SELECT DISTINCT genesymbol FROM geneTissue "
-                                    "WHERE tissue LIKE ? ", t).fetchall()
+                                    "WHERE tissue LIKE ? AND enrichment > 5 ", t).fetchall()
             if res:
                 gene_names = [r[0] for r in res]
             else:
@@ -1565,7 +1565,8 @@ class TFTA:
         if self.tfdb is not None:
             t = (tissue_name, gene_name)
             res = self.tfdb.execute("SELECT DISTINCT genesymbol FROM geneTissue "
-                                    "WHERE tissue LIKE ? AND genesymbol = ?", t).fetchall()
+                                    "WHERE tissue LIKE ? AND genesymbol = ? "
+                                    "AND enrichment > 5 ", t).fetchall()
             if res:
                 return True
             else:
@@ -1573,12 +1574,12 @@ class TFTA:
     
     def is_tissue_gene_exclusive(self, tissue_name, gene_name):
         """
-        For a given gene and a tissue, return if this gene is expressed in this tissue
+        For a given gene and a tissue, return if this gene is exclusively expressed in this tissue
         """
         if self.tfdb is not None:
             t = (gene_name,)
             res = self.tfdb.execute("SELECT DISTINCT genesymbol, tissue FROM geneTissue "
-                                    "WHERE genesymbol = ?", t).fetchall()
+                                    "WHERE genesymbol = ? AND enrichment > 5 ", t).fetchall()
             if res:
                 tissues = set([r[1] for r in res])
                 if len(tissues) == 1 and tissue_name in tissues:
@@ -1595,14 +1596,15 @@ class TFTA:
         gene_exp_all = defaultdict(set)
         gene_exp_exclusive = defaultdict(set)
         if self.tfdb is not None:
-            res = self.tfdb.execute("SELECT DISTINCT tissue FROM geneTissue").fetchall()
+            res = self.tfdb.execute("SELECT DISTINCT tissue FROM geneTissue "
+                                    "WHERE enrichment > 5 ").fetchall()
             tissues = [r[0] for r in res]
             #print('tissues: ', ','.join(tissues))
             #print('number of tissues: ', len(tissues))
             for tiss in tissues:
                 t = (tiss,)
                 res = self.tfdb.execute("SELECT DISTINCT genesymbol FROM geneTissue "
-                                    "WHERE tissue LIKE ?", t).fetchall()
+                                    "WHERE tissue LIKE ? AND enrichment > 5 ", t).fetchall()
                 gene_exp_all[tiss] = set([r[0] for r in res])
             #get exclusively expressed genes
             for i in range(len(tissues)):
