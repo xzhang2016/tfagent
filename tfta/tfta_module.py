@@ -1718,16 +1718,20 @@ class TFTA_Module(Bioagent):
         #kinase regualation
         kin_messages = self.get_kinase_regulation(target_names, keyword_name.lower())
         #db result
-        try:
-            tf_names = self.tfta.find_tfs(target_names)
-        except TargetNotFoundException:
-            messages = _combine_messages([kin_messages, lit_messages])
-            if len(messages):
-                reply = KQMLList.from_string(
+        #only considering the regulation case
+        if keyword_name.lower() == 'regulate':
+            try:
+                tf_names = self.tfta.find_tfs(target_names)
+            except TargetNotFoundException:
+                messages = _combine_messages([kin_messages, lit_messages])
+                if len(messages):
+                    reply = KQMLList.from_string(
                         '(SUCCESS :regulators (' + messages + '))')
-            else:
-                reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
-            return reply
+                else:
+                    reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
+                return reply
+        else:
+            tf_names = []
         if len(tf_names):
             tf_messages = wrap_message(':tf-db', tf_names)
             messages = _combine_messages([tf_messages, kin_messages, lit_messages])
