@@ -1591,7 +1591,7 @@ class TFTA:
                 
     def map_exclusive_tissue_gene(self):
         """
-        Add a new column, exclusive, to make easy for querying gene expressions exclusively in one tissue
+        return gene expressions exclusively in each tissue
         """
         gene_exp_all = defaultdict(set)
         gene_exp_exclusive = defaultdict(set)
@@ -1616,6 +1616,22 @@ class TFTA:
                 if len(temp):
                     gene_exp_exclusive[tissues[i]] = temp
         return gene_exp_exclusive
+    
+    def find_evidence_dbname(self, tf_name, target_name):
+        """
+        Return the dbnames supporting the regulation
+        """
+        if self.tfdb is not None:
+            t = (tf_name, target_name)
+            res = self.tfdb.execute("SELECT DISTINCT dbnames FROM CombinedDB "
+                                    "WHERE TF = ? AND Target = ? ", t).fetchall()
+            if res:
+                dbs = [r[0] for r in res]
+                db_names = set(','.join(dbs).split(','))
+            else:
+                db_names = set()
+        return db_names
+                
             
     
     #---------------------------------------------#
