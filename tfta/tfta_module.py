@@ -1773,29 +1773,43 @@ class TFTA_Module(Bioagent):
         if not target_name:
             reply = make_failure('NO_TARGET_NAME')
             return reply
-        try:
-            keyword_arg = content.get('keyword')
-            keyword_name = keyword_arg.data
-        except Exception as e:
-            reply = make_failure('NO_KEYWORD')
-            return reply
-        try:
-            stmt_types = stmt_type_map[keyword_name.lower()]
-        except KeyError as e:
-            reply = make_failure('INVALID_KEYWORD')
-            return reply
-        stmts = self.tfta.find_statement_indraDB(subj=regulator_name, obj=target_name, stmt_types=stmt_types)
-        if len(stmts):
-            evidences = self.tfta.find_evidence_indra(stmts)
-            if len(evidences):
-                evi_message = wrap_evidence_message(':evidence', evidences)
+        #check if there's source parameter
+        source_arg = content.get('source')
+        if source_arg:
+            db_names = self.tfta.find_evidence_dbname(regulator_name, target_name)
+            if len(db_names):
+                db_str = ''
+                for db in db_names:
+                    db_str += '(:name %s) ' % db
                 reply = KQMLList.from_string(
-                        '(SUCCESS ' + evi_message + ')')
+                        '(SUCCESS :evidence (' + db_str + '))')
             else:
                 reply = KQMLList.from_string('(SUCCESS :evidence NIL)')
+            return reply
         else:
-            reply = KQMLList.from_string('(SUCCESS :evidence NIL)')
-        return reply
+            try:
+                keyword_arg = content.get('keyword')
+                keyword_name = keyword_arg.data
+            except Exception as e:
+                reply = make_failure('NO_KEYWORD')
+                return reply
+            try:
+                stmt_types = stmt_type_map[keyword_name.lower()]
+            except KeyError as e:
+                reply = make_failure('INVALID_KEYWORD')
+                return reply
+            stmts = self.tfta.find_statement_indraDB(subj=regulator_name, obj=target_name, stmt_types=stmt_types)
+            if len(stmts):
+                evidences = self.tfta.find_evidence_indra(stmts)
+                if len(evidences):
+                    evi_message = wrap_evidence_message(':evidence', evidences)
+                    reply = KQMLList.from_string(
+                            '(SUCCESS ' + evi_message + ')')
+                else:
+                    reply = KQMLList.from_string('(SUCCESS :evidence NIL)')
+            else:
+                reply = KQMLList.from_string('(SUCCESS :evidence NIL)')
+            return reply
             
     def respond_find_gene_tissue(self, content):
         """
