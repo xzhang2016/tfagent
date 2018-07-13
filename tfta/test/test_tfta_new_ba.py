@@ -2179,6 +2179,28 @@ class TestFindRegulation8(_IntegrationTest):
         print(output.get('regulators'))
         assert output.get('regulators') == 'NIL', output
         
+#what increase the amount of mzd8? 
+class TestFindRegulation9(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindRegulation9, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target_arg = ekb_from_text('fzd8')
+        #print(target_arg, '\n')
+        target = get_gene_symbol(target_arg)
+        content = KQMLList('FIND-REGULATION')
+        content.set('target', KQMLString(target_arg))
+        content.set('keyword', 'increase')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('regulators'))=", str(len(output.get('regulators'))))
+        if output.get('regulators').get('tf-literature') is not None:
+            print("len(output.get('regulators').get('tf-literature'))=", str(len(output.get('regulators').get('tf-literature'))))
+        assert len(output.get('regulators')) == 6, output
+        
 #FIND-EVIDENCE
 ##Show me evidence that kras regulate frizzled8? 
 class TestFindEvidence1(_IntegrationTest):
@@ -2299,6 +2321,28 @@ class TestFindEvidence5(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
         assert output.get('reason') == 'NO_REGULATOR_NAME', output
+
+#test source
+#What is the evidence that SRF binds the FOS gene?
+class TestFindEvidence6(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindEvidence6, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        regulator_arg = ekb_from_text('srf')
+        target_arg = ekb_from_text('cfos')
+        target = get_gene_symbol(target_arg)
+        content = KQMLList('FIND-EVIDENCE')
+        content.set('regulator', KQMLString(regulator_arg))
+        content.set('target', KQMLString(target_arg))
+        content.set('source', 'tf-db')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('evidence'))=", str(len(output.get('evidence'))))
+        assert len(output.get('evidence')) == 2, output
 
 #FIND-GENE-TISSUE        
 #what genes are expressed in liver? 
