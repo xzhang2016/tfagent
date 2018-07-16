@@ -1544,6 +1544,25 @@ class TestIsGeneOnto4(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         assert output.get('result') == 'TRUE', output
 
+#Is PBRM1 a transcription factor?
+class TestIsGeneOnto5(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestIsGeneOnto5, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        gene = ekb_kstring_from_text('PBRM1')
+        keyword = 'transcription factor'
+        content = KQMLList('is-gene-onto')
+        content.set('keyword', keyword)
+        content.set('gene', gene)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.get('result') == 'TRUE', output
+
+#TEST FIND-GENE-ONTO
 #Among STAT3, JAK1, JAK2, ELK1, and FOS, which are protein kinases?
 class TestFindGeneOnto1(_IntegrationTest):
     def __init__(self, *args):
@@ -1697,6 +1716,28 @@ class TestFindGeneOnto41(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('genes')) == 1, output
         
+#Among PBRM1, SMAD2, TBL1XR1, AKT1, CDK19, CDK8, CDK9, DDR1, GSK3A, GSK3B, MET,TRIM28,COL2A1,
+# JAK1, PRMT1, RB1, SMURF2, TRAF4, and USP15, which are transcription factors?
+class TestFindGeneOnto5(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindGeneOnto5, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        gene = "PBRM1, SMAD2, TBL1XR1, AKT1, CDK19, CDK8, CDK9, DDR1, \
+                GSK3A, GSK3B, MET,TRIM28,COL2A1,JAK1, PRMT1, RB1, SMURF2, TRAF4, USP15"
+        keyword = 'transcription factor'
+        content = KQMLList('find-gene-onto')
+        content.set('keyword', keyword)
+        content.set('gene', gene)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        print('len(output)=' + str(len(output.get('genes'))))
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('genes')) == 2, output
+        
+#FIND-KINASE-REGULATION
 #Which kinases regulate the cfos gene?
 class TestFindKinaseReg1(_IntegrationTest):
     def __init__(self, *args):
