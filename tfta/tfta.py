@@ -122,7 +122,7 @@ class TFTA:
                     return True
         else:
             try:
-                goids = go_map[kinase_name]
+                goids = go_map[go_name]
             except KeyError:
                 raise GONotFoundException
             if self.tfdb is not None:
