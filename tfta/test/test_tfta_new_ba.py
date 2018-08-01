@@ -739,9 +739,9 @@ class TestFindTarget23(_IntegrationTest):
         assert output.get('targets') == 'NIL', output
         
 #What genes does miR-20b-5p target? (subtask: find-target-mirna)
-class TestFindTarget3(_IntegrationTest):
+class TestFindTargetMirna1(_IntegrationTest):
     def __init__(self, *args):
-        super(TestFindTarget3, self).__init__(TFTA_Module)
+        super(TestFindTargetMirna1, self).__init__(TFTA_Module)
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
@@ -753,6 +753,60 @@ class TestFindTarget3(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('targets')) == 917, output
+        
+#What genes are regulated by miR-297? (subtask: find-target-mirna)
+class TestFindTargetMirna2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTargetMirna2, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = ekb_kstring_from_text('miR-297')
+        content = KQMLList('FIND-TARGET-MIRNA')
+        content.set('miRNA', mirna)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets')) = ", len(output.get('targets')))
+        assert len(output.get('targets')) == 190, output
+        
+#What are the genes that have strong evidence of being regulated by mir-122-5p.? (subtask: find-target-mirna)
+class TestFindTargetMirna3(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTargetMirna3, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = ekb_kstring_from_text('mir-122-5p')
+        content = KQMLList('FIND-TARGET-MIRNA')
+        content.set('miRNA', mirna)
+        content.set('strength', 'strong')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets')) = ", len(output.get('targets')))
+        assert len(output.get('targets')) == 69, output
+        
+#What are the genes that have weak evidence of being regulated by mir-122-5p.? (subtask: find-target-mirna)
+class TestFindTargetMirna4(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTargetMirna4, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = ekb_kstring_from_text('mir-122-5p')
+        content = KQMLList('FIND-TARGET-MIRNA')
+        content.set('miRNA', mirna)
+        content.set('strength', 'weak')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets')) = ", len(output.get('targets')))
+        assert len(output.get('targets')) == 556, output
+
         
 #What genes are most frequently regulated by miR-335-5p, miR-155-5p, miR-145-5p, and miR-20a-5p?
 #(subtask: FIND-GENE-COUNT-MIRNA)
@@ -1969,6 +2023,7 @@ class TestFindTf15(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('tfs')) == 27, output
 
+#TEST FIND-TF-MIRNA
 ##what transcription factors does miR-124-3p regulate? 
 class TestFindTfMirna1(_IntegrationTest):
     def __init__(self, *args):
@@ -2640,20 +2695,6 @@ class TestIsTissueGene9(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         assert output.get('result') == 'TRUE', output
         
-#
-def get_gene_symbol(target_arg):
-        agent = []
-        targets = []
-        ont1 = ['ONT::PROTEIN', 'ONT::GENE-PROTEIN', 'ONT::GENE']
-        tp = TripsProcessor(target_arg)
-        for term in tp.tree.findall('TERM'):
-            if term.find('type').text in ont1:
-                term_id = term.attrib['id']
-                agent.append(tp._get_agent_by_id(term_id, None))
-        for ag in agent:
-            targets.append(ag.name)
-        print('targets=' + ','.join(targets))
-        
 #FIND-KINASE-PATHWAY
 #What kinases are in the MAPK signaling pathway?
 class TestFindKinasePathway1(_IntegrationTest):
@@ -2691,6 +2732,40 @@ class TestFindKinasePathway2(_IntegrationTest):
         print("len(output.get('pathways'))=", len(output.get('pathways')))
         assert len(output.get('pathways')) == 4, output
         
+#TEST FIND-EVIDENCE-MIRNA-TARGET
+#show me evidence that miR-148a-3p targets DNMT1?
+class TestFindEvidenceMirnaTarget1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindEvidenceMirnaTarget1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = ekb_kstring_from_text('miR-148a-3p')
+        target = ekb_kstring_from_text('DNMT1')
+        content = KQMLList('FIND-EVIDENCE-MIRNA-TARGET')
+        content.set('miRNA', mirna)
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('evidence'))=", len(output.get('evidence')))
+        assert len(output.get('evidence')) == 7, output
+
+#functions
+def get_gene_symbol(target_arg):
+        agent = []
+        targets = []
+        ont1 = ['ONT::PROTEIN', 'ONT::GENE-PROTEIN', 'ONT::GENE']
+        tp = TripsProcessor(target_arg)
+        for term in tp.tree.findall('TERM'):
+            if term.find('type').text in ont1:
+                term_id = term.attrib['id']
+                agent.append(tp._get_agent_by_id(term_id, None))
+        for ag in agent:
+            targets.append(ag.name)
+        print('targets=' + ','.join(targets))
+
 #########################################
 ##UNIT TEST##############################
 def test_find_tf_indra():
