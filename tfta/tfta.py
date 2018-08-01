@@ -1265,6 +1265,55 @@ class TFTA:
                 target_names.sort()       
         return target_names
         
+    def find_target_miRNA_strength(self, miRNA_names, evidence_strength):
+        """
+        Return Targets regulated by the given miRNAs
+        example: What genes does miR-20b-5p target?
+        """
+        target_names = []
+        if self.tfdb is not None:
+            if evidence_strength == 'strong':
+                t = (miRNA_names[0], '%Weak%')
+                res = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo "
+                                    "WHERE mirna LIKE ? AND supportType NOT LIKE ? ", t).fetchall()
+                if res:
+                    target_names = [r[0] for r in res]
+                else:
+                    raise miRNANotFoundException
+                if len(miRNA_names)>1:
+                    for i in range(1, len(miRNA_names)):
+                        t = (miRNA_names[i], '%Weak%')
+                        res = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo "
+                                    "WHERE mirna LIKE ? AND supportType NOT LIKE ?", t).fetchall()
+                        if res:
+                            target_names = list(set(target_names) & set([r[0] for r in res]))
+                        else:
+                            raise miRNANotFoundException
+                        if not len(target_names):
+                            break;
+            else:
+                t = (miRNA_names[0], '%Weak%')
+                res = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo "
+                                    "WHERE mirna LIKE ? AND supportType LIKE ? ", t).fetchall()
+                if res:
+                    target_names = [r[0] for r in res]
+                else:
+                    raise miRNANotFoundException
+                if len(miRNA_names)>1:
+                    for i in range(1, len(miRNA_names)):
+                        t = (miRNA_names[i], '%Weak%')
+                        res = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo "
+                                    "WHERE mirna LIKE ? AND supportType LIKE ?", t).fetchall()
+                        if res:
+                            target_names = list(set(target_names) & set([r[0] for r in res]))
+                        else:
+                            raise miRNANotFoundException
+                        if not len(target_names):
+                            break;
+            if len(target_names):
+                target_names.sort()       
+        return target_names
+        
     def find_tf_miRNA(self, miRNA_names):
         """
         Return TFs regulated by the given miRNAs
