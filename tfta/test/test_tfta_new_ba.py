@@ -1127,6 +1127,42 @@ class TestFindPathway43(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('pathways')) == 6, output
         
+#which of those are in the immune pathways? 
+class TestFindPathway44(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindPathway44, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = 'STAT3, MEK1, SRF, HRAS, KRAS, JAK2, JAK1'
+        keyword = 'immune'
+        content = KQMLList('FIND-COMMON-PATHWAY-GENES')
+        content.set('target', target)
+        content.set('keyword', keyword)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways')) = ", len(output.get('pathways')))
+        assert len(output.get('pathways')) == 3, output
+        
+#which of those have common pathways? 
+class TestFindPathway45(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindPathway45, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = 'STAT3, MEK1, SRF, HRAS, KRAS, JAK2, JAK1'
+        content = KQMLList('FIND-COMMON-PATHWAY-GENES')
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways')) = ", len(output.get('pathways')))
+        assert len(output.get('pathways')) == 74, output
+        
 #What immune pathways involve kras and elk1? (subtask: find-pathway-gene-keyword)
 class TestFindPathway5(_IntegrationTest):
     def __init__(self, *args):
@@ -2342,10 +2378,7 @@ class TestFindEvidence2(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('evidence'))=", str(len(output.get('evidence'))))
-        print("type(output.get('evidence'))=",type(output.get('evidence')))
-        print(output.get('evidence'))
-        #print("len(output.get('evidence').get('source_api'))=", str(len(output.get('evidence').get('source_api'))))
-        assert len(output.get('evidence')) == 1, output
+        assert len(output.get('evidence')) == 2, output
         
 ##show me evidence that kras decrease frizzled8? 
 class TestFindEvidence3(_IntegrationTest):
@@ -2386,16 +2419,54 @@ class TestFindEvidence4(_IntegrationTest):
         content.set('regulator', KQMLString(regulator_arg))
         content.set('target', KQMLString(target_arg))
         content.set('keyword', 'increase')
-        print(content, '\n')
         return get_request(content), content
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('evidence'))=", str(len(output.get('evidence'))))
-        print("type(output.get('evidence'))=",type(output.get('evidence')))
-        print(output.get('evidence'))
-        #print("len(output.get('evidence').get('source_api'))=", str(len(output.get('evidence').get('source_api'))))
-        assert len(output.get('evidence')) == 6, output
+        assert len(output.get('evidence')) == 2, output
+        
+##Show me the evidence that SRF binds to the FOS gene.
+class TestFindEvidence5(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindEvidence5, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        regulator_arg = ekb_from_text('SRF')
+        target_arg = ekb_from_text('cfos')
+        target = get_gene_symbol(target_arg)
+        content = KQMLList('FIND-EVIDENCE')
+        content.set('regulator', KQMLString(regulator_arg))
+        content.set('target', KQMLString(target_arg))
+        content.set('keyword', 'bind')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('evidence'))=", str(len(output.get('evidence'))))
+        assert len(output.get('evidence')) == 2, output
+
+##Show me the evidence that SRF regulate FOS gene.
+class TestFindEvidence6(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindEvidence6, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        regulator_arg = ekb_from_text('SRF')
+        target_arg = ekb_from_text('cfos')
+        target = get_gene_symbol(target_arg)
+        content = KQMLList('FIND-EVIDENCE')
+        content.set('regulator', KQMLString(regulator_arg))
+        content.set('target', KQMLString(target_arg))
+        content.set('keyword', 'regulate')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('evidence'))=", str(len(output.get('evidence'))))
+        assert len(output.get('evidence')) == 4, output
         
 #IncreaseAmount(miR_491(), GFAP())
 class TestFindEvidence5(_IntegrationTest):
