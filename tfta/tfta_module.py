@@ -19,6 +19,9 @@ from bioagents import Bioagent
 
 stmt_type_map = {'increase':['IncreaseAmount'], 'decrease':['DecreaseAmount'],
                  'regulate':['RegulateAmount']}
+                 
+dbname_pmid_map = {'TRED':'17202159', 'ITFP':'18713790', 'ENCODE':'22955616',
+                 'TRRUST':'26066708', 'Marbach2016':'26950747', 'Neph2012':'22959076'}
 
 class TFTA_Module(Bioagent):
     """TFTA module is used to receive and decode messages and send
@@ -1881,7 +1884,13 @@ class TFTA_Module(Bioagent):
         if keyword_name.lower() == 'regulate':
             db_names = self.tfta.find_evidence_dbname(regulator_name, target_name)
             if len(db_names):
-                db_message = wrap_message(':tf-db', db_names)
+                for db in db_names:
+                    try:
+                        pmid = dbname_pmid_map[db]
+                    except KeyError as e:
+                        pmid = ''
+                    db_message += '(:name %s :pmid %s) ' % (db, pmid)
+                db_message = ':tf-db (' + db_message + ') '
         message = _combine_messages([db_message, evi_message])
         if message:
             reply = KQMLList.from_string(
@@ -1918,7 +1927,11 @@ class TFTA_Module(Bioagent):
         if len(db_names):
             db_str = ''
             for db in db_names:
-                db_str += '(:name %s) ' % db
+                try:
+                    pmid = dbname_pmid_map[db]
+                except KeyError as e:
+                    pmid = ''
+                db_str += '(:name %s :pmid %s) ' % (db, pmid)
             reply = KQMLList.from_string(
                     '(SUCCESS :evidence (:tf-db (' + db_str + ')))')
         else:
