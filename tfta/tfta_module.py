@@ -1029,19 +1029,32 @@ class TFTA_Module(Bioagent):
         """
         response content to FIND-COMMON-PATHWAY-GENES request
         """
-        target_arg = content.gets('target')
-        if not target_arg:
-            target_arg = content.gets('gene')
         try:
-            targets = _get_targets(target_arg)
-            target_names = []
-            for tg in targets:
-                target_names.append(tg.name)
+            gene_arg = content.gets('gene')
+            if not gene_arg:
+                gene_arg = content.gets('target')
+            #check if it's using ekb xml format
+            if '<ekb' in gene_arg or '<EKB' in gene_arg:
+                genes = _get_targets(gene_arg)
+                gene_names = []
+                for gene in genes:
+                    gene_names.append(gene.name)
+            else:
+                gene_arg = content.get('gene')
+                if not gene_arg:
+                    gene_arg = content.get('target')
+                gene_arg_str = gene_arg.data
+                gene_arg_str = gene_arg_str.replace(' ', '')
+                gene_arg_str = gene_arg_str.upper()
+                gene_names = gene_arg_str.split(',')
         except Exception as e:
-            reply = make_failure('NO_GENE_NAME')
-            return reply
+            if self.gene_list:
+                gene_names = self.gene_list
+            else:
+                reply = make_failure('NO_GENE_NAME')
+                return reply
         try:
-            pathwayName, dblink, genes = self.tfta.find_common_pathway_genes(target_names)
+            pathwayName, dblink, genes = self.tfta.find_common_pathway_genes(gene_names)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
@@ -1069,21 +1082,33 @@ class TFTA_Module(Bioagent):
         except Exception as e:
             reply = make_failure('NO_KEYWORD')
             return reply
-        target_arg = content.gets('gene')
-        if not target_arg:
-            target_arg = content.gets('target')
         try:
-            targets = _get_targets(target_arg)
-            target_names = []
-            for tg in targets:
-                target_names.append(tg.name)
-            target_names = list(set(target_names))
+            gene_arg = content.gets('target')
+            if not gene_arg:
+                gene_arg = content.gets('gene')
+            #check if it's using ekb xml format
+            if '<ekb' in gene_arg or '<EKB' in gene_arg:
+                genes = _get_targets(gene_arg)
+                gene_names = []
+                for gene in genes:
+                    gene_names.append(gene.name)
+            else:
+                gene_arg = content.get('target')
+                if not gene_arg:
+                    gene_arg = content.get('gene')
+                gene_arg_str = gene_arg.data
+                gene_arg_str = gene_arg_str.replace(' ', '')
+                gene_arg_str = gene_arg_str.upper()
+                gene_names = gene_arg_str.split(',')
         except Exception as e:
-            reply = make_failure('NO_GENE_NAME')
-            return reply
+            if self.gene_list:
+                gene_names = self.gene_list
+            else:
+                reply = make_failure('NO_GENE_NAME')
+                return reply
         try:
             pathwayName,dblink,genes = \
-               self.tfta.find_common_pathway_genes_keyword(target_names, keyword_name)
+               self.tfta.find_common_pathway_genes_keyword(gene_names, keyword_name)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
