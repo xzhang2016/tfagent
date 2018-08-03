@@ -1817,10 +1817,26 @@ class TFTA_Module(Bioagent):
                 reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
         #self.gene_list = tf_names
         return reply
-    
+        
     def respond_find_evidence(self, content):
         """
         response to find-evidence request
+        """
+        try:
+            keyword_arg = content.get('keyword')
+            keyword_name = keyword_arg.data
+        except Exception as e:
+            reply = make_failure('NO_KEYWORD')
+            return reply
+        if keyword_name.lower() == 'bind':
+            reply = self.respond_find_evidence_tfdb(content)
+        else:
+            reply = self.respond_find_evidence_literature(content)
+        return reply
+    
+    def respond_find_evidence_literature(self, content):
+        """
+        response to find-evidence request from literature
         for example: show me evidence that IL6 increase the amount of SOCS1.
         Only consider one-one case
         """
@@ -1844,43 +1860,70 @@ class TFTA_Module(Bioagent):
         if not target_name:
             reply = make_failure('NO_TARGET_NAME')
             return reply
-        #check if there's source parameter
-        source_arg = content.get('source')
-        if source_arg:
+        try:
+            keyword_arg = content.get('keyword')
+            keyword_name = keyword_arg.data
+        except Exception as e:
+            reply = make_failure('NO_KEYWORD')
+            return reply
+        try:
+            stmt_types = stmt_type_map[keyword_name.lower()]
+        except KeyError as e:
+            reply = make_failure('INVALID_KEYWORD')
+            return reply
+        evi_message = ''
+        db_message = ''
+        stmts = self.tfta.find_statement_indraDB(subj=regulator_name, obj=target_name, stmt_types=stmt_types)
+        if len(stmts):
+            evidences = self.tfta.find_evidence_indra(stmts)
+            if len(evidences):
+                evi_message = wrap_evidence_message(':literature', evidences)
+        if keyword_name.lower() == 'regulate':
             db_names = self.tfta.find_evidence_dbname(regulator_name, target_name)
             if len(db_names):
-                db_str = ''
-                for db in db_names:
-                    db_str += '(:name %s) ' % db
-                reply = KQMLList.from_string(
-                        '(SUCCESS :evidence (' + db_str + '))')
-            else:
-                reply = KQMLList.from_string('(SUCCESS :evidence NIL)')
-            return reply
+                db_message = wrap_message(':tf-db', db_names)
+        message = _combine_messages([db_message, evi_message])
+        if message:
+            reply = KQMLList.from_string(
+                             '(SUCCESS :evidence (' + message + '))')
         else:
-            try:
-                keyword_arg = content.get('keyword')
-                keyword_name = keyword_arg.data
-            except Exception as e:
-                reply = make_failure('NO_KEYWORD')
-                return reply
-            try:
-                stmt_types = stmt_type_map[keyword_name.lower()]
-            except KeyError as e:
-                reply = make_failure('INVALID_KEYWORD')
-                return reply
-            stmts = self.tfta.find_statement_indraDB(subj=regulator_name, obj=target_name, stmt_types=stmt_types)
-            if len(stmts):
-                evidences = self.tfta.find_evidence_indra(stmts)
-                if len(evidences):
-                    evi_message = wrap_evidence_message(':evidence', evidences)
-                    reply = KQMLList.from_string(
-                            '(SUCCESS ' + evi_message + ')')
-                else:
-                    reply = KQMLList.from_string('(SUCCESS :evidence NIL)')
-            else:
-                reply = KQMLList.from_string('(SUCCESS :evidence NIL)')
+            reply = KQMLList.from_string('(SUCCESS :evidence NIL)')
+        return reply
+    
+    def respond_find_evidence_tfdb(self, content):
+        """
+        Respond to find-evidence request from tfdb
+        """
+        try:
+            regulator_arg = content.gets('regulator')
+            regulator = _get_target(regulator_arg)
+            regulator_name = regulator.name
+        except Exception as e:
+            reply = make_failure('NO_REGULATOR_NAME')
             return reply
+        if not regulator_name:
+            reply = make_failure('NO_REGULATOR_NAME')
+            return reply
+        try:
+            target_arg = content.gets('target')
+            target = _get_target(target_arg)
+            target_name = target.name
+        except Exception as e:
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
+        if not target_name:
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
+        db_names = self.tfta.find_evidence_dbname(regulator_name, target_name)
+        if len(db_names):
+            db_str = ''
+            for db in db_names:
+                db_str += '(:name %s) ' % db
+            reply = KQMLList.from_string(
+                    '(SUCCESS :evidence (:tf-db (' + db_str + ')))')
+        else:
+            reply = KQMLList.from_string('(SUCCESS :evidence NIL)')
+        return reply
             
     def respond_find_gene_tissue(self, content):
         """
@@ -2281,7 +2324,7 @@ def wrap_message(descr, data):
     tf_list_str = ''
     for tf in data:
         tf_str = '"' + tf + '"'
-        tf_list_str += '(:name %s) ' % tf
+        tf_list_str += '(:name %s) ' % tf_str
     return descr + ' (' + tf_list_str + ') '
 
 def wrap_evidence_message(descr, evids):
@@ -2302,7 +2345,7 @@ def wrap_evidence_message(descr, evids):
             ind += 1
         else:
             break
-    evi_message = descr + ' (' + evi_message + ')'
+    evi_message = descr + ' (' + evi_message + ') '
     return evi_message
     
 def _combine_messages(mess_list):
