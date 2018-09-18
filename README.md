@@ -1,6 +1,6 @@
 TF agent: TFTA
 ===========================
-TFTA (Transcription Factor and Target Agent): The TFTA's task is to search for targets for known transcription factor, and TFs for known target; TF and target involved in specific pathways; TF and target involved in specific GO terms;microRNA and target relationship.
+TFTA (Transcription Factor and Target Agent): The TFTA's task is to search for targets for known transcription factor, and TFs for known target; TF and target involved in specific pathways; TF and target involved in specific GO terms;microRNA and target relationship; find evidence for given regulation from both our database and literature.
 
 KQML messaging classes used by the agent are available at: https://github.com/bgyori/pykqml
 
