@@ -51,7 +51,7 @@ class TFTA_Module(Bioagent):
     def __init__(self, **kwargs):
         #Instantiate a singleton TFTA agent
         self.tfta = TFTA()
-        # Call the constructor of KQMLModule
+        # Call the constructor of Bioagent
         super(TFTA_Module, self).__init__(**kwargs)
         
     def receive_tell(self, msg, content):
@@ -2335,9 +2335,12 @@ def wrap_message(descr, data):
         data = list(data)
     data.sort()  
     tf_list_str = ''
+    #don't consider strings from literature containing double quote
+    dquote = '"'
     for tf in data:
-        tf_str = '"' + tf + '"'
-        tf_list_str += '(:name %s) ' % tf_str
+        if dquote not in tf:
+            tf_str = '"' + tf + '"'
+            tf_list_str += '(:name %s) ' % tf_str
     return descr + ' (' + tf_list_str + ') '
 
 def wrap_evidence_message(descr, evids):
