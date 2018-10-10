@@ -9,17 +9,19 @@ It combines the following datasets into one:
     TRRUST (2015)
     Marbach2016 (2016)
     
+The data can be find at https://github.com/slowkow/tftargets. But we further refined the data.
+    
 2) pathway databases
 It includes 7 pathway databases: KEGG, Wikipathways, BioCarta, Reactome, HumanCyc, PharmGKB, SMPDB
 
 3) Gene Ontology database
-Currently use MSigDB.
+Currently use MSigDB and refined GO categories.
 
-4) MirRNA database
-It's based on miRTarBase 7.0.
+4) MicroRNA database
+It's based on miRTarBase 7.0 at http://mirtarbase.mbc.nctu.edu.tw/php/index.php
 
 5)Tissue specific gene expression
-It's based on Tiger dataset.
+It's based on Tiger dataset at http://bioinfo.wilmer.jhu.edu/tiger/
 
 6)Tissue specific gene regulation
 It's based on Tiger dataset and Neph2012, as well as literature search.
