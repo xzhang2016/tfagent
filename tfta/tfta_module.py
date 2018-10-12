@@ -162,15 +162,19 @@ class TFTA_Module(Bioagent):
             reply = make_failure('UNKNOWN_TASK')
         return reply
         
-    def respond_find_common_pathway_genes2keyword(self, content):
+    def respond_find_common_pathway_all(self, content):
         """
         Respond to find-common-pathway-genes, which covers:
-        find-common-pathway-genes, find-common-pathway-genes-keyword
+        find-common-pathway-genes, find-common-pathway-genes-keyword,
+        find-common-pathway-genes-database
         """
         target_arg = content.gets('target')
         keyword_arg = content.get('keyword')
+        db_arg = content.get('database')
         if all([target_arg, keyword_arg]):
             reply = self.respond_find_common_pathway_genes_keyword2(content)
+        elif all([target_arg, db_arg]):
+            reply = self.respond_find_common_pathway_genes_db(content)
         elif target_arg:
             reply = self.respond_find_common_pathway_genes2(content)
         else:
@@ -1127,6 +1131,60 @@ class TFTA_Module(Bioagent):
         reply = KQMLList.from_string(
                '(SUCCESS :pathways (' + path_list_str + '))')
         return reply
+        
+    def respond_find_common_pathway_genes_db(self, content):
+        """
+        Response content to FIND-COMMON-PATHWAY-GENES-DB request
+        """
+        db_arg = content.get('database')
+        try:
+            #keyword_name = keyword_arg.head()
+            db_name = db_arg.data
+        except Exception as e:
+            reply = make_failure('NO_DB_NAME')
+            return reply
+        try:
+            gene_arg = content.gets('target')
+            if not gene_arg:
+                gene_arg = content.gets('gene')
+            #check if it's using ekb xml format
+            if '<ekb' in gene_arg or '<EKB' in gene_arg:
+                genes = _get_targets(gene_arg)
+                gene_names = []
+                for gene in genes:
+                    gene_names.append(gene.name)
+            else:
+                gene_arg = content.get('target')
+                if not gene_arg:
+                    gene_arg = content.get('gene')
+                gene_arg_str = gene_arg.data
+                gene_arg_str = gene_arg_str.replace(' ', '')
+                gene_arg_str = gene_arg_str.upper()
+                gene_names = gene_arg_str.split(',')
+        except Exception as e:
+            if self.gene_list:
+                gene_names = self.gene_list
+            else:
+                reply = make_failure('NO_GENE_NAME')
+                return reply
+        try:
+            pathwayName,dblink,genes = \
+               self.tfta.find_common_pathway_genes_db(gene_names, db_name)
+        except PathwayNotFoundException:
+            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+            return reply
+        path_list_str = ''
+        for pth in genes.keys():
+            pnslash = '"' + pathwayName[pth] +'"'
+            dbl = '"' + dblink[pth] +'"'
+            gene_list_str = ''
+            for g in genes[pth]:
+                gene_list_str += '(:name %s) ' % g
+            path_list_str += '(:name %s :dblink %s ' % (pnslash, dbl)
+            path_list_str += ':gene-list (' + gene_list_str + ')) '
+        reply = KQMLList.from_string(
+               '(SUCCESS :pathways (' + path_list_str + '))')
+        return reply
 
     def respond_is_pathway_gene(self, content):
         """
@@ -2055,7 +2113,7 @@ class TFTA_Module(Bioagent):
     task_func = {'IS-REGULATION':respond_is_regulation, 'FIND-TF':respond_find_tf,
                  'FIND-PATHWAY':respond_find_pathway, 'FIND-TARGET':respond_find_target,
                  'FIND-GENE':respond_find_gene, 'FIND-MIRNA':respond_find_miRNA,
-                 'FIND-COMMON-PATHWAY-GENES':respond_find_common_pathway_genes2keyword,
+                 'FIND-COMMON-PATHWAY-GENES':respond_find_common_pathway_all,
                  'FIND-MIRNA-COUNT-GENE':respond_find_miRNA_count_target,
                  'FIND-GENE-COUNT-MIRNA':respond_find_target_count_miRNA,
                  'IS-MIRNA-TARGET':respond_is_miRNA_target,
