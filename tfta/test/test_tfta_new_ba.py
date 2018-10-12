@@ -1302,6 +1302,28 @@ class TestFindPathway62(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('pathways')) == 2, output
         
+#What KEGG pathways involve ERBB2, JUN, and MAPK8?
+#sub-task:find-common-pathway-genes-db
+class TestFindPathway7(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindPathway7, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('ERBB2, JUN, MAPK8')
+        db = 'KEGG'
+        #count = 'count'
+        content = KQMLList('FIND-COMMON-PATHWAY-GENES')
+        content.set('target', target)
+        content.set('database', db)
+        #content.set('count', count)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        print('len(output)=' + str(len(output.get('pathways'))))
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 4, output
+        
 #Does the mTor pathway utilize SGK1? (subtask: is-pathway-gene)
 class TestFindPathway7(_IntegrationTest):
     def __init__(self, *args):
@@ -2138,7 +2160,52 @@ class TestFindRegulation1(_IntegrationTest):
         if output.get('regulators').get('tf-literature') is not None:
             print("len(output.get('regulators').get('tf-literature'))=", str(len(output.get('regulators').get('tf-literature'))))
         assert len(output.get('regulators')) == 12, output
+
+###what increase the amount of myc? 
+class TestFindRegulation11(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindRegulation11, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target_arg = ekb_from_text('myc')
+        #print(target_arg, '\n')
+        target = get_gene_symbol(target_arg)
+        content = KQMLList('FIND-REGULATION')
+        content.set('target', KQMLString(target_arg))
+        content.set('keyword', 'increase')
+        return get_request(content), content
         
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('regulators'))=", str(len(output.get('regulators'))))
+        if output.get('regulators').get('tf-db') is not None:
+            print("len(output.get('regulators').get('tf-db'))=", str(len(output.get('regulators').get('tf-db'))))
+        if output.get('regulators').get('tf-literature') is not None:
+            print("len(output.get('regulators').get('tf-literature'))=", str(len(output.get('regulators').get('tf-literature'))))
+        assert len(output.get('regulators')) == 10, output
+    
+###what regulate bcl2? 
+class TestFindRegulation12(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindRegulation12, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target_arg = ekb_from_text('bcl2')
+        #print(target_arg, '\n')
+        target = get_gene_symbol(target_arg)
+        content = KQMLList('FIND-REGULATION')
+        content.set('target', KQMLString(target_arg))
+        content.set('keyword', 'regulate')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('regulators'))=", str(len(output.get('regulators'))))
+        assert len(output.get('regulators')) == 12, output
+    
+
 ##what regulate frizzled8? 
 class TestFindRegulation2(_IntegrationTest):
     def __init__(self, *args):
