@@ -908,6 +908,59 @@ class TFTA:
             if not len(genes):
                 raise PathwayNotFoundException
         return pathwayName, dblink, genes
+        
+    def find_common_pathway_genes_db(self, gene_names, db_name):
+        """
+        For a given gene list and db name, find the pathways containing at least two of 
+        the genes, and return the corresponding given genes in each of the pathways 
+        """
+        pathwayName = dict()
+        dblink = dict()
+        counts = defaultdict(int)
+        genes = defaultdict(list)
+        if self.tfdb is not None:
+            gene_names = list(set(gene_names))
+            thr = max(2, math.ceil(len(gene_names)/2))
+            for gene_name in gene_names:
+                t = (gene_name,)
+                res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
+                                         "WHERE genesymbol = ? ", t).fetchall()
+                if res1:
+                    pids = [r[0] for r in res1]
+                    for pid in pids:
+                        genes[pid].append(gene_name)
+                        counts[pid] += 1
+            if len(genes):
+                max_count = max(counts.values())
+                if max_count >= thr:
+                    #only consider pathways which contain at least thr given genes
+                    for pth, ct in counts.items():
+                        if ct < thr:
+                            del genes[pth]
+                elif max_count >= 2:
+                    #consider pathways which contain at least 2 given genes
+                    for pth, ct in counts.items():
+                        if ct < 2:
+                            del genes[pth]
+                else:
+                    raise PathwayNotFoundException
+            else:
+                raise PathwayNotFoundException
+            if len(genes):
+                for pth in list(genes.keys()):
+                    t = (pth, db_name)
+                    res = self.tfdb.execute("SELECT pathwayName, dblink FROM pathwayInfo "
+                                            "WHERE Id = ? AND source LIKE ?", t).fetchone()
+                    if res:
+                        pathwayName[pth] = res['pathwayName']
+                        dblink[pth] = res['dblink']
+                    else:
+                        del genes[pth]
+            else:
+                raise PathwayNotFoundException
+            if not len(genes):
+                raise PathwayNotFoundException
+        return pathwayName, dblink, genes
 
     def find_pathway_count_genes_keyword(self, gene_names, keyword):
         """
