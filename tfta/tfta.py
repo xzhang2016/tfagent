@@ -8,10 +8,18 @@ import sqlite3
 import numpy as np
 from collections import defaultdict
 import math
-from indra.sources.indra_db_rest.client_api import get_statements
-from indra.tools.assemble_corpus import filter_evidence_source
 
+logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
+                    level=logging.INFO)
 logger = logging.getLogger('TFTA')
+
+if has_config('INDRA_DB_REST_URL') and has_config('INDRA_DB_REST_API_KEY'):
+    from indra.sources.indra_db_rest.client_api import get_statements
+    from indra.tools.assemble_corpus import filter_evidence_source
+    CAN_CHECK_STATEMENTS = True
+else:
+    logger.warning("Harvard web api not specified. Cannot get evidence from literature.")
+    CAN_CHECK_STATEMENTS = False
  
 _resource_dir = os.path.dirname(os.path.realpath(__file__)) + '/../resources/'
 
@@ -1759,6 +1767,8 @@ class TFTA:
         obj: str, HGNC symbol
         stmt_type: list[str], list of statement type
         """
+        if not CAN_CHECK_STATEMENTS:
+            return []
         statements = []
         try:
             for stype in stmt_types:
