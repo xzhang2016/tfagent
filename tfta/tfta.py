@@ -8,6 +8,7 @@ import sqlite3
 import numpy as np
 from collections import defaultdict
 import math
+from indra import has_config
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
