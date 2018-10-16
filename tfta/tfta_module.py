@@ -17,6 +17,9 @@ from indra.sources.trips.processor import TripsProcessor
 from collections import defaultdict
 from bioagents import Bioagent
 
+stmt_provenance_map = {'increase':'upregulates', 'decrease':'downregulates',
+                 'regulate':'regulates'}
+
 stmt_type_map = {'increase':['IncreaseAmount'], 'decrease':['DecreaseAmount'],
                  'regulate':['RegulateAmount']}
                  
@@ -1935,6 +1938,7 @@ class TFTA_Module(Bioagent):
         evi_message = ''
         db_message = ''
         stmts = self.tfta.find_statement_indraDB(subj=regulator_name, obj=target_name, stmt_types=stmt_types)
+        self.send_background_support(stmts, regulator_name, target_name, keyword_name)
         if len(stmts):
             evidences = self.tfta.find_evidence_indra(stmts)
             if len(evidences):
@@ -2237,6 +2241,26 @@ class TFTA_Module(Bioagent):
         if len(kinase_names):
             kin_messages += wrap_message(':kinase-db', kinase_names)
         return kin_messages
+        
+    def send_background_support(self, stmts, regulator_name, target_name, keyword_name):
+        logger.info('Sending support for %d statements' % len(stmts))
+        interaction = stmt_provenance_map[keyword_name.lower()]
+        for_what = 'that ' + regulator_name + ' ' + interaction + ' ' + target_name
+        if len(stmts):
+            self.send_provenance_for_stmts(stmts, for_what, limit = 100)
+        else:
+            cause_txt = 'literature '
+            reason_txt = 'that may be due to internal error'
+            self.send_null_provenance(stmt=for_what, for_what=cause_txt, reason=reason_txt)
+    
+    def send_null_provenance(self, stmt, for_what, reason=''):
+        """Send out that no provenance could be found for a given Statement."""
+        content_fmt = ('<h4>No supporting evidence found for {statement} from '
+                        '{cause}{reason}.</h4>')
+        content = KQMLList('add-provenance')
+        content.sets('html', content_fmt.format(statement=stmt,
+                                                cause=for_what, reason=reason))
+        return self.tell(content)
 
 def _get_target(target_str):
     tp = TripsProcessor(target_str)
@@ -2401,12 +2425,11 @@ def wrap_message(descr, data):
             tf_list_str += '(:name %s) ' % tf_str
     return descr + ' (' + tf_list_str + ') '
 
-def wrap_evidence_message(descr, evids):
+def wrap_evidence_message(descr, evids, limit = 10):
     """
     descr: descriptor, for example: ':evidence'
     evids: set of tuple(source_api, pmid, text)
     """
-    limit = 10
     evi_message = ''
     ind = 0
     for ev in evids:
