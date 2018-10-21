@@ -2250,7 +2250,7 @@ class TFTA_Module(Bioagent):
             self.send_provenance_for_stmts(stmts, for_what, limit = 100)
         else:
             cause_txt = 'literature '
-            reason_txt = 'that may be due to internal error'
+            reason_txt = ''
             self.send_null_provenance(stmt=for_what, for_what=cause_txt, reason=reason_txt)
     
     def send_null_provenance(self, stmt, for_what, reason=''):
