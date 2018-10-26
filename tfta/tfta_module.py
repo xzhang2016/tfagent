@@ -620,6 +620,9 @@ class TFTA_Module(Bioagent):
         try:
             #keyword_name = keyword_arg.head()
             keyword_name = keyword_arg.data
+            keyword_name = keyword_name.replace('W::', '')
+            keyword_name = keyword_name.replace('-', ' ')
+            keyword_name = trim_word([keyword_name], 'pathway')
         except Exception as e:
             reply = make_failure('NO_KEYWORD')
             return reply        
@@ -637,12 +640,12 @@ class TFTA_Module(Bioagent):
             return reply
         try:
             pathwayId, pathwayName, externalId, source,dblink = \
-                self.tfta.find_pathways_from_genelist_keyword(gene_names, keyword_name)
+                self.tfta.find_pathways_from_genelist_keyword(gene_names, keyword_name[0])
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
         pathway_list_str = ''
-        for pn, eid, src, dbl in zip(pathwayName, externalId, source, dblink):
+        for pn, dbl in zip(pathwayName, dblink):
             pnslash = '"' + pn +'"'
             dbl = '"' + dbl +'"'
             pathway_list_str += \
@@ -790,20 +793,20 @@ class TFTA_Module(Bioagent):
         self.gene_list = list(set(temp_genes))
         return reply
 
-    def respond_find_pathway_chemical(self, content):
+    def respond_find_pathway_keyword(self, content):
         """
         Response content to FIND_PATHWAY_KEYWORD request
         For a given chemical name, reply the pathways involving the chemical
         """
-        chemical_arg = content.get('keyword')
         try:
-            chemical_name = chemical_arg.data
+            keyword_arg = content.get('keyword')
+            keyword_name = keyword_arg.data
         except Exception as e:
             reply = make_failure('NO_PATHWAY_NAME')
             return reply
         try:
             pathwayId, pathwayName, externalId, source, dblink = \
-                self.tfta.find_pathways_from_chemical(chemical_name)
+                self.tfta.find_pathways_from_keyword(keyword_name)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
@@ -1005,6 +1008,9 @@ class TFTA_Module(Bioagent):
         try:
             #keyword_name = keyword_arg.head()
             keyword_name = keyword_arg.data
+            keyword_name = keyword_name.replace('W::', '')
+            keyword_name = keyword_name.replace('-', ' ')
+            keyword_name = trim_word([keyword_name], 'pathway')
         except Exception as e:
             reply = make_failure('NO_KEYWORD')
             return reply
@@ -1022,7 +1028,7 @@ class TFTA_Module(Bioagent):
             return reply
         try:
             pathwayName,externalId,source,dblink,counts = \
-               self.tfta.find_pathway_count_genes_keyword(target_names, keyword_name)
+               self.tfta.find_pathway_count_genes_keyword(target_names, keyword_name[0])
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
@@ -1089,6 +1095,9 @@ class TFTA_Module(Bioagent):
         try:
             #keyword_name = keyword_arg.head()
             keyword_name = keyword_arg.data
+            keyword_name = keyword_name.replace('W::', '')
+            keyword_name = keyword_name.replace('-', ' ')
+            keyword_name = trim_word([keyword_name], 'pathway')
         except Exception as e:
             reply = make_failure('NO_KEYWORD')
             return reply
@@ -1118,7 +1127,7 @@ class TFTA_Module(Bioagent):
                 return reply
         try:
             pathwayName,dblink,genes = \
-               self.tfta.find_common_pathway_genes_keyword(gene_names, keyword_name)
+               self.tfta.find_common_pathway_genes_keyword(gene_names, keyword_name[0])
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
@@ -2135,7 +2144,7 @@ class TFTA_Module(Bioagent):
                  'FIND-PATHWAY-DB-GENE':respond_find_pathway_db_gene,
                  'FIND-TF-PATHWAY':respond_find_tf_pathway,
                  'FIND-GENE-PATHWAY':respond_find_gene_pathway,
-                 'FIND-PATHWAY-KEYWORD':respond_find_pathway_chemical,
+                 'FIND-PATHWAY-KEYWORD':respond_find_pathway_keyword,
                  'FIND-TF-KEYWORD':respond_find_tf_chemical,
                  'FIND-OVERLAP-TARGETS-TF-GENES':respond_find_overlap_targets_tf_genes,
                  'FIND-COMMON-PATHWAY-GENES-KEYWORD':respond_find_common_pathway_genes_keyword,
