@@ -97,7 +97,8 @@ class TFTA_Module(Bioagent):
     def respond_find_pathway(self, content):
         """
         Response content to find-pathway request, which includes:
-        find-pathway-gene, find-pathway-db-gene, find-pathway-gene-keyword.
+        find-pathway-gene, find-pathway-db-gene, find-pathway-gene-keyword,
+        find-pathway-keyword.
         """
         gene_arg = content.gets('gene')
         pathway_arg = content.gets('pathway')
@@ -110,6 +111,8 @@ class TFTA_Module(Bioagent):
             reply = self.respond_find_pathway_db_gene(content)
         elif gene_arg:
             reply = self.respond_find_pathway_gene(content)
+        elif keyword_arg:
+            reply = self.respond_find_pathway_keyword(content)
         else:
             reply = make_failure('UNKNOWN_TASK')
         return reply
@@ -801,12 +804,15 @@ class TFTA_Module(Bioagent):
         try:
             keyword_arg = content.get('keyword')
             keyword_name = keyword_arg.data
+            keyword_name = keyword_name.replace('W::', '')
+            keyword_name = keyword_name.replace('-', ' ')
+            keyword_name = trim_word([keyword_name], 'pathway')
         except Exception as e:
             reply = make_failure('NO_PATHWAY_NAME')
             return reply
         try:
             pathwayId, pathwayName, externalId, source, dblink = \
-                self.tfta.find_pathways_from_keyword(keyword_name)
+                self.tfta.find_pathways_from_keyword(keyword_name[0])
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
