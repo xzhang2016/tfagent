@@ -2158,7 +2158,7 @@ class TFTA_Module(Bioagent):
                  'FIND-TF-PATHWAY':respond_find_tf_pathway,
                  'FIND-GENE-PATHWAY':respond_find_gene_pathway,
                  'FIND-PATHWAY-KEYWORD':respond_find_pathway_keyword,
-                 'FIND-TF-KEYWORD':respond_find_tf_chemical,
+                 'FIND-TF-KEYWORD':respond_find_tf_keyword,
                  'FIND-OVERLAP-TARGETS-TF-GENES':respond_find_overlap_targets_tf_genes,
                  'FIND-COMMON-PATHWAY-GENES-KEYWORD':respond_find_common_pathway_genes_keyword,
                  'FIND-GENE-GO-TF':respond_find_genes_go_tf2,
