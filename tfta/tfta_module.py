@@ -101,7 +101,7 @@ class TFTA_Module(Bioagent):
         find-pathway-keyword.
         """
         gene_arg = content.gets('gene')
-        pathway_arg = content.gets('pathway')
+        #pathway_arg = content.gets('pathway')
         db_arg = content.get('database')
         keyword_arg = content.get('keyword')
         #count_arg = content.get('count')
@@ -623,9 +623,10 @@ class TFTA_Module(Bioagent):
         try:
             #keyword_name = keyword_arg.head()
             keyword_name = keyword_arg.data
-            keyword_name = keyword_name.replace('W::', '')
+            #keyword_name = keyword_name.replace('W::', '')
             keyword_name = keyword_name.replace('-', ' ')
-            keyword_name = trim_word([keyword_name], 'pathway')
+            keyword_name = keyword_name.lower()
+            #keyword_name = trim_word([keyword_name], 'pathway')
         except Exception as e:
             reply = make_failure('NO_KEYWORD')
             return reply        
@@ -643,7 +644,7 @@ class TFTA_Module(Bioagent):
             return reply
         try:
             pathwayId, pathwayName, externalId, source,dblink = \
-                self.tfta.find_pathways_from_genelist_keyword(gene_names, keyword_name[0])
+                self.tfta.find_pathways_from_genelist_keyword(gene_names, keyword_name)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
