@@ -683,7 +683,10 @@ class TFTA:
                 if pathlist.count(pth) == len(gene_names):
                     pathIDs.append(pth)
             if len(pathIDs)>0:
-                regstr = '%' + keyword + ' %'
+                if keyword == 'immune system':
+                    regstr = '%' + keyword + '%'
+                else:
+                    regstr = '%' + keyword + ' %'
                 for pth in pathIDs:
                     t = (pth, regstr)
                     res = self.tfdb.execute("SELECT * FROM pathwayInfo "
@@ -704,12 +707,15 @@ class TFTA:
                 raise PathwayNotFoundException    
         return pathwayId,pathwayName1,externalId,source,dblink
 
-    def find_pathways_from_chemical(self, chemical_name):
+    def find_pathways_from_keyword(self, keyword):
         """
         return pathways containing the given chemical
         """
         if self.tfdb is not None:
-            regstr = '%' + chemical_name + ' %'
+            if keyword == 'immune system':
+                regstr = '%' + keyword + '%'
+            else:
+                regstr = '%' + keyword + ' %'
             t = (regstr,)
             res = self.tfdb.execute("SELECT * FROM pathwayInfo "
                                     "WHERE pathwayName LIKE ? ORDER BY pathwayName", t).fetchall()
