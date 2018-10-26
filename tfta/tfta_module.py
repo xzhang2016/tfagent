@@ -800,13 +800,14 @@ class TFTA_Module(Bioagent):
     def respond_find_pathway_keyword(self, content):
         """
         Response content to FIND_PATHWAY_KEYWORD request
-        For a given chemical name, reply the pathways involving the chemical
+        For a given keyword, reply the pathways involving the keyword
         """
         try:
             keyword_arg = content.get('keyword')
             keyword_name = keyword_arg.data
             keyword_name = keyword_name.replace('W::', '')
             keyword_name = keyword_name.replace('-', ' ')
+            keyword_name = keyword_name.lower()
             keyword_name = trim_word([keyword_name], 'pathway')
         except Exception as e:
             reply = make_failure('NO_PATHWAY_NAME')
@@ -827,21 +828,23 @@ class TFTA_Module(Bioagent):
             '(SUCCESS :pathways (' + pathway_list_str + '))')
         return reply
 
-    def respond_find_tf_chemical(self, content):
+    def respond_find_tf_keyword(self, content):
         """
         Response content to FIND_TF_KEYWORD request
-        For a given chemical name, reply the tfs within the pathways
-        involving the chemical
+        For a given keyword, reply the tfs within the pathways
+        involving the keyword
         """
-        chemical_arg = content.get('keyword')
+        keyword_arg = content.get('keyword')
         try:
-            chemical_name = chemical_arg.data
+            keyword_name = keyword_arg.data
+            keyword_name = keyword_name.replace('-', ' ')
+            keyword_name = keyword_name.lower()
         except Exception as e:
             reply = make_failure('NO_PATHWAY_NAME')
             return reply
         try:
             pathwayId, pathwayName, tflist, dblink = \
-                self.tfta.find_tfs_from_pathwaysWithChemical(chemical_name)
+                self.tfta.find_tf_pathway_keyword(keyword_name)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
@@ -1017,6 +1020,7 @@ class TFTA_Module(Bioagent):
             keyword_name = keyword_arg.data
             keyword_name = keyword_name.replace('W::', '')
             keyword_name = keyword_name.replace('-', ' ')
+            keyword_name = keyword_name.lower()
             keyword_name = trim_word([keyword_name], 'pathway')
         except Exception as e:
             reply = make_failure('NO_KEYWORD')
@@ -1104,6 +1108,7 @@ class TFTA_Module(Bioagent):
             keyword_name = keyword_arg.data
             keyword_name = keyword_name.replace('W::', '')
             keyword_name = keyword_name.replace('-', ' ')
+            keyword_name = keyword_name.lower()
             keyword_name = trim_word([keyword_name], 'pathway')
         except Exception as e:
             reply = make_failure('NO_KEYWORD')
@@ -1609,6 +1614,7 @@ class TFTA_Module(Bioagent):
             pathway_names = pathway_arg.data
             pathway_names = pathway_names.replace('W::', '')
             pathway_names = pathway_names.replace('-', ' ')
+            pathway_names = pathway_names.lower()
             pathway_names = trim_word([pathway_names], 'pathway')
         except Exception as e:
             reply = make_failure('NO_PATHWAY_NAME')
