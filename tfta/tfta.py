@@ -938,7 +938,8 @@ class TFTA:
         genes = defaultdict(list)
         if self.tfdb is not None:
             gene_names = list(set(gene_names))
-            thr = max(2, math.ceil(len(gene_names)/2))
+            thr1 = max(2, math.ceil(len(gene_names)/2))
+            thr2 = max(2, math.ceil(math.sqrt(len(gene_names))))
             for gene_name in gene_names:
                 t = (gene_name,)
                 res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
@@ -950,10 +951,14 @@ class TFTA:
                         counts[pid] += 1
             if len(genes):
                 max_count = max(counts.values())
-                if max_count >= thr:
-                    #only consider pathways which contain at least thr given genes
+                if max_count >= thr1:
+                    #only consider pathways which contain at least thr1 given genes
                     for pth, ct in counts.items():
-                        if ct < thr:
+                        if ct < thr1:
+                            del genes[pth]
+                elif max_count >= thr2:
+                    for pth, ct in counts.items():
+                        if ct < thr2:
                             del genes[pth]
                 elif max_count >= 2:
                     #consider pathways which contain at least 2 given genes
