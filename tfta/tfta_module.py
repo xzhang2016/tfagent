@@ -814,7 +814,7 @@ class TFTA_Module(Bioagent):
             return reply
         try:
             pathwayId, pathwayName, externalId, source, dblink = \
-                self.tfta.find_pathways_from_keyword(keyword_name[0])
+                self.tfta.find_pathway_keyword(keyword_name[0])
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
@@ -1923,7 +1923,7 @@ class TFTA_Module(Bioagent):
     def respond_find_evidence_literature(self, content):
         """
         response to find-evidence request from literature
-        for example: show me evidence that IL6 increase the amount of SOCS1.
+        for example: show me evidence that IL6 increases the amount of SOCS1.
         Only consider one-one case
         """
         try:
@@ -2473,6 +2473,14 @@ def _combine_messages(mess_list):
         if len(mess):
             messages += mess
     return messages
+    
+def _filter_subword(sentence, pattern_list):
+    """
+    If the sentence contains any pattern in the pattern_list as a single word or phrase, 
+    return true, else false
+    """
+    word = False
+    sen_list = sentence.strsplit(
 
 if __name__ == "__main__":
     TFTA_Module(argv=sys.argv[1:])
