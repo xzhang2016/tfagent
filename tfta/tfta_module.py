@@ -1253,12 +1253,16 @@ class TFTA_Module(Bioagent):
             return reply            
         pathway_list_str = ''
         for pid in pids:
-            pn = '"' + pathwayName[pid] + '"'
-            dbl = '"' + dblink[pid] + '"'
-            pathway_list_str += \
-                '(:name %s :dblink %s) ' % (pn, dbl)                
-        reply = KQMLList.from_string(
-            '(SUCCESS :pathways (' + pathway_list_str + '))')
+            if _filter_subword(pathwayName[pid], pathway_names):
+                pn = '"' + pathwayName[pid] + '"'
+                dbl = '"' + dblink[pid] + '"'
+                pathway_list_str += \
+                    '(:name %s :dblink %s) ' % (pn, dbl)
+        if pathway_list_str:
+            reply = KQMLList.from_string(
+                '(SUCCESS :pathways (' + pathway_list_str + '))')
+        else:
+            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
         return reply
 
     def respond_find_genes_go_tf(self, content):
