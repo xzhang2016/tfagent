@@ -643,19 +643,23 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_GENE_NAME')
             return reply
         try:
-            pathwayId, pathwayName, externalId, source,dblink = \
-                self.tfta.find_pathways_from_genelist_keyword(gene_names, keyword_name)
+            pathwayName, dblink = \
+                self.tfta.find_pathway_gene_keyword(gene_names, keyword_name)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
         pathway_list_str = ''
         for pn, dbl in zip(pathwayName, dblink):
-            pnslash = '"' + pn +'"'
-            dbl = '"' + dbl +'"'
-            pathway_list_str += \
-                '(:name %s :dblink %s) ' % (pnslash, dbl)
-        reply = KQMLList.from_string(
-            '(SUCCESS :pathways (' + pathway_list_str + '))')
+            if _filter_subword(pn, [keyword_name]):
+                pnslash = '"' + pn +'"'
+                dbl = '"' + dbl +'"'
+                pathway_list_str += \
+                    '(:name %s :dblink %s) ' % (pnslash, dbl)
+        if pathway_list_str:
+            reply = KQMLList.from_string(
+                '(SUCCESS :pathways (' + pathway_list_str + '))')
+        else:
+            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
         return reply
 
     def respond_find_pathway_db_gene(self, content):
@@ -784,17 +788,21 @@ class TFTA_Module(Bioagent):
         pathway_list_str = ''
         temp_genes = []
         for pid in pathwayId:
-            temp_genes += genelist[pid]
-            gene_list_str = ''
-            for gene in genelist[pid]:
-                gene_list_str += '(:name %s) ' % gene
-            gene_list_str = '(' + gene_list_str + ')'
-            pnslash = '"' + pathwayName[pid] +'"'
-            pwlink = '"' + plink[pid] + '"'
-            pathway_list_str += '(:name %s :dblink %s :genes %s) ' % (pnslash, pwlink, gene_list_str)            
-        reply = KQMLList.from_string(
+            if _filter_subword(pathwayName[pid], pathway_names):
+                temp_genes += genelist[pid]
+                gene_list_str = ''
+                for gene in genelist[pid]:
+                    gene_list_str += '(:name %s) ' % gene
+                gene_list_str = '(' + gene_list_str + ')'
+                pnslash = '"' + pathwayName[pid] +'"'
+                pwlink = '"' + plink[pid] + '"'
+                pathway_list_str += '(:name %s :dblink %s :genes %s) ' % (pnslash, pwlink, gene_list_str)
+        if pathway_list_str:
+            reply = KQMLList.from_string(
                         '(SUCCESS :pathways (' + pathway_list_str + '))')
-        self.gene_list = list(set(temp_genes))
+            #self.gene_list = list(set(temp_genes))
+        else:
+            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
         return reply
 
     def respond_find_pathway_keyword(self, content):
@@ -2484,12 +2492,12 @@ def _filter_subword(sentence, pattern_list):
     return true, else false
     """
     word = False
-    sen_list = sentence.split(' ')
+    sen_list = sentence.lower().split(' ')
     for p in pattern_list:
         ps = p.split(' ')
         ind = True
         for s in ps:
-            ind = ind & (s in sen_list)
+            ind = ind & (s.lower() in sen_list)
         if ind:
             word = True
             break
