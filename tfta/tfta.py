@@ -707,9 +707,9 @@ class TFTA:
                 raise PathwayNotFoundException    
         return pathwayId,pathwayName1,externalId,source,dblink
 
-    def find_pathways_from_keyword(self, keyword):
+    def find_pathway_keyword(self, keyword):
         """
-        return pathways containing the given chemical
+        return pathways containing the given keyword
         """
         if self.tfdb is not None:
             if keyword == 'immune system':
@@ -720,20 +720,14 @@ class TFTA:
             res = self.tfdb.execute("SELECT * FROM pathwayInfo "
                                     "WHERE pathwayName LIKE ? ORDER BY pathwayName", t).fetchall()
             if res:
-                pathwayId = [r[0] for r in res]
                 pathwayName = [r[1] for r in res]
-                externalId = [r[2] for r in res]
-                source = [r[3] for r in res]
                 dblink = [r[4] for r in res]
             else:
                 raise PathwayNotFoundException		
         else:
-            pathwayId = []
             pathwayName = []
-            externalId = []
-            source = []
-            dblink = []	
-        return pathwayId,pathwayName,externalId,source,dblink
+            dblink = []
+        return pathwayName,dblink
 
     def find_tf_pathway_keyword(self, keyword_name):
         """
