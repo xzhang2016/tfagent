@@ -1639,12 +1639,16 @@ class TFTA_Module(Bioagent):
             return reply        
         pathway_list_str = ''
         for id in pathwayId:
-            pn = '"' + pathwayName[id] + '"'
-            dbl = '"' + dblink[id] + '"'
-            pathway_list_str += \
-                '(:name %s :dblink %s) ' % (pn, dbl)
-        reply = KQMLList.from_string(
-            '(SUCCESS :pathways (' + pathway_list_str + '))')
+            if _filter_subword(pathwayName[id], pathway_names):
+                pn = '"' + pathwayName[id] + '"'
+                dbl = '"' + dblink[id] + '"'
+                pathway_list_str += \
+                    '(:name %s :dblink %s) ' % (pn, dbl)
+        if pathway_list_str:
+            reply = KQMLList.from_string(
+                '(SUCCESS :pathways (' + pathway_list_str + '))')
+        else:
+            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
         return reply
 
     def respond_find_tissue_gene(self, content):
