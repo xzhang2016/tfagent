@@ -528,7 +528,7 @@ class TFTA:
                 raise PathwayNotFoundException
         return pathwayId,pathwayName,tflist,dblink
         
-    def find_kinase_from_pathwayName(self,pathway_names):
+    def find_kinase_pathway(self,pathway_names):
         """
         Return kinases within the given pathway
         """
@@ -543,10 +543,7 @@ class TFTA:
                                         "WHERE termId = ? ", t).fetchall()
             kinases = set([r[0] for r in res])
             for pathway_name in pathway_names:
-                if pathway_name == 'immune system':
-                    regstr = '%' + pathway_name + '%'
-                else:
-                    regstr = '%' + pathway_name + ' %'
+                regstr = '%' + pathway_name + '%'
                 t = (regstr,)
                 res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
                                         "WHERE pathwayName LIKE ? ", t).fetchall()
