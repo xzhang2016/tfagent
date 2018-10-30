@@ -460,10 +460,7 @@ class TFTA:
             pids = []
             plink = []
             for pathway_name in pathway_names:
-                if pathway_name == 'immune system':
-                    regstr = '%' + pathway_name + '%'
-                else:
-                    regstr = '%' + pathway_name + ' %'
+                regstr = '%' + pathway_name + '%'
                 t = (regstr,)
                 #get pathwayId
                 res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
@@ -658,7 +655,7 @@ class TFTA:
                 raise PathwayNotFoundException
             return upid, pname, plink
 
-    def find_pathways_from_genelist_keyword(self,gene_names, keyword):
+    def find_pathway_gene_keyword(self,gene_names, keyword):
         """
         return pathways having given genes and some information in pathway name
         """
@@ -683,10 +680,7 @@ class TFTA:
                 if pathlist.count(pth) == len(gene_names):
                     pathIDs.append(pth)
             if len(pathIDs)>0:
-                if keyword == 'immune system':
-                    regstr = '%' + keyword + '%'
-                else:
-                    regstr = '%' + keyword + ' %'
+                regstr = '%' + keyword + '%'
                 for pth in pathIDs:
                     t = (pth, regstr)
                     res = self.tfdb.execute("SELECT * FROM pathwayInfo "
@@ -705,17 +699,14 @@ class TFTA:
                     raise PathwayNotFoundException
             else:
                 raise PathwayNotFoundException    
-        return pathwayId,pathwayName1,externalId,source,dblink
+        return pathwayName1, dblink
 
     def find_pathway_keyword(self, keyword):
         """
         return pathways containing the given keyword
         """
         if self.tfdb is not None:
-            if keyword == 'immune system':
-                regstr = '%' + keyword + '%'
-            else:
-                regstr = '%' + keyword + ' %'
+            regstr = '%' + keyword + '%'
             t = (regstr,)
             res = self.tfdb.execute("SELECT * FROM pathwayInfo "
                                     "WHERE pathwayName LIKE ? ORDER BY pathwayName", t).fetchall()
