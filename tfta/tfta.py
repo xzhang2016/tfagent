@@ -713,15 +713,12 @@ class TFTA:
             dblink = []
         return pathwayName,dblink
 
-    def find_tf_pathway_keyword(self, keyword_name):
+    def find_tf_keyword(self, keyword_name):
         """
         return pathways containing the given keyword and related tfs 
         """
         if self.tfdb is not None:
-            if keyword_name in ['immune system']:
-                regstr = '%' + keyword_name + '%'
-            else:
-                regstr = '%' + keyword_name + ' %'
+            regstr = '%' + keyword_name + '%'
             t = (regstr,)
             res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
                                     "WHERE pathwayName LIKE ? ", t).fetchall()
