@@ -1165,7 +1165,7 @@ class TFTA_Module(Bioagent):
                     gene_list_str += '(:name %s) ' % g
                 path_list_str += '(:name %s :dblink %s ' % (pnslash, dbl)
                 path_list_str += ':gene-list (' + gene_list_str + ')) '
-        if path_list_str
+        if path_list_str:
             reply = KQMLList.from_string(
                    '(SUCCESS :pathways (' + path_list_str + '))')
         else:
