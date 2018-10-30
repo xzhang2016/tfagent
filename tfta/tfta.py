@@ -905,7 +905,7 @@ class TFTA:
             else:
                 raise PathwayNotFoundException
             if len(genes):
-                regstr = '%' + keyword + ' %'
+                regstr = '%' + keyword + '%'
                 #pths = genes.keys()
                 for pth in list(genes.keys()):
                     t = (pth, regstr)
