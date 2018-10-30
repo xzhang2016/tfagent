@@ -484,11 +484,10 @@ class TFTA:
                 raise PathwayNotFoundException
         return pathwayId,pathwayName,genelist,pw_link
 
-    def find_tfs_from_pathwayName(self,pathway_names):
+    def find_tf_pathway(self,pathway_names):
         """
         Return TFs within the given pathway
         """
-        pathwayId = []
         pathwayName = dict()
         dblink = dict()
         tflist = dict()
@@ -497,10 +496,7 @@ class TFTA:
             pn = []
             dl = []
             for pathway_name in pathway_names:
-                if pathway_name == 'immune system':
-                    regstr = '%' + pathway_name + '%'
-                else:
-                    regstr = '%' + pathway_name + ' %'
+                regstr = '%' + pathway_name + '%'
                 t = (regstr,)
                 res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
                                         "WHERE pathwayName LIKE ? ", t).fetchall()
@@ -508,7 +504,7 @@ class TFTA:
                     pids += [r[0] for r in res]
                     pn += [r[1] for r in res]
                     dl += [r[2] for r in res]
-            if len(pids):	
+            if len(pids):
                 pathwayId = list(set(pids))
                 for i in range(len(pids)):
                     pathwayName[pids[i]] = pn[i]
@@ -523,10 +519,10 @@ class TFTA:
                     else:
                         del pathwayName[pthID]
                         del dblink[pthID]
-                        pathwayId.remove(pthID)
+                        #pathwayId.remove(pthID)
             else:
                 raise PathwayNotFoundException
-        return pathwayId,pathwayName,tflist,dblink
+        return pathwayName,tflist,dblink
         
     def find_kinase_pathway(self,pathway_names):
         """
