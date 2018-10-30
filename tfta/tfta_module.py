@@ -59,7 +59,7 @@ class TFTA_Module(Bioagent):
         
     def receive_tell(self, msg, content):
         #handle tell broadcast
-        #now just do nothing here, but to avoid error message senting out
+        #now just do nothing here, but to avoid error message sending out
         pass
 
     def respond_is_regulation(self, content):
@@ -864,23 +864,27 @@ class TFTA_Module(Bioagent):
             return reply
         try:
             pathwayId, pathwayName, tflist, dblink = \
-                self.tfta.find_tf_pathway_keyword(keyword_name)
+                self.tfta.find_tf_keyword(keyword_name)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
         pathway_list_str = ''
         temp_tfs = []
         for pid, pn, dl in zip(pathwayId, pathwayName, dblink):
-            tf_list_str = ''
-            temp_tfs += tflist[pid]
-            for tf in tflist[pid]:
-                tf_list_str += '(:name %s) ' % tf
-            tf_list_str = '(' + tf_list_str + ')'
-            pnslash = '"' + pn + '"'
-            dl = '"' + dl + '"'
-            pathway_list_str += '(:name %s :dblink %s :tfs %s) ' % (pnslash, dl, tf_list_str)
-        reply = KQMLList.from_string(
-            '(SUCCESS :pathways (' + pathway_list_str + '))')
+            if _filter_subword(pn, [keyword_name]):
+                tf_list_str = ''
+                temp_tfs += tflist[pid]
+                for tf in tflist[pid]:
+                    tf_list_str += '(:name %s) ' % tf
+                tf_list_str = '(' + tf_list_str + ')'
+                pnslash = '"' + pn + '"'
+                dl = '"' + dl + '"'
+                pathway_list_str += '(:name %s :dblink %s :tfs %s) ' % (pnslash, dl, tf_list_str)
+        if pathway_list_str:
+            reply = KQMLList.from_string(
+                '(SUCCESS :pathways (' + pathway_list_str + '))')
+        else:
+            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
         self.gene_list = list(set(temp_tfs))
         return reply
 
