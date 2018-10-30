@@ -8,7 +8,6 @@ phosphatase	GO:0004722
 protease	GO:0008233
 receptor	GO:0038023
 tyrosine kinase receptor	GO:0004714
-tyrosine kinase receptors	GO:0004714
 histone demethylase	GO:0032452
 histone methylase	GO:0042054
 histone methyltransferase	GO:0042054

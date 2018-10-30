@@ -1157,15 +1157,19 @@ class TFTA_Module(Bioagent):
             return reply
         path_list_str = ''
         for pth in genes.keys():
-            pnslash = '"' + pathwayName[pth] +'"'
-            dbl = '"' + dblink[pth] +'"'
-            gene_list_str = ''
-            for g in genes[pth]:
-                gene_list_str += '(:name %s) ' % g
-            path_list_str += '(:name %s :dblink %s ' % (pnslash, dbl)
-            path_list_str += ':gene-list (' + gene_list_str + ')) '
-        reply = KQMLList.from_string(
-               '(SUCCESS :pathways (' + path_list_str + '))')
+            if _filter_subword(pathwayName[pth], keyword_name):
+                pnslash = '"' + pathwayName[pth] +'"'
+                dbl = '"' + dblink[pth] +'"'
+                gene_list_str = ''
+                for g in genes[pth]:
+                    gene_list_str += '(:name %s) ' % g
+                path_list_str += '(:name %s :dblink %s ' % (pnslash, dbl)
+                path_list_str += ':gene-list (' + gene_list_str + ')) '
+        if path_list_str
+            reply = KQMLList.from_string(
+                   '(SUCCESS :pathways (' + path_list_str + '))')
+        else:
+            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
         return reply
         
     def respond_find_common_pathway_genes_db(self, content):

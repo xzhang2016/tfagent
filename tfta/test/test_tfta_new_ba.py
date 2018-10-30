@@ -848,21 +848,20 @@ class TestFindTarget41(_IntegrationTest):
         
 #TEST FIND-GENE
 #What genes are in the MAPK signaling pathway? (subtask: find-gene-pathway)
-class TestFindGene1(_IntegrationTest):
+class TestFindGenePathway1(_IntegrationTest):
     def __init__(self, *args):
-        super(TestFindGene1, self).__init__(TFTA_Module)
+        super(TestFindGenePathway1, self).__init__(TFTA_Module)
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
         pathway = ekb_kstring_from_text('MAPK')
-        content = KQMLList('FIND-GENE')
+        content = KQMLList('FIND-GENE-PATHWAY')
         content.set('pathway', pathway)
-        content.set('subtype', 'gene')
         return get_request(content), content
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('pathways')) == 23, output
+        assert len(output.get('pathways')) == 21, output
         
 #What genes are involved in the il-12 pathway?
 class TestFindGene11(_IntegrationTest):
@@ -2311,7 +2310,7 @@ class TestFindRegulation2(_IntegrationTest):
             print("len(output.get('regulators').get('other-literature'))=", 
                 str(len(output.get('regulators').get('other-literature'))))
         print("type(output.get('regulators'))=",type(output.get('regulators')))
-        assert len(output.get('regulators')) == 8, output
+        assert len(output.get('regulators')) == 10, output
 
 ###what regulate GLUL? 
 class TestFindRegulation3(_IntegrationTest):
@@ -2471,7 +2470,7 @@ class TestFindRegulation9(_IntegrationTest):
         print("len(output.get('regulators'))=", str(len(output.get('regulators'))))
         if output.get('regulators').get('tf-literature') is not None:
             print("len(output.get('regulators').get('tf-literature'))=", str(len(output.get('regulators').get('tf-literature'))))
-        assert len(output.get('regulators')) == 6, output
+        assert len(output.get('regulators')) == 8, output
         
 #FIND-EVIDENCE
 ##Show me evidence that kras regulate frizzled8? 
