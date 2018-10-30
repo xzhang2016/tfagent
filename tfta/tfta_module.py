@@ -813,19 +813,23 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_PATHWAY_NAME')
             return reply
         try:
-            pathwayId, pathwayName, externalId, source, dblink = \
+            pathwayName, dblink = \
                 self.tfta.find_pathway_keyword(keyword_name[0])
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
         pathway_list_str = ''
         for pn, dbl in zip(pathwayName,dblink):
-            pnslash = '"' + pn +'"'
-            dbl = '"' + dbl +'"'
-            pathway_list_str += \
-                '(:name %s :dblink %s) ' % (pnslash, dbl)
-        reply = KQMLList.from_string(
-            '(SUCCESS :pathways (' + pathway_list_str + '))')
+            if _filter_subword(pn, keyword_name):
+                pnslash = '"' + pn +'"'
+                dbl = '"' + dbl +'"'
+                pathway_list_str += \
+                    '(:name %s :dblink %s) ' % (pnslash, dbl)
+        if pathway_list_str:
+            reply = KQMLList.from_string(
+                '(SUCCESS :pathways (' + pathway_list_str + '))')
+        else:
+            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
         return reply
 
     def respond_find_tf_keyword(self, content):
@@ -2480,7 +2484,17 @@ def _filter_subword(sentence, pattern_list):
     return true, else false
     """
     word = False
-    sen_list = sentence.strsplit(
+    sen_list = sentence.split(' ')
+    for p in pattern_list:
+        ps = p.split(' ')
+        ind = True
+        for s in ps:
+            ind = ind & (s in sen_list)
+        if ind:
+            word = True
+            break
+    return word
+            
 
 if __name__ == "__main__":
     TFTA_Module(argv=sys.argv[1:])
