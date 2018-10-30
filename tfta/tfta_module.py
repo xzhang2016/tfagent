@@ -750,22 +750,26 @@ class TFTA_Module(Bioagent):
             return reply    
         try:
             pathwayName, kinaselist, dblink = \
-                self.tfta.find_kinase_from_pathwayName(pathway_names)
+                self.tfta.find_kinase_pathway(pathway_names)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
         pathway_list_str = ''
         keys = kinaselist.keys()
         for key in keys:
-            kinase_list_str = ''
-            for kinase in kinaselist[key]:
-                kinase_list_str += '(:name %s) ' % kinase
-            kinase_list_str = '(' + kinase_list_str + ')'
-            pn = '"' + pathwayName[key] + '"'
-            dl = '"' + dblink[key] + '"'
-            pathway_list_str += '(:name %s :dblink %s :kinase %s) ' % (pn, dl, kinase_list_str)
-        reply = KQMLList.from_string(
-                '(SUCCESS :pathways (' + pathway_list_str + '))')
+            if _filter_subword(pathwayName[key], pathway_names):
+                kinase_list_str = ''
+                for kinase in kinaselist[key]:
+                    kinase_list_str += '(:name %s) ' % kinase
+                kinase_list_str = '(' + kinase_list_str + ')'
+                pn = '"' + pathwayName[key] + '"'
+                dl = '"' + dblink[key] + '"'
+                pathway_list_str += '(:name %s :dblink %s :kinase %s) ' % (pn, dl, kinase_list_str)
+        if pathway_list_str:
+            reply = KQMLList.from_string(
+                    '(SUCCESS :pathways (' + pathway_list_str + '))')
+        else:
+            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
         return reply
 
     def respond_find_gene_pathway(self, content):
