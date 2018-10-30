@@ -711,8 +711,8 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_PATHWAY_NAME')
             return reply    
         try:
-            pathwayId,pathwayName,tflist,dblink = \
-                self.tfta.find_tfs_from_pathwayName(pathway_names)
+            pathwayName,tflist,dblink = \
+                self.tfta.find_tf_pathway(pathway_names)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
@@ -721,16 +721,20 @@ class TFTA_Module(Bioagent):
         temp_tfs = [] #track all the tfs
         if keys:
             for key in keys:
-                temp_tfs += tflist[key]
-                tf_list_str = ''
-                for tf in tflist[key]:
-                    tf_list_str += '(:name %s) ' % tf
-                tf_list_str = '(' + tf_list_str + ')'
-                pn = '"' + pathwayName[key] + '"'
-                dl = '"' + dblink[key] + '"'
-                pathway_list_str += '(:name %s :dblink %s :tfs %s) ' % (pn, dl, tf_list_str)
-            reply = KQMLList.from_string(
-                    '(SUCCESS :pathways (' + pathway_list_str + '))')
+                if _filter_subword(pathwayName[key], pathway_names):
+                    temp_tfs += tflist[key]
+                    tf_list_str = ''
+                    for tf in tflist[key]:
+                        tf_list_str += '(:name %s) ' % tf
+                    tf_list_str = '(' + tf_list_str + ')'
+                    pn = '"' + pathwayName[key] + '"'
+                    dl = '"' + dblink[key] + '"'
+                    pathway_list_str += '(:name %s :dblink %s :tfs %s) ' % (pn, dl, tf_list_str)
+            if pathway_list_str:
+                reply = KQMLList.from_string(
+                        '(SUCCESS :pathways (' + pathway_list_str + '))')
+            else:
+                reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
         else:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
