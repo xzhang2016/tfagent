@@ -1859,7 +1859,7 @@ class TFTA_Module(Bioagent):
             except KeyError as e:
                 reply = make_failure('INVALID_KEYWORD')
                 return reply
-            lit_messages = self.get_tf_indra(target_names, stmt_types)
+            lit_messages = self.get_regulator_indra(target_names, stmt_types, keyword_name)
             if len(lit_messages):
                 reply = KQMLList.from_string(
                         '(SUCCESS :regulators (' + lit_messages + '))')
@@ -1907,7 +1907,7 @@ class TFTA_Module(Bioagent):
         except KeyError as e:
             reply = make_failure('INVALID_KEYWORD')
             return reply
-        lit_messages = self.get_tf_indra(target_names, stmt_types)
+        lit_messages = self.get_regulator_indra(target_names, stmt_types, keyword_name)
         #kinase regualation
         kin_messages = self.get_kinase_regulation(target_names, keyword_name.lower())
         #db result
@@ -2227,7 +2227,7 @@ class TFTA_Module(Bioagent):
         reply_msg.set('content', reply_content)
         self.reply(msg, reply_msg)
         
-    def get_tf_indra(self, target_names, stmt_types):
+    def get_regulator_indra(self, target_names, stmt_types, keyword_name):
         """
         wrap message for multiple targets case
         target_names: list
@@ -2240,8 +2240,10 @@ class TFTA_Module(Bioagent):
         genes = defaultdict(set)
         for target in target_names:
             stmts = self.tfta.find_statement_indraDB(obj=target, stmt_types=stmt_types)
+            #provenance support
+            self.send_background_support(stmts, 'what', target, keyword_name)
             if len(stmts):
-                tfs[target], genes[target], mirnas[target], others[target] = self.tfta.find_tf_indra(stmts)
+                tfs[target], genes[target], mirnas[target], others[target] = self.tfta.find_regulator_indra(stmts)
         #take the intersection
         ftfs = tfs[target_names[0]]
         fmirnas = mirnas[target_names[0]]
