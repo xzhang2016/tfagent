@@ -479,7 +479,7 @@ class TestFindTf3(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('pathways'))=", str(len(output.get('pathways'))))
-        assert len(output.get('pathways')) == 2, output
+        assert len(output.get('pathways')) == 3, output
         
 #What transcription factors are shared by the SRF, HRAS, and elk1 genes? (subtask: find-common-tf-genes)
 class TestFindTf4(_IntegrationTest):
@@ -580,7 +580,7 @@ class TestFindTf5(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('pathways'))=", str(len(output.get('pathways'))))
-        assert len(output.get('pathways')) == 11, output
+        assert len(output.get('pathways')) == 14, output
         
 #TEST FIND-TARGET
 #what genes are regulated by smad2? (subtask: find-tf-target)
@@ -1050,7 +1050,7 @@ class TestFindPathway3(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('pathways')) == 10, output
+        assert len(output.get('pathways')) == 9, output
         
 #What pathways involve calcium? (subtask: find-pathway-keyword covered by find-pathway)
 class TestFindPathway31(_IntegrationTest):
@@ -1066,7 +1066,8 @@ class TestFindPathway31(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('pathways')) == 10, output
+        print("len(output.get('pathways'))=", str(len(output.get('pathways'))))
+        assert len(output.get('pathways')) == 9, output
 
 #What pathways involve immune system?        
 class TestFindPathway32(_IntegrationTest):
@@ -1350,7 +1351,7 @@ class TestFindPathway62(_IntegrationTest):
     def check_response_to_message(self, output):
         print('len(output)=' + str(len(output.get('pathways'))))
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('pathways')) == 2, output
+        assert len(output.get('pathways')) == 3, output
         
 #What KEGG pathways involve ERBB2, JUN, and MAPK8?
 #sub-task:find-common-pathway-genes-db
@@ -1390,7 +1391,8 @@ class TestIsPathwayGene1(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('pathways')) == 3, output
+        print("len(output.get('pathways'))=", str(len(output.get('pathways'))))
+        assert len(output.get('pathways')) == 2, output
         
 ##Does the mTor pathway utilize MEK? (subtask: is-pathway-gene)
 class TestIsPathwayGene11(_IntegrationTest):
@@ -1427,7 +1429,8 @@ class TestIsPathwayGene12(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('pathways')) == 3, output
+        print("len(output.get('pathways'))=", str(len(output.get('pathways'))))
+        assert len(output.get('pathways')) == 2, output
         
 #What KEGG pathways involve immune signaling? (subtask: find-pathway-db-keyword)
 class TestFindPathway8(_IntegrationTest):
@@ -1445,7 +1448,7 @@ class TestFindPathway8(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('pathways')) == 2, output
+        assert len(output.get('pathways')) == 1, output
         
 #What KEGG pathways involve immune system? (subtask: find-pathway-db-keyword)
 class TestFindPathway81(_IntegrationTest):
@@ -2495,7 +2498,7 @@ class TestFindEvidence1(_IntegrationTest):
         print("len(output.get('evidence'))=", str(len(output.get('evidence'))))
         print(output.get('evidence'))
         #print("len(output.get('evidence').get('source_api'))=", str(len(output.get('evidence').get('source_api'))))
-        assert len(output.get('evidence')) == 3, output
+        assert len(output.get('evidence')) == 2, output
         
 ##show me evidence that kras increase frizzled8? 
 class TestFindEvidence2(_IntegrationTest):
@@ -2642,7 +2645,7 @@ class TestFindEvidence6(_IntegrationTest):
         content = KQMLList('FIND-EVIDENCE')
         content.set('regulator', KQMLString(regulator_arg))
         content.set('target', KQMLString(target_arg))
-        content.set('source', 'tf-db')
+        content.set('keyword', 'bind')
         return get_request(content), content
         
     def check_response_to_message(self, output):
@@ -2922,7 +2925,7 @@ class TestFindKinasePathway1(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('pathways'))=", len(output.get('pathways')))
-        assert len(output.get('pathways')) == 23, output
+        assert len(output.get('pathways')) == 21, output
         
 #What kinases are in the immune system pathway?
 class TestFindKinasePathway2(_IntegrationTest):
@@ -2982,7 +2985,7 @@ def test_find_tf_indra():
     tfta = TFTA()
     stmts = tfta.find_statement_indraDB(obj='MYC', stmt_types=['IncreaseAmount'])
     print('len(stmts)=', len(stmts))
-    tfs, genes, mirnas, other = tfta.find_tf_indra(stmts)
+    tfs, genes, mirnas, other = tfta.find_regulator_indra(stmts)
     print('len(tfs)=', (len(tfs)))
     print('len(mirnas)=', len(mirnas))
     print('len(genes)=', len(genes))
