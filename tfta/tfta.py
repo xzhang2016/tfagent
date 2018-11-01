@@ -1782,7 +1782,7 @@ class TFTA:
             return statements
         return statements
             
-    def find_tf_indra(self, stmts):
+    def find_regulator_indra(self, stmts):
         """
         stmts: indra statements
         return the list of TFs from the subject of the stmts, as well as other subjects
