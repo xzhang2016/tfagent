@@ -304,6 +304,8 @@ class TFTA_Module(Bioagent):
             return reply
         #check if it exists in literature
         stmts = self.tfta.find_statement_indraDB(subj=tf_name, obj=target_name, stmt_types=['RegulateAmount'])
+        #provenance support
+        self.send_background_support(stmts, tf_name, target_name, 'regulate')
         if len(stmts):
             literature = True
         #check the db
