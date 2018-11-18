@@ -2383,34 +2383,17 @@ def _get_pathway_name(target_str):
 def _get_miRNA_name(xml_string):
     miRNA_names = []
     try:
-        root = ET.fromstring(xml_string)
-    except Exception as e:
-        return miRNA_names
-    try:
         for term in root.findall('TERM'):
-            if term is not None:
-                dts = term.find('drum-terms').findall('drum-term')
-                for dt in dts:
-                    if dt.get('matched-name') is not None:
-                        #change miRNA name to standard name
-                        s1 = dt.get('matched-name')
-                        #matched_pattern = re.findall('([0-9]+-)[a-zA-Z]', s1)
-                        s1 = rtrim_hyphen(s1)
-                        miRNA_names.append(s1.upper())
+            s = term.find('name')
+            if s is not None:
+                s1 = s.text
+                #change miRNA name to standard name
+                #matched_pattern = re.findall('([0-9]+-)[a-zA-Z]', s1)
+                s1 = rtrim_hyphen(s1)
+                miRNA_names.append(s1.upper())
         miRNA_names = list(set(miRNA_names))
     except Exception as e:
-        try:
-            for term in root.findall('TERM'):
-                s = term.find('name')
-                if s is not None:
-                    s1 = s.text
-                    #change miRNA name to standard name
-                    #matched_pattern = re.findall('([0-9]+-)[a-zA-Z]', s1)
-                    s1 = rtrim_hyphen(s1)
-                    miRNA_names.append(s1.upper())
-            miRNA_names = list(set(miRNA_names))
-        except Exception as e:
-            return miRNA_names
+        return miRNA_names
     return miRNA_names
 
 def make_failure(reason):
