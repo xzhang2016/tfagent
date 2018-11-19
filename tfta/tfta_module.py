@@ -2383,6 +2383,10 @@ def _get_pathway_name(target_str):
 def _get_miRNA_name(xml_string):
     miRNA_names = []
     try:
+        root = ET.fromstring(xml_string)
+    except Exception as e:
+        return miRNA_names
+    try:
         for term in root.findall('TERM'):
             s = term.find('name')
             if s is not None:
