@@ -126,11 +126,13 @@ class TFTA_Module(Bioagent):
         find-tf-target, find-tf-target-tissue. 
         """
         tf_arg = content.gets('tf')
-        target_arg = content.gets('target')
+        keyword_arg = content.get('keyword')
         tissue_arg = content.get('tissue')
         #count_arg = content.get('count')
         if all([tf_arg,tissue_arg]):
             reply = self.respond_find_tf_targets_tissue(content)
+        elif all([tf_arg, keyword_arg]):
+            reply = self.respond_find_target_literature(content)
         elif tf_arg:
             reply = self.respond_find_tf_targets(content)
         else:
@@ -385,6 +387,7 @@ class TFTA_Module(Bioagent):
     def respond_find_tf_targets(self, content):
         """
         Response content to find-tf-target request
+        Covered by find-target
         For a tf list, reply with the targets found
         """
         tf_arg = content.gets('tf')
@@ -399,7 +402,7 @@ class TFTA_Module(Bioagent):
         if not len(tf_names):
             reply = make_failure('NO_TF_NAME')
             return reply
-        #consider an optional parameter for sequencing query
+        #consider an optional parameter for subsequent query
         of_targets_names = []
         of_targets_arg = content.get('of-targets')
         if of_targets_arg:
@@ -412,7 +415,7 @@ class TFTA_Module(Bioagent):
         except TFNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
             return reply
-        #check if it's a sequencing query
+        #check if it's a subsequent query
         if of_targets_names:
             target_names = list(set(of_targets_names) & set(target_names))
         if len(target_names):
@@ -425,6 +428,47 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
         self.gene_list = target_names
         return reply
+        
+    def respond_find_target_literature(self, content):
+        """
+        Respond to find-target request with information in literatures
+        """
+        tf_arg = content.gets('tf')
+        try:
+            tfs = _get_targets(tf_arg)
+            tf_names = []
+            for tf in tfs:
+                tf_names.append(tf.name)
+        except Exception as e:
+            reply = make_failure('NO_TF_NAME')
+            return reply
+        if not len(tf_names):
+            reply = make_failure('NO_TF_NAME')
+            return reply
+        try:
+            keyword_arg = content.get('keyword')
+            keyword_name = keyword_arg.data
+        except Exception as e:
+            reply = make_failure('NO_KEYWORD')
+            return reply
+        try:
+            stmt_types = stmt_type_map[keyword_name.lower()]
+        except KeyError as e:
+            reply = make_failure('INVALID_KEYWORD')
+            return reply
+        lit_messages = self.get_target_indra(tf_names, stmt_types, keyword_name)
+        if len(lit_messages):
+            reply = KQMLList.from_string(
+                    '(SUCCESS :targets (' + lit_messages + '))')
+        else:
+            reply = KQMLList.from_string('(SUCCESS :targets NIL)')
+        return reply
+        
+    def respond_find_target_all(self, content):
+    """
+    Respond to find-target request both from our db and literature
+    """
+    pass
 
     def respond_find_tf_targets_tissue(self, content):
         """
@@ -2176,6 +2220,10 @@ class TFTA_Module(Bioagent):
         is_express_str = 'TRUE' if is_express else 'FALSE'
         reply.set('result', is_express_str)
         return reply
+        
+    
+        
+    
         
     task_func = {'IS-REGULATION':respond_is_regulation, 'FIND-TF':respond_find_tf,
                  'FIND-PATHWAY':respond_find_pathway, 'FIND-TARGET':respond_find_target,
