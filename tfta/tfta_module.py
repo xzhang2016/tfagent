@@ -463,12 +463,6 @@ class TFTA_Module(Bioagent):
         else:
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
         return reply
-        
-    def respond_find_target_all(self, content):
-    """
-    Respond to find-target request both from our db and literature
-    """
-    pass
 
     def respond_find_tf_targets_tissue(self, content):
         """
@@ -2385,7 +2379,7 @@ class TFTA_Module(Bioagent):
         logger.info('Sending support for %d statements' % len(stmts))
         if target_name == 'what':
             interaction = stmt_provenance_map_target[keyword_name.lower()]
-            for_what = 'that what genes are ' + interaction + 'by ' + regulator
+            for_what = 'that what genes are ' + interaction + 'by ' + regulator_name
         else:
             interaction = stmt_provenance_map[keyword_name.lower()]
             for_what = 'that ' + regulator_name + ' ' + interaction + ' ' + target_name
