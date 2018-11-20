@@ -197,7 +197,7 @@ class TFTA_Module(Bioagent):
         Respond to find-regulation
         """
         #target_arg = content.gets('target')
-        #keyword_arg = content.get('keyword')
+        agent_arg = content.get('agent')
         source_arg = content.get('source')
         tissue_arg = content.get('tissue')
         if tissue_arg:
@@ -210,6 +210,8 @@ class TFTA_Module(Bioagent):
                 reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
         elif source_arg:
             reply = self.respond_find_regulation_source(content)
+        elif agent_arg:
+            reply = self.respond_find_regulation_agent(content)
         else:
             reply = self.respond_find_regulation_all(content)
         return reply
@@ -1918,6 +1920,48 @@ class TFTA_Module(Bioagent):
                 reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
         else:
             reply = make_failure('INVALID_SOURCE')
+        return reply
+        
+    def respond_find_regulation_agent(self, content):
+        """
+        Response to find-regulation request
+        For example: Which kinases regulate the cfos gene?
+        """
+        try:
+            target_arg = content.gets('target')
+            targets = _get_targets(target_arg)
+            target_names = []
+            for target in targets:
+                target_names.append(target.name)
+        except Exception as e:
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
+        if not len(target_names):
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
+        target_names = list(set(target_names))
+        try:
+            keyword_arg = content.get('keyword')
+            keyword_name = keyword_arg.data
+        except Exception as e:
+            reply = make_failure('NO_KEYWORD')
+            return reply
+        try:
+            agent_arg = content.get('agent')
+            agent_name = agent_arg.data
+        except Exception as e:
+            reply = make_failure('NO_AGENT')
+            return reply
+        if agent_name.lower() == 'kinase':
+            #kinase regualtion
+            kin_messages = self.get_kinase_regulation(target_names, keyword_name.lower())
+            if len(kin_messages):
+                reply = KQMLList.from_string(
+                        '(SUCCESS :regulators (' + kin_messages + '))')
+            else:
+                reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
+        else:
+            reply = make_failure('INVALID_AGENT')
         return reply
         
     def respond_find_regulation_all(self, content):
