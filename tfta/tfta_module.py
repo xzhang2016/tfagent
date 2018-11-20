@@ -19,6 +19,9 @@ from bioagents import Bioagent
 
 stmt_provenance_map = {'increase':'upregulates', 'decrease':'downregulates',
                  'regulate':'regulates'}
+                 
+stmt_provenance_map_target = {'increase':'upregulated', 'decrease':'downregulated',
+                 'regulate':'regulated'}
 
 stmt_type_map = {'increase':['IncreaseAmount'], 'decrease':['DecreaseAmount'],
                  'regulate':['RegulateAmount']}
@@ -2267,6 +2270,32 @@ class TFTA_Module(Bioagent):
             lit_messages += wrap_message(':other-literature', fothers)
         return lit_messages
         
+    def get_target_indra(self, regulator_names, stmt_types, keyword_name):
+        """
+        wrap message for multiple regulators case
+        regulator_names: list
+        stmt_types: statement type
+        keyword_name: string
+        """
+        lit_messages = ''
+        others = defaultdict(set)
+        mirnas = defaultdict(set)
+        genes = defaultdict(set)
+        for regulator in regulator_names:
+            stmts = self.tfta.find_statement_indraDB(subj=regulator, stmt_types=stmt_types)
+            #provenance support
+            self.send_background_support(stmts, regulator, 'what', keyword_name)
+            if len(stmts):
+                genes[regulator] = self.tfta.find_target_indra(stmts)
+        #take the intersection
+        fgenes = genes[regulator_names[0]]
+        if len(regulator_names)>1:
+            for i in range(1, len(regulator_names)):
+                fgenes = fgenes.intersection(genes[regulator_names[i]])
+        if len(fgenes):
+            lit_messages += wrap_message(':gene-literature', fgenes)
+        return lit_messages
+        
     def _send_table_to_provenance(self, stmts, nl_question):
         """Post a concise table listing statements found."""
         html_str = '<h4>Statements matching: %s</h4>\n' % nl_question
@@ -2306,8 +2335,12 @@ class TFTA_Module(Bioagent):
         
     def send_background_support(self, stmts, regulator_name, target_name, keyword_name):
         logger.info('Sending support for %d statements' % len(stmts))
-        interaction = stmt_provenance_map[keyword_name.lower()]
-        for_what = 'that ' + regulator_name + ' ' + interaction + ' ' + target_name
+        if target_name == 'what':
+            interaction = stmt_provenance_map_target[keyword_name.lower()]
+            for_what = 'that what genes are ' + interaction + 'by ' + regulator
+        else:
+            interaction = stmt_provenance_map[keyword_name.lower()]
+            for_what = 'that ' + regulator_name + ' ' + interaction + ' ' + target_name
         if len(stmts):
             self.send_provenance_for_stmts(stmts, for_what, limit = 100)
         else:
