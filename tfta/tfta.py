@@ -1805,7 +1805,20 @@ class TFTA:
         genes = others.intersection(hgnc_genes_set)
         other = others - genes
         return tfs, genes, mirnas, other
-       
+        
+    def find_target_indra(self, stmts):
+        """
+        stmts: indra statements
+        return the list of genes from the object of the stmts, as well as other objects
+        """
+        objs = set()
+        for stmt in stmts:
+            obj = stmt.obj
+            if obj is not None:
+                objs.add(obj.name)
+        genes = objs.intersection(hgnc_genes_set)
+        return genes
+        
     def find_evidence_indra(self, stmts):
         """
         stmts: indra statements
