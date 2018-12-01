@@ -74,8 +74,11 @@ class TFTA_Module(Bioagent):
         tf_arg = content.gets('tf')
         target_arg = content.gets('target')
         tissue_arg = content.get('tissue')
+        keyword_arg = content.get('keyword')
         if all([tf_arg,target_arg,tissue_arg]):
             reply = self.respond_is_tf_target_tissue(content)
+        elif all([tf_arg,target_arg, keyword_arg]):
+            reply = self.respond_is_tf_target_literature(content)
         elif all([tf_arg,target_arg]):
             reply = self.respond_is_tf_target(content)
         else:
@@ -331,6 +334,51 @@ class TFTA_Module(Bioagent):
         is_target_str = 'TRUE' if result else 'FALSE'
         reply.set('result', is_target_str)
         reply.set('db', 'TRUE' if is_target else 'FALSE')
+        reply.set('literature', 'TRUE' if literature else 'FALSE')
+        return reply
+        
+    def respond_is_tf_target_literature(self, content):
+        """
+        Response content to is-tf-target request with regulating direction
+        """
+        literature = False
+        tf_arg = content.gets('tf')
+        try:
+            tf = _get_target(tf_arg)
+            tf_name = tf.name
+        except Exception as e:
+            reply = make_failure('NO_TF_NAME')
+            return reply
+        target_arg = content.gets('target')
+        try:
+            target = _get_target(target_arg)
+            target_name = target.name
+        except Exception as e:
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
+        try:
+            keyword_arg = content.get('keyword')
+            keyword_name = keyword_arg.data
+        except Exception as e:
+            reply = make_failure('NO_KEYWORD')
+            return reply
+        try:
+            stmt_types = stmt_type_map[keyword_name.lower()]
+        except KeyError as e:
+            reply = make_failure('INVALID_KEYWORD')
+            return reply
+        stmts = self.tfta.find_statement_indraDB(subj=tf_name, obj=target_name, stmt_types=stmt_types)
+        #provenance support
+        self.send_background_support(stmts, tf_name, target_name, keyword_name)
+        if len(stmts):
+            literature = True
+        #set is_target to False since it doesn't support 'increase' or 'decrease' query
+        is_target = False
+        result = literature
+        reply = KQMLList('SUCCESS')
+        is_target_str = 'TRUE' if result else 'FALSE'
+        reply.set('result', is_target_str)
+        reply.set('db', 'FALSE')
         reply.set('literature', 'TRUE' if literature else 'FALSE')
         return reply
 
