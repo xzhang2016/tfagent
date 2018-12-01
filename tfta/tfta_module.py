@@ -246,8 +246,22 @@ class TFTA_Module(Bioagent):
         is_onto_str = 'TRUE' if is_onto else 'FALSE'
         reply.set('result', is_onto_str)
         return reply
-        
+    
     def respond_find_gene_onto(self, content):
+        """
+        Respond to find-gene-onto
+        """
+        regulator_arg = content.gets('regulator')
+        gene_arg = content.gets('gene')
+        if regulator_arg:
+            reply = self.respond_find_gene_onto_regulator(content)
+        elif gene_arg:
+            reply = self.respond_find_gene_onto_gene(content)
+        else:
+            reply = make_failure('UNKNOWN_TASK')
+        return reply
+        
+    def respond_find_gene_onto_gene(self, content):
         """
         Respond to find-gene-onto
         """
@@ -289,6 +303,50 @@ class TFTA_Module(Bioagent):
                 gene_list_str += '(:name %s) ' % res
             reply = KQMLList.from_string(
                 '(SUCCESS :genes (' + gene_list_str + '))')
+        else:
+            reply = KQMLList.from_string('(SUCCESS :genes NIL)')
+        return reply
+        
+    def respond_find_gene_onto_regulator(self, content):
+        """
+        Respond to find-gene-onto
+        """
+        try:
+            keyword_arg = content.get('keyword')
+            keyword_name = keyword_arg.data
+            keyword_name = keyword_name.lower()
+        except Exception as e:
+            reply = make_failure('NO_KEYWORD')
+            return reply
+        try:
+            regulator_arg = content.gets('regulator')
+            regulators = _get_targets(regulator_arg)
+                regulator_names = []
+                for regulator in regulators:
+                    regulator_names.append(regulator.name)
+        except Exception as e:
+            reply = make_failure('NO_REGULATOR_NAME')
+            return reply
+        #get genes regulated by regulators in regulator_names
+        try:
+            gene_names = self.tfta.find_targets(regulator_names)
+        except TFNotFoundException:
+            reply = KQMLList.from_string('(SUCCESS :genes NIL)')
+            return reply
+        if len(gene_names):
+            try:
+                results = self.tfta.find_gene_onto(keyword_name, gene_names)
+            except GONotFoundException:
+                reply = make_failure('GO_NOT_FOUND')
+                return reply
+            if len(results):
+                gene_list_str = ''
+                for res in results:
+                    gene_list_str += '(:name %s) ' % res
+                reply = KQMLList.from_string(
+                    '(SUCCESS :genes (' + gene_list_str + '))')
+            else:
+                reply = KQMLList.from_string('(SUCCESS :genes NIL)')
         else:
             reply = KQMLList.from_string('(SUCCESS :genes NIL)')
         return reply
