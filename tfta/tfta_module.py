@@ -320,10 +320,18 @@ class TFTA_Module(Bioagent):
             return reply
         try:
             regulator_arg = content.gets('regulator')
-            regulators = _get_targets(regulator_arg)
-            regulator_names = []
-            for regulator in regulators:
-                regulator_names.append(regulator.name)
+            #check if it's using ekb xml format
+            if '<EKB' in regulator_arg or '<ekb' in regulator_arg:
+                regulators = _get_targets(regulator_arg)
+                regulator_names = []
+                for regulator in regulators:
+                    regulator_names.append(regulator.name)
+            else:
+                regulator_arg = content.get('regulator')
+                regulator_arg_str = regulator_arg.data
+                regulator_arg_str = regulator_arg_str.replace(' ', '')
+                regulator_arg_str = regulator_arg_str.upper()
+                regulator_names = regulator_arg_str.split(',')
         except Exception as e:
             reply = make_failure('NO_REGULATOR_NAME')
             return reply
