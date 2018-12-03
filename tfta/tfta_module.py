@@ -655,7 +655,7 @@ class TFTA_Module(Bioagent):
         if not len(target_names):
             reply = make_failure('NO_TARGET_NAME')
             return reply
-        #consider an optional parameter for sequencing query
+        #consider an optional parameter for subsequent query
         of_tfs_names = []
         of_tfs_arg = content.get('of-tfs')
         if of_tfs_arg:
@@ -668,7 +668,7 @@ class TFTA_Module(Bioagent):
         except TargetNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
             return reply
-        #check if it's a sequencing query
+        #check if it's a subsequent query
         if of_tfs_names:
             tf_names = list(set(of_tfs_names) & set(tf_names))   
         if len(tf_names):    
