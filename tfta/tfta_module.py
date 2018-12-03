@@ -321,9 +321,9 @@ class TFTA_Module(Bioagent):
         try:
             regulator_arg = content.gets('regulator')
             regulators = _get_targets(regulator_arg)
-                regulator_names = []
-                for regulator in regulators:
-                    regulator_names.append(regulator.name)
+            regulator_names = []
+            for regulator in regulators:
+                regulator_names.append(regulator.name)
         except Exception as e:
             reply = make_failure('NO_REGULATOR_NAME')
             return reply
