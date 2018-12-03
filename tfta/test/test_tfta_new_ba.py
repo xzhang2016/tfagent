@@ -175,6 +175,7 @@ class TestIsRegulation31(_IntegrationTest):
         # Here we create a KQML request that the TFTA needs to respond to
         target = ekb_kstring_from_text('MEK')
         mirna = ekb_kstring_from_text('miR-20b-5p')
+        print('mirna=', str(mirna))
         content = KQMLList('IS-MIRNA-TARGET')
         content.set('target', target)
         content.set('miRNA', mirna)
@@ -261,9 +262,34 @@ class TestIsRegulation43(_IntegrationTest):
         print('result=', output.get('result'))
         print('db=', output.get('db'))
         print('literature=', output.get('literature'))
-        assert output.get('result') == 'FALSE', output
-        assert output.get('db') == 'FALSE', output
+        assert output.get('result') == 'TRUE', output
+        assert output.get('db') == 'TRUE', output
 
+#Does STAT3 increase transcription of the c-fos gene?
+class TestIsRegulation5(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestIsRegulation5, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf_arg = ekb_from_text('stat3')
+        target_arg = ekb_from_text('c-fos')
+        target = get_gene_symbol(target_arg)
+        keyword = 'increase'
+        content = KQMLList('IS-REGULATION')
+        content.set('tf', KQMLString(tf_arg))
+        content.set('target', KQMLString(target_arg))
+        content.set('keyword', keyword)
+        #print(content, '\n')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('result'))=", str(len(output.get('result'))))
+        print('result=', output.get('result'))
+        print('db=', output.get('db'))
+        print('literature=', output.get('literature'))
+        assert output.get('result') == 'TRUE', output
         
 #TEST FIND-TF
 #Which transcription factors regulate frizzled8? (subtask: find-target-tf)
@@ -597,7 +623,8 @@ class TestFindTarget1(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('targets')) == 115, output
+        print("len(output.get('targets'))=", str(len(output.get('targets'))))
+        assert len(output.get('targets')) == 117, output
         
 #what genes are regulated by elk1 and smad2? (subtask: find-tf-target)
 class TestFindTarget11(_IntegrationTest):
@@ -738,6 +765,25 @@ class TestFindTarget23(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         assert output.get('targets') == 'NIL', output
         
+#What genes does smad2 upregulate?
+class TestFindTarget3(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTarget3, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = ekb_kstring_from_text('smad2')
+        keyword = 'increase'
+        content = KQMLList('FIND-TARGET')
+        content.set('tf', tf)
+        content.set('keyword', keyword)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets'))=", str(len(output.get('targets'))))
+        assert len(output.get('targets')) == 2, output
+        
 #What genes does miR-20b-5p target? (subtask: find-target-mirna)
 class TestFindTargetMirna1(_IntegrationTest):
     def __init__(self, *args):
@@ -825,7 +871,8 @@ class TestFindTarget4(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('targets')) == 380, output
+        print("len(output.get('targets'))=", str(len(output.get('targets'))))
+        assert len(output.get('targets')) == 192, output
         
 #What genes are most frequently regulated by miR-335-5p, miR-155-5p and miR-145-5p?
 #(subtask: FIND-GENE-COUNT-MIRNA)
@@ -844,7 +891,8 @@ class TestFindTarget41(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('targets')) == 151, output
+        print("len(output.get('targets'))=", str(len(output.get('targets'))))
+        assert len(output.get('targets')) == 33, output
         
 #TEST FIND-GENE
 #What genes are in the MAPK signaling pathway? (subtask: find-gene-pathway)
@@ -878,7 +926,8 @@ class TestFindGene11(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('pathways')) == 3, output
+        print("len(output.get('pathways'))=", str(len(output.get('pathways'))))
+        assert len(output.get('pathways')) == 2, output
         
 #What genes are in the immune system pathway?
 class TestFindGene12(_IntegrationTest):
@@ -1351,7 +1400,7 @@ class TestFindPathway62(_IntegrationTest):
     def check_response_to_message(self, output):
         print('len(output)=' + str(len(output.get('pathways'))))
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('pathways')) == 3, output
+        assert len(output.get('pathways')) == 2, output
         
 #What KEGG pathways involve ERBB2, JUN, and MAPK8?
 #sub-task:find-common-pathway-genes-db
@@ -1920,9 +1969,48 @@ class TestFindGeneOnto5(_IntegrationTest):
         return get_request(content), content
         
     def check_response_to_message(self, output):
+        print("len(output.get('genes'))=" + str(len(output.get('genes'))))
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('genes')) == 3, output
+        
+#complex query: find-target and find-gene-onto
+#What genes regulated by FOS are kinases?
+class TestFindGeneOnto6(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindGeneOnto6, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        regulator = ekb_kstring_from_text('cfos')
+        keyword = 'kinase'
+        content = KQMLList('find-gene-onto')
+        content.set('keyword', keyword)
+        content.set('regulator', regulator)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
         print('len(output)=' + str(len(output.get('genes'))))
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('genes')) == 2, output
+        assert len(output.get('genes')) == 5, output
+        
+#What genes regulated by FOS are kinases?
+class TestFindGeneOnto61(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindGeneOnto61, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        regulator = 'FOS'
+        keyword = 'kinase'
+        content = KQMLList('find-gene-onto')
+        content.set('keyword', keyword)
+        content.set('regulator', regulator)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        print('len(output)=' + str(len(output.get('genes'))))
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('genes')) == 5, output
         
 #FIND-KINASE-REGULATION
 #Which kinases regulate the cfos gene?
@@ -2154,7 +2242,8 @@ class TestFindTf15(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('tfs')) == 27, output
+        print("len(output.get('tfs'))=", str(len(output.get('tfs'))))
+        assert len(output.get('tfs')) == 31, output
 
 #TEST FIND-TF-MIRNA
 ##what transcription factors does miR-124-3p regulate? 
@@ -2173,7 +2262,7 @@ class TestFindTfMirna1(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('tfs'))=", str(len(output.get('tfs'))))
-        assert len(output.get('tfs')) == 276, output
+        assert len(output.get('tfs')) == 283, output
 
 ##what transcription factors does miR-200c regulate? 
 class TestFindTfMirna11(_IntegrationTest):
@@ -2209,7 +2298,7 @@ class TestFindTfMirna12(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('tfs'))=", str(len(output.get('tfs'))))
-        assert len(output.get('tfs')) == 57, output
+        assert len(output.get('tfs')) == 59, output
 
 #FIND-REGULATION
 ###what regulate myc? 
@@ -2406,6 +2495,28 @@ class TestFindRegulation6(_IntegrationTest):
         print("len(output.get('regulators'))=", str(len(output.get('regulators'))))
         if output.get('regulators').get('tf-literature') is not None:
             print("len(output.get('regulators').get('tf-literature'))=", str(len(output.get('regulators').get('tf-literature'))))
+        assert len(output.get('regulators')) == 2, output
+        
+#Which kinases regulate the cfos gene?
+class TestFindRegulation61(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindRegulation61, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target_arg = ekb_from_text('FOS')
+        #print(target_arg, '\n')
+        target = get_gene_symbol(target_arg)
+        content = KQMLList('FIND-REGULATION')
+        content.set('target', KQMLString(target_arg))
+        content.set('keyword', 'regulate')
+        content.set('agent', 'kinase')
+        print("content=", str(content))
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('regulators'))=", str(len(output.get('regulators'))))
         assert len(output.get('regulators')) == 2, output
         
 ###What are the regulators of MAPK14 in bladder?
