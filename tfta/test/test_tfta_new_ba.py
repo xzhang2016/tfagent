@@ -2510,7 +2510,7 @@ class TestFindRegulation61(_IntegrationTest):
         content = KQMLList('FIND-REGULATION')
         content.set('target', KQMLString(target_arg))
         content.set('keyword', 'regulate')
-        content.set('agent', 'kinase')
+        content.set('regulator', 'kinase')
         print("content=", str(content))
         return get_request(content), content
         
