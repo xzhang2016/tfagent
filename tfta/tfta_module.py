@@ -200,7 +200,7 @@ class TFTA_Module(Bioagent):
         Respond to find-regulation
         """
         #target_arg = content.gets('target')
-        agent_arg = content.get('agent')
+        agent_arg = content.get('regulator')
         source_arg = content.get('source')
         tissue_arg = content.get('tissue')
         if tissue_arg:
@@ -2061,10 +2061,10 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_KEYWORD')
             return reply
         try:
-            agent_arg = content.get('agent')
+            agent_arg = content.get('regulator')
             agent_name = agent_arg.data
         except Exception as e:
-            reply = make_failure('NO_AGENT')
+            reply = make_failure('NO_REGULATOR_NAME')
             return reply
         if agent_name.lower() == 'kinase':
             #kinase regualtion
@@ -2075,7 +2075,7 @@ class TFTA_Module(Bioagent):
             else:
                 reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
         else:
-            reply = make_failure('INVALID_AGENT')
+            reply = make_failure('INVALID_REGULATOR')
         return reply
         
     def respond_find_regulation_all(self, content):
