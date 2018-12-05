@@ -1653,32 +1653,29 @@ class TFTA_Module(Bioagent):
         if not len(miRNA_names):
             reply = make_failure('NO_MIRNA_NAME')
             return reply 
-        try:
-            target_names = self.tfta.find_target_miRNA(miRNA_names)
-        except miRNANotFoundException:
-            #for user clarification
-            if len(miRNA_names) == 1:
-                try:
-                    clari_mirna = self.tfta.get_similar_miRNAs(miRNA_names[0])
-                    c_str = ''
-                    for c in clari_mirna:
-                        c_str += '(:name %s) ' % c
-                    reply = make_failure_clarification('MIRNA_NOT_FOUND', '(' + c_str + ')')
-                    return reply
-                except miRNANotFoundException:
-                    reply = make_failure('NO_SIMILAR_MIRNA')
-                    return reply
+        target_names,miRNA_mis = self.tfta.find_target_miRNA(miRNA_names)
+        #check if it's necessary for user clarification
+        if len(miRNA_mis):
+            try:
+                clari_mirna = self.tfta.get_similar_miRNAs(miRNA_mis)
+                c_str = ''
+                for c in clari_mirna:
+                    c_str += '(:name %s) ' % c
+                c_str = '(resolve :term ' + miRNA_mis + ' :as (' + c_str + '))'
+                reply = make_failure_clarification('MIRNA_NOT_FOUND', c_str)
+                return reply
+            except miRNANotFoundException:
+                reply = make_failure('NO_SIMILAR_MIRNA')
+                return reply
+        else:
+            if len(target_names):
+                target_list_str = ''
+                for tg in target_names:
+                    target_list_str += '(:name %s ) ' % tg
+                reply = KQMLList.from_string(
+                    '(SUCCESS :targets (' + target_list_str + '))')
             else:
                 reply = KQMLList.from_string('(SUCCESS :targets NIL)')
-                return reply
-        if len(target_names):
-            target_list_str = ''
-            for tg in target_names:
-                target_list_str += '(:name %s ) ' % tg
-            reply = KQMLList.from_string(
-                '(SUCCESS :targets (' + target_list_str + '))')
-        else:
-            reply = KQMLList.from_string('(SUCCESS :targets NIL)')
         self.gene_list = target_names  
         return reply
         
@@ -1954,31 +1951,29 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_MIRNA_NAME')
             return reply 
         try:
-            tf_names = self.tfta.find_tf_miRNA(miRNA_names)
-        except miRNANotFoundException:
-            #for user clarification
-            if len(miRNA_names) == 1:
+            tf_names,miRNA_mis = self.tfta.find_tf_miRNA(miRNA_names)
+            #check if it's necessary for user clarification
+            if len(miRNA_mis):
                 try:
-                    clari_mirna = self.tfta.get_similar_miRNAs(miRNA_names[0])
+                    clari_mirna = self.tfta.get_similar_miRNAs(miRNA_mis)
                     c_str = ''
                     for c in clari_mirna:
                         c_str += '(:name %s) ' % c
-                    reply = make_failure_clarification('MIRNA_NOT_FOUND', '(' + c_str + ')')
+                    c_str = '(resolve :term ' + miRNA_mis + ' :as (' + c_str + '))'
+                    reply = make_failure_clarification('MIRNA_NOT_FOUND', c_str)
                     return reply
                 except miRNANotFoundException:
                     reply = make_failure('NO_SIMILAR_MIRNA')
                     return reply
             else:
-                reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
-                return reply
+                tf_list_str = ''
+                for tf in tf_names:
+                    tf_list_str += '(:name %s) ' % tf
+                reply = KQMLList.from_string(
+                    '(SUCCESS :tfs (' + tf_list_str + '))')
         except TFNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
             return reply
-        tf_list_str = ''
-        for tf in tf_names:
-            tf_list_str += '(:name %s) ' % tf
-        reply = KQMLList.from_string(
-            '(SUCCESS :tfs (' + tf_list_str + '))')
         self.gene_list = tf_names  
         return reply
     
