@@ -1304,6 +1304,7 @@ class TFTA:
         Return Targets regulated by the given miRNAs
         example: What genes does miR-20b-5p target?
         """
+        miRNA_mis = ''
         target_names = []
         if self.tfdb is not None:
             t = (miRNA_names[0],)
@@ -1312,7 +1313,9 @@ class TFTA:
             if res:
                 target_names = [r[0] for r in res]
             else:
-                raise miRNANotFoundException
+                #raise miRNANotFoundException
+                miRNA_mis = miRNA_names[0]
+                return target_names,miRNA_mis 
             if len(miRNA_names)>1:
                 for i in range(1, len(miRNA_names)):
                     t = (miRNA_names[i],)
@@ -1321,10 +1324,12 @@ class TFTA:
                     if res:
                         target_names = list(set(target_names) & set([r[0] for r in res]))
                     else:
-                        raise miRNANotFoundException
+                        #raise miRNANotFoundException
+                        miRNA_mis = miRNA_names[i]
+                        return target_names,miRNA_mis
             if len(target_names):
                 target_names.sort()       
-        return target_names
+        return target_names,miRNA_mis
         
     def find_target_miRNA_strength(self, miRNA_names, evidence_strength):
         """
@@ -1380,19 +1385,24 @@ class TFTA:
         Return TFs regulated by the given miRNAs
         example: what transcription factors does miR-124-3p regulate? 
         """
-        target_names = self.find_target_miRNA(miRNA_names)
+        target_names,miRNA_mis = self.find_target_miRNA(miRNA_names)
         tf_names = []
-        #get TF list
-        if len(target_names):
-            res = self.tfdb.execute("SELECT DISTINCT TF FROM CombinedDB").fetchall()
-            tf_names = list(set(target_names) & set([r[0] for r in res]))
+        if not miRNA_mis:
+            if len(target_names):
+                if self.tfdb is not None:
+                    res = self.tfdb.execute("SELECT DISTINCT tf FROM transFactor").fetchall()
+                    tf_names = list(set(target_names) & set([r[0] for r in res]))
+                else:
+                    raise TFNotFoundException
+            else:
+                raise TFNotFoundException
+            if len(tf_names):
+                tf_names.sort()
+            else:
+                raise TFNotFoundException
         else:
-            raise TFNotFoundException
-        if len(tf_names):
-            tf_names.sort()
-        else:
-            raise TFNotFoundException
-        return tf_names
+            return tf_names,miRNA_mis
+        return tf_names,miRNA_mis
         
     def find_evidence_miRNA_target(self, miRNA_name, target_name):
         """
