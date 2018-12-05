@@ -2262,7 +2262,7 @@ class TestFindTfMirna1(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('tfs'))=", str(len(output.get('tfs'))))
-        assert len(output.get('tfs')) == 283, output
+        assert len(output.get('tfs')) == 156, output
 
 ##what transcription factors does miR-200c regulate? 
 class TestFindTfMirna11(_IntegrationTest):
@@ -2279,8 +2279,11 @@ class TestFindTfMirna11(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
-        #print("len(output.get('tfs'))=", str(len(output.get('tfs'))))
         assert output.get('reason') == 'MIRNA_NOT_FOUND', output
+        print("len(output.get('clarification'))=", str(len(output.get('clarification'))))
+        assert len(output.get('clarification')) == 5, output
+        assert len(output.get('clarification').get('as')) == 2, output
+        
         
 ##what transcription factors does miR-200c-3p regulate? 
 class TestFindTfMirna12(_IntegrationTest):
@@ -2298,7 +2301,7 @@ class TestFindTfMirna12(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('tfs'))=", str(len(output.get('tfs'))))
-        assert len(output.get('tfs')) == 59, output
+        assert len(output.get('tfs')) == 39, output
 
 #FIND-REGULATION
 ###what regulate myc? 
