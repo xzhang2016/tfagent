@@ -2622,7 +2622,7 @@ def _get_miRNA_name(xml_string):
         root = ET.fromstring(xml_string)
     except Exception as e:
         return miRNA_names
-    ont1 = ['ONT::RNA']
+    ont1 = ['ONT::RNA', 'ONT::GENE']
     try:
         for term in root.findall('TERM'):
             if term.find('type').text in ont1:
