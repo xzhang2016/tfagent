@@ -206,7 +206,7 @@ class TFTA_Module(Bioagent):
         if tissue_arg:
             temp_reply = self.respond_find_target_tfs_tissue(content)
             tf_str = temp_reply.get('tfs')
-            if len(tf_str) > 3:
+            if tf_str != 'NIL':
                 reply = KQMLList.from_string(
                     '(SUCCESS :regulators (:tf-db ' + tf_str.to_string() + '))')
             else:
@@ -2069,6 +2069,14 @@ class TFTA_Module(Bioagent):
                         '(SUCCESS :regulators (' + kin_messages + '))')
             else:
                 reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
+        elif agent_name.lower() == 'transcription factor':
+            temp_reply = self.respond_find_tf(content)
+            tf_str = temp_reply.get('tfs')
+            if tf_str != 'NIL':
+                reply = KQMLList.from_string(
+                    '(SUCCESS :regulators (:tf-db ' + tf_str.to_string() + '))')
+            else:
+                reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
         else:
             reply = make_failure('INVALID_REGULATOR')
         return reply
@@ -2614,15 +2622,15 @@ def _get_miRNA_name(xml_string):
         root = ET.fromstring(xml_string)
     except Exception as e:
         return miRNA_names
+    ont1 = ['ONT::RNA']
     try:
         for term in root.findall('TERM'):
-            s = term.find('name')
-            if s is not None:
-                s1 = s.text
-                #change miRNA name to standard name
-                #matched_pattern = re.findall('([0-9]+-)[a-zA-Z]', s1)
-                s1 = rtrim_hyphen(s1)
-                miRNA_names.append(s1.upper())
+            if term.find('type').text in ont1:
+                s = term.find('name')
+                if s is not None:
+                    s1 = s.text
+                    s1 = rtrim_hyphen(s1)
+                    miRNA_names.append(s1.upper())
         miRNA_names = list(set(miRNA_names))
     except Exception as e:
         return miRNA_names
