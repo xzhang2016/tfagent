@@ -2070,7 +2070,7 @@ class TFTA_Module(Bioagent):
             else:
                 reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
         elif agent_name.lower() == 'transcription factor':
-            temp_reply = self.respond_find_tf(content)
+            temp_reply = self.respond_find_target_tfs(content)
             tf_str = temp_reply.get('tfs')
             if tf_str != 'NIL':
                 reply = KQMLList.from_string(
