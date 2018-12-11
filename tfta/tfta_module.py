@@ -386,12 +386,18 @@ class TFTA_Module(Bioagent):
             literature = True
         #check the db
         try:
-            is_target = self.tfta.Is_tf_target(tf_name, target_name)
+            is_target,dbname = self.tfta.Is_tf_target(tf_name, target_name)
+            #provenance support
+            self.send_background_support_db(tf_name, target_name, dbname)
         except TFNotFoundException:
+            #provenance support
+            self.send_background_support_db(tf_name, target_name, '')
             if not literature:
                 reply = KQMLList.from_string('(SUCCESS :result FALSE :db FALSE :literature FALSE)')
                 return reply
         except TargetNotFoundException:
+            #provenance support
+            self.send_background_support_db(tf_name, target_name, '')
             if not literature:
                 reply = KQMLList.from_string('(SUCCESS :result FALSE :db FALSE :literature FALSE)')
                 return reply
@@ -2499,21 +2505,52 @@ class TFTA_Module(Bioagent):
             lit_messages += wrap_message(':gene-literature', fgenes)
         return lit_messages
         
-    def _send_table_to_provenance(self, stmts, nl_question):
-        """Post a concise table listing statements found."""
-        html_str = '<h4>Statements matching: %s</h4>\n' % nl_question
+    def send_table_to_provenance(self, tf_name, target_name, dbname, nl_question):
+        """Post a concise table listing evidence found."""
+        publink = "https://www.ncbi.nlm.nih.gov/pubmed/"
+        head_str = '<head><style>table,th,td{border:1px solid black;padding:8px}</style></head>'
+        html_str = head_str + '<h4>Supporting information from tf-db: %s</h4>\n' % nl_question
         html_str += '<table style="width:100%">\n'
-        row_list = ['<th>Source</th><th>Interactions</th><th>Target</th>']
-        for stmt in stmts:
-            sub_ag, obj_ag = stmt.agent_list()
+        row_list = ['<th>TF</th><th>Target</th><th>Source</th>']
+        for tf,target,db in zip(tf_name, target_name, dbname):
+            db_list = db.split(',')
+            db_str = ''
+            for d in db_list:
+                db_str += '<a href=' + publink + dbname_pmid_map[d] + ' target="_blank">' + d + '</a>,'
             row_list.append('<td>%s</td><td>%s</td><td>%s</td>'
-                            % (sub_ag, type(stmt).__name__, obj_ag))
+                            % (tf, target, db_str[:-1]))
         html_str += '\n'.join(['  <tr>%s</tr>\n' % row_str
                                for row_str in row_list])
         html_str += '</table>'
         content = KQMLList('add-provenance')
         content.sets('html', html_str)
         return self.tell(content)
+        
+    def send_background_support_db(self, tf_name, target_name, dbname):
+        """
+        Send the evidence from the tf db
+        """
+        if dbname:
+            if all([type(tf_name).__name__ == 'str', type(target_name).__name__ == 'str']):
+                nl = 'does ' + tf_name + ' regulate ' + target_name + '?'
+                self.send_table_to_provenance([tf_name], [target_name], [dbname], nl)
+            elif all([type(tf_name).__name__ == 'list', type(target_name).__name__ == 'str']):
+                nl = 'what transcription factors regulate ' + target_name + '?'
+                target_list = []
+                for i in range(len(tf_name)):
+                    target_list.append(target_name)
+                self.send_table_to_provenance(tf_name, target_list, dbname, nl)
+            elif all([type(tf_name).__name__ == 'str', type(target_name).__name__ == 'list']):
+                nl = 'what genes are regulated by ' + tf_name + '?'
+                tf_list = []
+                for i in range(len(target_name)):
+                    tf_list.append(tf_name)
+                self.send_table_to_provenance(tf_list, target_name, dbname, nl)
+        else:
+            for_what = 'your query'
+            cause_txt = 'tf-db'
+            reason_txt = ''
+            self.send_null_provenance(stmt=for_what, for_what=cause_txt, reason=reason_txt)
         
     def get_kinase_regulation(self, target_names, keyword_name):
         """
@@ -2547,7 +2584,7 @@ class TFTA_Module(Bioagent):
         if len(stmts):
             self.send_provenance_for_stmts(stmts, for_what, limit = 100)
         else:
-            cause_txt = 'literature '
+            cause_txt = 'literature'
             reason_txt = ''
             self.send_null_provenance(stmt=for_what, for_what=cause_txt, reason=reason_txt)
     
@@ -2559,6 +2596,7 @@ class TFTA_Module(Bioagent):
         content.sets('html', content_fmt.format(statement=stmt,
                                                 cause=for_what, reason=reason))
         return self.tell(content)
+        
 
 def _get_target(target_str):
     tp = TripsProcessor(target_str)
