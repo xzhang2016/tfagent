@@ -337,7 +337,7 @@ class TFTA_Module(Bioagent):
             return reply
         #get genes regulated by regulators in regulator_names
         try:
-            gene_names = self.tfta.find_targets(regulator_names)
+            gene_names,dbname = self.tfta.find_targets(regulator_names)
         except TFNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :genes NIL)')
             return reply
@@ -533,8 +533,11 @@ class TFTA_Module(Bioagent):
             of_targets_data = of_targets_data.upper()
             of_targets_names = of_targets_data.split(',')  
         try:
-            target_names = self.tfta.find_targets(tf_names)
+            target_names,dbname = self.tfta.find_targets(tf_names)
         except TFNotFoundException:
+            #provenance support
+            self.send_background_support_db(','.join(tf_names), [], '')
+            
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
             return reply
         #check if it's a subsequent query
@@ -548,7 +551,12 @@ class TFTA_Module(Bioagent):
                 '(SUCCESS :targets (' + target_list_str + '))')
         else:
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
+            
         self.gene_list = target_names
+        
+        #provenance support
+        self.send_background_support_db(','.join(tf_names), target_names, dbname)
+        
         return reply
         
     def respond_find_target_literature(self, content):
@@ -674,7 +682,7 @@ class TFTA_Module(Bioagent):
         except TargetNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
             #provenance support
-            self.send_background_support_db(tf_names, ','.join(target_names), '')
+            self.send_background_support_db([], ','.join(target_names), '')
             return reply
         #check if it's a subsequent query
         if of_tfs_names:
@@ -2621,7 +2629,6 @@ class TFTA_Module(Bioagent):
                                                 cause=for_what, reason=reason))
         return self.tell(content)
         
-
 def _get_target(target_str):
     tp = TripsProcessor(target_str)
     terms = tp.tree.findall('TERM')
