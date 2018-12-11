@@ -1031,12 +1031,15 @@ class TFTA:
         """
         Return Targets regulated by the tf or tf list
         """
+        dbname = dict()
         if self.tfdb is not None:
             t = (tf_names[0],)
-            res = self.tfdb.execute("SELECT DISTINCT Target FROM CombinedDB "
+            res = self.tfdb.execute("SELECT DISTINCT Target,dbnames FROM CombinedDB "
                                     "WHERE TF = ? ", t).fetchall()
             if res:
                 target_names = [r[0] for r in res]
+                for r in res:
+                    dbname[r[0]] = r[1]
             else:
                 raise TFNotFoundException
                 
@@ -1051,9 +1054,12 @@ class TFTA:
                         raise TFNotFoundException
             if len(target_names):
                 target_names.sort()
+                dif = dbname.keys() - target_names
+                for k in dif:
+                    del dbname[k]
         else:
             target_names = []
-        return target_names
+        return target_names,dbname
 
     def find_overlap_targets_tfs_genes(self,tf_names,target_names):
         """
