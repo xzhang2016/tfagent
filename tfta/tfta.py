@@ -102,6 +102,7 @@ class TFTA:
         """
         Return True if the tf regulates the target, and False if not
         """
+        dbname = []
         if self.tfdb is not None:
             #check if target_name in the database
             t = (target_name,)
@@ -110,13 +111,14 @@ class TFTA:
                 raise TargetNotFoundException
             else:
                 t = (tf_name,)
-                res = self.tfdb.execute("SELECT DISTINCT Target FROM CombinedDB WHERE TF = ? ", t).fetchall()
+                res = self.tfdb.execute("SELECT DISTINCT Target, dbnames FROM CombinedDB WHERE TF = ? ", t).fetchall()
                 if not res:
                     raise TFNotFoundException
                 for r in res:
                     if r[0].upper() == target_name.upper():
-                        return True
-        return False
+                        dbname = r[1]
+                        return True,dbname
+        return False,dbname
         
     def Is_gene_onto(self, go_name, gene_name):
         """
