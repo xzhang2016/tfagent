@@ -200,12 +200,15 @@ class TFTA:
         Return TFs regulating all the given targets
         """
         #query
+        dbname = dict()
         if self.tfdb is not None:
             t = (target_names[0],)
-            res = self.tfdb.execute("SELECT DISTINCT TF FROM CombinedDB "
+            res = self.tfdb.execute("SELECT DISTINCT TF,dbnames FROM CombinedDB "
                                     "WHERE Target = ? ", t).fetchall()
             if res:
                 tf_names = [r[0] for r in res]
+                for r in res:
+                    dbname[r[0]] = r[1]
             else:
                 raise TargetNotFoundException 
             if len(target_names)>1:
@@ -215,6 +218,9 @@ class TFTA:
                                             "WHERE Target = ? ", t).fetchall()
                     if res:
                         tf_names = list(set(tf_names) & set([r[0] for r in res]))
+                        dif = dbname.keys() - tf_names
+                        for k in dif:
+                            del dbname[k]
                     else:
                         raise TargetNotFoundException
             if len(tf_names):
@@ -222,7 +228,7 @@ class TFTA:
         else:
             tf_names = []
         #print(tf_names)
-        return tf_names
+        return tf_names,dbname
 
     def find_tfs_count(self,target_names):
         """
