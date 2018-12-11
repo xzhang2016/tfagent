@@ -2526,26 +2526,37 @@ class TFTA_Module(Bioagent):
         content.sets('html', html_str)
         return self.tell(content)
         
-    def send_background_support_db(self, tf_name, target_name, dbname):
+    def send_background_support_db(self, tf_name, target_name, dbname, tissue=None):
         """
         Send the evidence from the tf db
         """
         if dbname:
             if all([type(tf_name).__name__ == 'str', type(target_name).__name__ == 'str']):
-                nl = 'does ' + tf_name + ' regulate ' + target_name + '?'
+                if tissue:
+                    nl = 'does ' + tf_name + ' regulate ' + target_name + ' in ' + tissue + '?'
+                else:
+                    nl = 'does ' + tf_name + ' regulate ' + target_name + '?'
                 self.send_table_to_provenance([tf_name], [target_name], [dbname], nl)
             elif all([type(tf_name).__name__ == 'list', type(target_name).__name__ == 'str']):
-                nl = 'what transcription factors regulate ' + target_name + '?'
+                if tissue:
+                    nl = 'what transcription factors regulate ' + target_name + ' in ' + tissue + '?'
+                else:
+                    nl = 'what transcription factors regulate ' + target_name + '?'
                 target_list = []
                 for i in range(len(tf_name)):
                     target_list.append(target_name)
                 self.send_table_to_provenance(tf_name, target_list, dbname, nl)
             elif all([type(tf_name).__name__ == 'str', type(target_name).__name__ == 'list']):
-                nl = 'what genes are regulated by ' + tf_name + '?'
+                if tissue:
+                    nl = 'what genes are regulated by ' + tf_name + ' in ' + tissue + '?'
+                else:
+                    nl = 'what genes are regulated by ' + tf_name + '?'
                 tf_list = []
                 for i in range(len(target_name)):
                     tf_list.append(tf_name)
                 self.send_table_to_provenance(tf_list, target_name, dbname, nl)
+            else:
+                return
         else:
             for_what = 'your query'
             cause_txt = 'tf-db'
