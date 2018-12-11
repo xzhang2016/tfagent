@@ -670,9 +670,11 @@ class TFTA_Module(Bioagent):
             of_tfs_data = of_tfs_data.upper()
             of_tfs_names = of_tfs_data.split(',')
         try:
-            tf_names = self.tfta.find_tfs(target_names)
+            tf_names,dbname = self.tfta.find_tfs(target_names)
         except TargetNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
+            #provenance support
+            self.send_background_support_db(tf_names, ','.join(target_names), '')
             return reply
         #check if it's a subsequent query
         if of_tfs_names:
@@ -686,6 +688,8 @@ class TFTA_Module(Bioagent):
         else:
             reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
         self.gene_list = tf_names
+        #provenance support
+        self.send_background_support_db(tf_names, ','.join(target_names), dbname)
         return reply
 
     def respond_find_target_tfs_tissue(self, content):
@@ -2124,8 +2128,13 @@ class TFTA_Module(Bioagent):
         #only considering the regulation case
         if keyword_name.lower() == 'regulate':
             try:
-                tf_names = self.tfta.find_tfs(target_names)
+                tf_names,dbname = self.tfta.find_tfs(target_names)
+                #provenance support
+                self.send_background_support_db(tf_names, ','.join(target_names), dbname)
             except TargetNotFoundException:
+                #provenance support
+                self.send_background_support_db([], ','.join(target_names), '')
+                
                 messages = _combine_messages([kin_messages, lit_messages])
                 if len(messages):
                     reply = KQMLList.from_string(
@@ -2543,18 +2552,22 @@ class TFTA_Module(Bioagent):
                 else:
                     nl = 'what transcription factors regulate ' + target_name + '?'
                 target_list = []
+                db_list = []
                 for i in range(len(tf_name)):
                     target_list.append(target_name)
-                self.send_table_to_provenance(tf_name, target_list, dbname, nl)
+                    db_list.append(dbname[tf_name[i]])
+                self.send_table_to_provenance(tf_name, target_list, db_list, nl)
             elif all([type(tf_name).__name__ == 'str', type(target_name).__name__ == 'list']):
                 if tissue:
                     nl = 'what genes are regulated by ' + tf_name + ' in ' + tissue + '?'
                 else:
                     nl = 'what genes are regulated by ' + tf_name + '?'
                 tf_list = []
+                db_list = []
                 for i in range(len(target_name)):
                     tf_list.append(tf_name)
-                self.send_table_to_provenance(tf_list, target_name, dbname, nl)
+                    db_list.append(dbname[target_name[i]])
+                self.send_table_to_provenance(tf_list, target_name, db_list, nl)
             else:
                 return
         else:
