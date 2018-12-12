@@ -2521,12 +2521,30 @@ class TFTA_Module(Bioagent):
         if len(fgenes):
             lit_messages += wrap_message(':gene-literature', fgenes)
         return lit_messages
+
+    def send_table_to_provenance_mirna(self, tf_name, target_name, dbname, nl_question):
+        """Post a concise table listing evidence found for mirna-target relationship."""
+        publink = "https://www.ncbi.nlm.nih.gov/pubmed/"
+        head_str = '<head><style>table,th,td{border: 1px solid black; padding: 8px}</style></head>'
+        html_str = head_str + '<h4>Supporting information from TFTA: %s</h4>\n' % nl_question
+        html_str += '<table style="width:100%">\n'
+        row_list = ['<th>MiRNA</th><th>Target</th><th>Experiment</th><th>Support Type</th><th>PMID</th>']
+        for mirna,target,expe,st,pd in zip(mirna_name, target_name, experiment, suptype, pmids):
+            pd_str = '<a href=' + publink + pd + ' target="_blank">' + pd + '</a>,'
+            row_list.append('<td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td>'
+                            % (mirna, target, expe, st, pd_str))
+        html_str += '\n'.join(['  <tr>%s</tr>\n' % row_str
+                               for row_str in row_list])
+        html_str += '</table>'
+        content = KQMLList('add-provenance')
+        content.sets('html', html_str)
+        return self.tell(content)
         
     def send_table_to_provenance(self, tf_name, target_name, dbname, nl_question):
-        """Post a concise table listing evidence found."""
+        """Post a concise table listing evidence found for tf-target relationship."""
         publink = "https://www.ncbi.nlm.nih.gov/pubmed/"
         head_str = '<head><style>table,th,td{border:1px solid black;padding:8px}</style></head>'
-        html_str = head_str + '<h4>Supporting information from tf-db: %s</h4>\n' % nl_question
+        html_str = head_str + '<h4>Supporting information from TFTA: %s</h4>\n' % nl_question
         html_str += '<table style="width:100%">\n'
         row_list = ['<th>TF</th><th>Target</th><th>Source</th>']
         for tf,target,db in zip(tf_name, target_name, dbname):
