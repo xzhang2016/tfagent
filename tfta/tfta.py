@@ -1268,7 +1268,7 @@ class TFTA:
     def Is_miRNA_target(self, miRNA_name, target_name):
         """
         Return True if the miRNA regulates the target, and False if not
-        query example: Does miR-20b-5p target STAT3? miRNANotFoundException
+        query example: Does miR-20b-5p target STAT3?
         """
         if self.tfdb is not None:
              t = (miRNA_name,)
@@ -1284,6 +1284,27 @@ class TFTA:
              if not res:
                  raise TargetNotFoundException       
         return False
+        
+    def Is_miRNA_target2(self, miRNA_name, target_name):
+        """
+        Return True if the miRNA regulates the target, and False if not;
+        also return evidence for provenance support
+        query example: Does miR-20b-5p target STAT3?
+        """
+        expr = defaultdict(list)
+        supt = defaultdict(list)
+        pmid = defaultdict(list)
+        if self.tfdb is not None:
+             t = (miRNA_name, target_name)
+             res = self.tfdb.execute("SELECT * FROM mirnaInfo WHERE mirna LIKE ? "
+                                     "AND target = ? ", t).fetchall()
+             if res:
+                 for r in res:
+                     expr[target_name].append(r[3])
+                     supt[target_name].append(r[4])
+                     pmid[target_name].append(str(r[5]))
+                 return True, expr, supt, pmid
+        return False, expr, supt, pmid
         
     def find_miRNA_target(self, target_names):
         """
