@@ -1580,6 +1580,68 @@ class TFTA_Module(Bioagent):
         reply.set('is-miRNA-target', is_target_str)
         return reply
         
+    def respond_is_miRNA_target(self, content):
+        """
+        Respond to IS-MIRNA-TARGET request
+        """
+        #assume the miRNA is also in EKB XML format
+        miRNA_arg = content.gets('miRNA')
+        miRNA_name = _get_miRNA_name(miRNA_arg)
+        if not len(miRNA_name):
+            reply = make_failure('NO_MIRNA_NAME')
+            return reply       
+        target_arg = content.gets('target')
+        try:
+            target = _get_target(target_arg)
+            target_name = target.name
+        except Exception as e:
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
+        if not len(target_name):
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
+        try:
+            is_target = self.tfta.Is_miRNA_target(miRNA_name[0], target_name)
+        except miRNANotFoundException:
+            reply = KQMLList.from_string('(SUCCESS :is-miRNA-target FALSE)')
+            return reply
+        except TargetNotFoundException:
+            reply = KQMLList.from_string('(SUCCESS :is-miRNA-target FALSE)')
+            return reply            
+        reply = KQMLList('SUCCESS')
+        is_target_str = 'TRUE' if is_target else 'FALSE'
+        reply.set('is-miRNA-target', is_target_str)
+        return reply
+        
+    def respond_is_miRNA_target2(self, content):
+        """
+        Respond to IS-MIRNA-TARGET request
+        """
+        miRNA_arg = content.gets('miRNA')
+        miRNA_name = _get_miRNA_name(miRNA_arg)
+        if not len(miRNA_name):
+            reply = make_failure('NO_MIRNA_NAME')
+            return reply       
+        target_arg = content.gets('target')
+        try:
+            target = _get_target(target_arg)
+            target_name = target.name
+        except Exception as e:
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
+        if not len(target_name):
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
+        
+        is_target,expr,supt,pmid = self.tfta.Is_miRNA_target2(miRNA_name[0], target_name)
+        #provenance support
+        self.send_background_support_mirna(miRNA_name[0], target_name, expr, supt, pmid)
+        #respond to BA
+        reply = KQMLList('SUCCESS')
+        is_target_str = 'TRUE' if is_target else 'FALSE'
+        reply.set('is-miRNA-target', is_target_str)
+        return reply
+        
     def respond_find_miRNA_target(self, content):
         """
         Respond to FIND-MIRNA-TARGET request
@@ -2409,7 +2471,7 @@ class TFTA_Module(Bioagent):
                  'FIND-COMMON-PATHWAY-GENES':respond_find_common_pathway_all,
                  'FIND-MIRNA-COUNT-GENE':respond_find_miRNA_count_target,
                  'FIND-GENE-COUNT-MIRNA':respond_find_target_count_miRNA,
-                 'IS-MIRNA-TARGET':respond_is_miRNA_target,
+                 'IS-MIRNA-TARGET':respond_is_miRNA_target2,
                  'FIND-COMMON-TF-GENES':respond_find_common_tfs_genes2,
                  'IS-PATHWAY-GENE':respond_is_pathway_gene,
                  'FIND-TARGET-MIRNA':respond_find_target_miRNA,
@@ -2462,7 +2524,7 @@ class TFTA_Module(Bioagent):
         """
         wrap message for multiple targets case
         target_names: list
-        stmt_types: statement type
+        stmt_types: indra statement type
         """
         lit_messages = ''
         tfs = defaultdict(set)
@@ -2500,8 +2562,8 @@ class TFTA_Module(Bioagent):
         """
         wrap message for multiple regulators case
         regulator_names: list
-        stmt_types: statement type
-        keyword_name: string
+        stmt_types: indra statement type
+        keyword_name: str
         """
         lit_messages = ''
         others = defaultdict(set)
@@ -2522,17 +2584,28 @@ class TFTA_Module(Bioagent):
             lit_messages += wrap_message(':gene-literature', fgenes)
         return lit_messages
 
-    def send_table_to_provenance_mirna(self, tf_name, target_name, dbname, nl_question):
-        """Post a concise table listing evidence found for mirna-target relationship."""
+    def send_table_to_provenance_mirna(self, mirna_name, target_name, experiment, support_type, pmid, nl_question):
+        """
+        Post a concise table listing evidence found for mirna-target relationship.
+        mirna_name: list
+        target_name: list
+        experiment: list
+        support_type: list
+        pmid: list
+        nl_question: str
+        """
         publink = "https://www.ncbi.nlm.nih.gov/pubmed/"
         head_str = '<head><style>table,th,td{border: 1px solid black; padding: 8px}</style></head>'
         html_str = head_str + '<h4>Supporting information from TFTA: %s</h4>\n' % nl_question
         html_str += '<table style="width:100%">\n'
         row_list = ['<th>MiRNA</th><th>Target</th><th>Experiment</th><th>Support Type</th><th>PMID</th>']
-        for mirna,target,expe,st,pd in zip(mirna_name, target_name, experiment, suptype, pmids):
-            pd_str = '<a href=' + publink + pd + ' target="_blank">' + pd + '</a>,'
+        for mirna,target,expe,st,pd in zip(mirna_name, target_name, experiment, support_type, pmid):
+            pd_list = pd.split(',')
+            pd_str = ''
+            for p in pd_list:
+                pd_str += '<a href=' + publink + p + ' target="_blank">' + p + '</a>;\n'
             row_list.append('<td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td>'
-                            % (mirna, target, expe, st, pd_str))
+                            % (mirna, target, expe, st, pd_str[:-2]))
         html_str += '\n'.join(['  <tr>%s</tr>\n' % row_str
                                for row_str in row_list])
         html_str += '</table>'
@@ -2540,8 +2613,62 @@ class TFTA_Module(Bioagent):
         content.sets('html', html_str)
         return self.tell(content)
         
+    def send_background_support_mirna(self, mirna_name, target_name, experiment, support_type, pmid):
+        """
+        Send the evidence from the MiRNA-target database
+        mirna_name: list or str
+        target_name: list or str
+        experiment: dict
+        support_type: dict
+        pmid: dict
+        """
+        if pmid:
+            if all([type(mirna_name).__name__ == 'str', type(target_name).__name__ == 'str']):
+                nl = 'does ' + mirna_name + ' regulate ' + target_name + '?'
+                exp_str = ';\n'.join(experiment[target_name])
+                suptype_str = ';\n'.join(support_type[target_name])
+                pmid_str = ','.join(pmid[target_name])
+                self.send_table_to_provenance_mirna([mirna_name], [target_name], [exp_str], [suptype_str], [pmid_str], nl)
+            elif all([type(mirna_name).__name__ == 'list', type(target_name).__name__ == 'str']):
+                nl = 'what miRNAs regulate ' + target_name + '?'
+                target_list = []
+                exp_list = []
+                sup_list = []
+                pmid_list = []
+                for i in range(len(mirna_name)):
+                    target_list.append(target_name)
+                    exp_list.append(';\n'.join(experiment[mirna_name[i]]))
+                    sup_list.append(';\n'.join(support_type[mirna_name[i]]))
+                    pmid_list.append(','.join(pmid[mirna_name[i]]))
+                self.send_table_to_provenance_mirna(mirna_name, target_list, exp_list, sup_list, pmid_list, nl)
+            elif all([type(mirna_name).__name__ == 'str', type(target_name).__name__ == 'list']):
+                nl = 'what genes are regulated by ' + mirna_name + '?'
+                mirna_list = []
+                exp_list = []
+                sup_list = []
+                pmid_list = []
+                for i in range(len(target_name)):
+                    mirna_list.append(mirna_name)
+                    exp_list.append(';\n'.join(experiment[target_name[i]]))
+                    sup_list.append(';\n'.join(support_type[target_name[i]]))
+                    pmid_list.append(','.join(pmid[target_name[i]]))
+                self.send_table_to_provenance_mirna(mirna_list, target_name, exp_list, sup_list, pmid_list, nl)
+            else:
+                return
+        else:
+            for_what = 'your query'
+            cause_txt = 'MiRNA-target db'
+            reason_txt = ''
+            self.send_null_provenance(stmt=for_what, for_what=cause_txt, reason=reason_txt)
+        
     def send_table_to_provenance(self, tf_name, target_name, dbname, nl_question):
-        """Post a concise table listing evidence found for tf-target relationship."""
+        """
+        Post a concise table listing evidence found for tf-target relationship.
+        tf_name: list
+        target_name: list
+        dbname: list
+        nl_question: str
+        """
         publink = "https://www.ncbi.nlm.nih.gov/pubmed/"
         head_str = '<head><style>table,th,td{border:1px solid black;padding:8px}</style></head>'
         html_str = head_str + '<h4>Supporting information from TFTA: %s</h4>\n' % nl_question
@@ -2563,7 +2690,7 @@ class TFTA_Module(Bioagent):
         
     def send_background_support_db(self, tf_name, target_name, dbname, tissue=None):
         """
-        Send the evidence from the tf db
+        Send the evidence from the tf-target db
         """
         if dbname:
             if all([type(tf_name).__name__ == 'str', type(target_name).__name__ == 'str']):
