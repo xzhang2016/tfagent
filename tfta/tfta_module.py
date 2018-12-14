@@ -589,7 +589,7 @@ class TFTA_Module(Bioagent):
         lit_messages = self.get_target_indra(tf_names, stmt_types, keyword_name)
         if len(lit_messages):
             reply = KQMLList.from_string(
-                    '(SUCCESS :targets (' + lit_messages + '))')
+                    '(SUCCESS ' + lit_messages + ')')
         else:
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
         return reply
@@ -2581,7 +2581,7 @@ class TFTA_Module(Bioagent):
             for i in range(1, len(regulator_names)):
                 fgenes = fgenes.intersection(genes[regulator_names[i]])
         if len(fgenes):
-            lit_messages += wrap_message(':gene-literature', fgenes)
+            lit_messages += wrap_message(':targets', fgenes)
         return lit_messages
 
     def send_table_to_provenance_mirna(self, mirna_name, target_name, experiment, support_type, pmid, nl_question):
