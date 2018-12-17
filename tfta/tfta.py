@@ -1854,7 +1854,7 @@ class TFTA:
     def find_target_indra(self, stmts):
         """
         stmts: indra statements
-        return the list of genes from the object of the stmts, as well as other objects
+        return the list of genes from the object of the stmts
         """
         objs = set()
         for stmt in stmts:
@@ -1863,6 +1863,29 @@ class TFTA:
                 objs.add(obj.name)
         genes = objs.intersection(hgnc_genes_set)
         return genes
+        
+    def find_target_indra_regulators(self, stmts_d):
+        """
+        stmts: dict
+        return the list of genes indra statements, as well as the filtered statements
+        """
+        regulators = list(stmts_d.keys())
+        stmt_list = []
+        for r in regulators:
+            stmt_list += stmts_d[r]
+        genes = self.find_target_indra(stmts_d[regulators[0]])
+        if len(regulators) > 1:
+            for i in range(1, len(regulators)):
+                temp = self.find_target_indra(stmts_d[regulators[i]])
+                genes = genes.intersection(temp)
+        #filter statements
+        stmt_f = []
+        for stmt in stmt_list:
+            obj = stmt.obj
+            if obj:
+                if obj.name in genes:
+                    stmt_f.append(stmt)
+        return genes, stmt_f
         
     def find_evidence_indra(self, stmts):
         """
