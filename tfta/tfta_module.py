@@ -2558,7 +2558,7 @@ class TFTA_Module(Bioagent):
             lit_messages += wrap_message(':other-literature', fothers)
         return lit_messages
         
-    def get_target_indra(self, regulator_names, stmt_types, keyword_name):
+    def get_target_indra0(self, regulator_names, stmt_types, keyword_name):
         """
         wrap message for multiple regulators case
         regulator_names: list
@@ -2582,6 +2582,32 @@ class TFTA_Module(Bioagent):
                 fgenes = fgenes.intersection(genes[regulator_names[i]])
         if len(fgenes):
             lit_messages += wrap_message(':targets', fgenes)
+        return lit_messages
+        
+    def get_target_indra(self, regulator_names, stmt_types, keyword_name):
+        """
+        wrap message for multiple regulators case
+        regulator_names: list
+        stmt_types: indra statement type
+        keyword_name: str
+        """
+        lit_messages = ''
+        stmts_d = defaultdict(list)
+        regulator_str = ', '.join(regulator_names[:-1]) + ' and ' + regulator_names[-1]
+        for regulator in regulator_names:
+            stmts = self.tfta.find_statement_indraDB(subj=regulator, stmt_types=stmt_types)
+            if len(stmts):
+                stmts_d[regulator] = stmts
+            else:
+                self.send_background_support([], regulator_str, 'what', keyword_name)
+                return lit_messages
+        genes, stmt_f = self.tfta.find_target_indra_regulators(stmts_d)        
+        
+        if len(genes):
+            lit_messages += wrap_message(':targets', genes)
+        #provenance support
+        self.send_background_support(stmt_f, regulator_str, 'what', keyword_name)
+        
         return lit_messages
 
     def send_table_to_provenance_mirna(self, mirna_name, target_name, experiment, support_type, pmid, nl_question):
