@@ -1612,7 +1612,7 @@ class TFTA:
         """
         clari_miRNA = []
         if self.tfdb is not None:
-            regstr = miRNA_name + '%'
+            regstr = miRNA_name + '-%'
             t = (regstr,)
             res = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo "
                                     "WHERE mirna LIKE ? ", t).fetchall()
