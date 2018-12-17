@@ -129,13 +129,20 @@ class TFTA_Module(Bioagent):
         find-tf-target, find-tf-target-tissue. 
         """
         tf_arg = content.gets('tf')
-        keyword_arg = content.get('keyword')
         tissue_arg = content.get('tissue')
-        #count_arg = content.get('count')
+        try:
+            keyword_arg = content.get('keyword')
+            keyword_name = keyword_arg.data
+        except Exception as e:
+            reply = make_failure('NO_KEYWORD')
+            return reply 
         if all([tf_arg,tissue_arg]):
             reply = self.respond_find_tf_targets_tissue(content)
         elif all([tf_arg, keyword_arg]):
-            reply = self.respond_find_target_literature(content)
+            if keyword_name.lower() in ['increase', 'decrease']:
+                reply = self.respond_find_target_literature(content)
+            else:
+                reply = self.respond_find_tf_targets(content)
         elif tf_arg:
             reply = self.respond_find_tf_targets(content)
         else:
@@ -2780,7 +2787,7 @@ class TFTA_Module(Bioagent):
         logger.info('Sending support for %d statements' % len(stmts))
         if target_name == 'what':
             interaction = stmt_provenance_map_target[keyword_name.lower()]
-            for_what = 'that what genes are ' + interaction + 'by ' + regulator_name
+            for_what = 'that what genes are ' + interaction + ' by ' + regulator_name
         else:
             interaction = stmt_provenance_map[keyword_name.lower()]
             for_what = 'that ' + regulator_name + ' ' + interaction + ' ' + target_name
