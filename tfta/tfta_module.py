@@ -531,6 +531,7 @@ class TFTA_Module(Bioagent):
         if not len(tf_names):
             reply = make_failure('NO_TF_NAME')
             return reply
+        tf_str = ', '.join(tf_names[:-1]) + ' and ' + tf_names[-1]
         #consider an optional parameter for subsequent query
         of_targets_names = []
         of_targets_arg = content.get('of-targets')
@@ -543,7 +544,7 @@ class TFTA_Module(Bioagent):
             target_names,dbname = self.tfta.find_targets(tf_names)
         except TFNotFoundException:
             #provenance support
-            self.send_background_support_db(','.join(tf_names), [], '')
+            self.send_background_support_db(tf_str, [], '')
             
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
             return reply
@@ -562,7 +563,7 @@ class TFTA_Module(Bioagent):
         self.gene_list = target_names
         
         #provenance support
-        self.send_background_support_db(','.join(tf_names), target_names, dbname)
+        self.send_background_support_db(tf_str, target_names, dbname)
         
         return reply
         
@@ -676,6 +677,7 @@ class TFTA_Module(Bioagent):
         if not len(target_names):
             reply = make_failure('NO_TARGET_NAME')
             return reply
+        target_str = ', '.join(target_names[:-1]) + ' and ' + target_names[-1]
         #consider an optional parameter for subsequent query
         of_tfs_names = []
         of_tfs_arg = content.get('of-tfs')
@@ -689,7 +691,7 @@ class TFTA_Module(Bioagent):
         except TargetNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
             #provenance support
-            self.send_background_support_db([], ','.join(target_names), '')
+            self.send_background_support_db([], target_str, '')
             return reply
         #check if it's a subsequent query
         if of_tfs_names:
@@ -704,7 +706,7 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
         self.gene_list = tf_names
         #provenance support
-        self.send_background_support_db(tf_names, ','.join(target_names), dbname)
+        self.send_background_support_db(tf_names, target_str, dbname)
         return reply
 
     def respond_find_target_tfs_tissue(self, content):
@@ -2203,14 +2205,15 @@ class TFTA_Module(Bioagent):
         kin_messages = self.get_kinase_regulation(target_names, keyword_name.lower())
         #db result
         #only considering the regulation case
+        target_str = ', '.join(target_names[:-1]) + ' and ' + target_names[-1]
         if keyword_name.lower() == 'regulate':
             try:
                 tf_names,dbname = self.tfta.find_tfs(target_names)
                 #provenance support
-                self.send_background_support_db(tf_names, ','.join(target_names), dbname)
+                self.send_background_support_db(tf_names, target_str, dbname)
             except TargetNotFoundException:
                 #provenance support
-                self.send_background_support_db([], ','.join(target_names), '')
+                self.send_background_support_db([], target_str, '')
                 
                 messages = _combine_messages([kin_messages, lit_messages])
                 if len(messages):
