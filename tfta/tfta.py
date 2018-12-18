@@ -208,26 +208,24 @@ class TFTA:
             if res:
                 tf_names = [r[0] for r in res]
                 for r in res:
-                    dbname[r[0]] = r[1]
+                    dbname[(r[0],target_names[0])] = r[1]
             else:
                 raise TargetNotFoundException 
             if len(target_names)>1:
                 for i in range(1,len(target_names)):
                     t = (target_names[i],)
-                    res = self.tfdb.execute("SELECT DISTINCT TF FROM CombinedDB "
+                    res = self.tfdb.execute("SELECT DISTINCT TF,dbnames FROM CombinedDB "
                                             "WHERE Target = ? ", t).fetchall()
                     if res:
                         tf_names = list(set(tf_names) & set([r[0] for r in res]))
-                        dif = dbname.keys() - tf_names
-                        for k in dif:
-                            del dbname[k]
+                        for r in res:
+                            dbname[(r[0],target_names[i])] = r[1]
                     else:
                         raise TargetNotFoundException
             if len(tf_names):
                 tf_names.sort()
         else:
             tf_names = []
-        #print(tf_names)
         return tf_names,dbname
 
     def find_tfs_count(self,target_names):
@@ -1039,24 +1037,23 @@ class TFTA:
             if res:
                 target_names = [r[0] for r in res]
                 for r in res:
-                    dbname[r[0]] = r[1]
+                    dbname[(tf_names[0],r[0])] = r[1]
             else:
                 raise TFNotFoundException
                 
             if len(tf_names) > 1:
                 for i in range(1,len(tf_names)):
                     t = (tf_names[i],)
-                    res = self.tfdb.execute("SELECT DISTINCT Target FROM CombinedDB "
+                    res = self.tfdb.execute("SELECT DISTINCT Target,dbnames FROM CombinedDB "
                                             "WHERE TF = ? ", t).fetchall()
                     if res:
                         target_names = list(set(target_names) & set([r[0] for r in res]))
+                        for r in res:
+                            dbname[(tf_names[i],r[0])] = r[1]
                     else:
                         raise TFNotFoundException
             if len(target_names):
                 target_names.sort()
-                dif = dbname.keys() - target_names
-                for k in dif:
-                    del dbname[k]
         else:
             target_names = []
         return target_names,dbname
