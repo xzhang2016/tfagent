@@ -80,7 +80,12 @@ def _get_hgnc_genes():
     
 hgnc_genes_set = _get_hgnc_genes()
 
+
+
 class TFTA:
+    #transcription factor list, will set when it's first 
+    trans_factor = set()
+    
     def __init__(self):
         logger.debug('Using resource folder: %s' % _resource_dir)
         #Load TF_target database
@@ -125,11 +130,15 @@ class TFTA:
         Return true if the gene is in the go category of go_name
         """
         if go_name == 'transcription factor':
-            if self.tfdb is not None:
-                t = (gene_name,)
-                res = self.tfdb.execute("SELECT DISTINCT tf FROM transFactor "
-                                        "WHERE tf = ?", t).fetchall()
-                if res:
+            if not self.trans_factor:
+                if self.tfdb is not None:
+                    t = (gene_name, )
+                    res = self.tfdb.execute("SELECT DISTINCT tf FROM transFactor "
+                                            "WHERE tf = ?", t).fetchall()
+                    if res:
+                        return True
+            else:
+                if gene_name in self.trans_factor:
                     return True
         else:
             try:
@@ -150,10 +159,11 @@ class TFTA:
         """
         go_genes = []
         if go_name == 'transcription factor':
-            if self.tfdb is not None:
-                res = self.tfdb.execute("SELECT DISTINCT tf FROM transFactor").fetchall()
-                all_tfs = set([r[0] for r in res])
-                go_genes = list(all_tfs & set(gene_names))
+            if not self.trans_factor:
+                if self.tfdb is not None:
+                    res = self.tfdb.execute("SELECT DISTINCT tf FROM transFactor").fetchall()
+                    self.trans_factor = set([r[0] for r in res])
+            go_genes = list(self.trans_factor & set(gene_names))
         else:
             try:
                 goids = go_map[go_name]
@@ -1421,11 +1431,11 @@ class TFTA:
         tf_names = []
         if not miRNA_mis:
             if len(target_names):
-                if self.tfdb is not None:
-                    res = self.tfdb.execute("SELECT DISTINCT tf FROM transFactor").fetchall()
-                    tf_names = list(set(target_names) & set([r[0] for r in res]))
-                else:
-                    raise TFNotFoundException
+                if not self.trans_factor:
+                    if self.tfdb is not None:
+                        res = self.tfdb.execute("SELECT DISTINCT tf FROM transFactor").fetchall()
+                        self.trans_factor = set([r[0] for r in res])
+                tf_names = list(set(target_names) & self.trans_factor)
             else:
                 raise TFNotFoundException
             if len(tf_names):
@@ -1835,12 +1845,12 @@ class TFTA:
             if subj is not None:
                 subjects.add(subj.name)
         #get all the tfs in the db
-        if self.tfdb is not None:
-            res = self.tfdb.execute("SELECT DISTINCT tf FROM transFactor").fetchall()
-            all_tfs = set([r[0] for r in res])
-        else:
-            all_tfs = set()
-        tfs = subjects.intersection(all_tfs)
+        if not self.trans_factor:
+            if self.tfdb is not None:
+                res = self.tfdb.execute("SELECT DISTINCT tf FROM transFactor").fetchall()
+                self.trans_factor = set([r[0] for r in res])
+       
+        tfs = subjects.intersection(self.trans_factor)
         nontfs = subjects - tfs
         mirnas = nontfs.intersection(mirna_indra_set)
         others = nontfs - mirnas
@@ -1864,7 +1874,7 @@ class TFTA:
     def find_target_indra_regulators(self, stmts_d):
         """
         stmts: dict
-        return the list of genes indra statements, as well as the filtered statements
+        return the list of genes, as well as the filtered statements
         """
         regulators = list(stmts_d.keys())
         stmt_list = []
@@ -1883,6 +1893,49 @@ class TFTA:
                 if obj.name in genes:
                     stmt_f.append(stmt)
         return genes, stmt_f
+        
+    def find_tf_indra(self, stmts):
+        """
+        stmts: indra statements
+        return the list of tfs from the subject of the stmts
+        """
+        subjs = set()
+        for stmt in stmts:
+            subj = stmt.subj
+            if subj is not None:
+                subjs.add(subj.name)
+                
+        #get all the tfs in the db
+        if not self.trans_factor:
+            if self.tfdb is not None:
+                res = self.tfdb.execute("SELECT DISTINCT tf FROM transFactor").fetchall()
+                self.trans_factor = set([r[0] for r in res])
+            
+        tfs = subjs.intersection(self.trans_factor)
+        return tfs
+        
+    def find_tfs_indra(self, stmts_d):
+        """
+        stmts: dict
+        return the list of tfs, as well as the filtered statements
+        """
+        targets = list(stmts_d.keys())
+        stmt_list = []
+        for t in targets:
+            stmt_list += stmts_d[t]
+        tfs = self.find_tf_indra(stmts_d[targets[0]])
+        if len(targets) > 1:
+            for i in range(1, len(targets)):
+                temp = self.find_tf_indra(stmts_d[targets[i]])
+                tfs = tfs.intersection(temp)
+        #filter statements
+        stmt_f = []
+        for stmt in stmt_list:
+            subj = stmt.subj
+            if subj:
+                if subj.name in tfs:
+                    stmt_f.append(stmt)
+        return tfs, stmt_f
         
     def find_evidence_indra(self, stmts):
         """
