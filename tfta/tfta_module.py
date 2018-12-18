@@ -92,8 +92,18 @@ class TFTA_Module(Bioagent):
         """
         target_arg = content.gets('target')
         tissue_arg = content.get('tissue')
+        try:
+            keyword_arg = content.get('keyword')
+            keyword_name = keyword_arg.data
+        except Exception as e:
+            keyword_arg = None
         if all([target_arg,tissue_arg]):
             reply = self.respond_find_target_tfs_tissue(content)
+        elif all([target_arg, keyword_arg]):
+            if keyword_name.lower() in ['increase', 'decrease']:
+                reply = self.respond_find_tf_literature(content)
+            else:
+                reply = self.respond_find_target_tfs(content)
         elif target_arg:
             reply = self.respond_find_target_tfs(content)
         else:
@@ -134,8 +144,7 @@ class TFTA_Module(Bioagent):
             keyword_arg = content.get('keyword')
             keyword_name = keyword_arg.data
         except Exception as e:
-            reply = make_failure('NO_KEYWORD')
-            return reply 
+            keyword_arg = None 
         if all([tf_arg,tissue_arg]):
             reply = self.respond_find_tf_targets_tissue(content)
         elif all([tf_arg, keyword_arg]):
@@ -707,6 +716,41 @@ class TFTA_Module(Bioagent):
         self.gene_list = tf_names
         #provenance support
         self.send_background_support_db(tf_names, target_names, dbname, find_tf=True)
+        return reply
+        
+    def respond_find_tf_literature(self, content):
+        """
+        Respond to find-tf request with information in literatures
+        """
+        target_arg = content.gets('target')
+        try:
+            targets = _get_targets(target_arg)
+            target_names = []
+            for target in targets:
+                target_names.append(target.name)
+        except Exception as e:
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
+        if not len(target_names):
+            reply = make_failure('NO_TARGET_NAME')
+            return reply
+        try:
+            keyword_arg = content.get('keyword')
+            keyword_name = keyword_arg.data
+        except Exception as e:
+            reply = make_failure('NO_KEYWORD')
+            return reply
+        try:
+            stmt_types = stmt_type_map[keyword_name.lower()]
+        except KeyError as e:
+            reply = make_failure('INVALID_KEYWORD')
+            return reply
+        lit_messages = self.get_tf_indra(target_names, stmt_types, keyword_name)
+        if len(lit_messages):
+            reply = KQMLList.from_string(
+                    '(SUCCESS ' + lit_messages + ')')
+        else:
+            reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
         return reply
 
     def respond_find_target_tfs_tissue(self, content):
@@ -2619,6 +2663,36 @@ class TFTA_Module(Bioagent):
         self.send_background_support(stmt_f, regulator_str, 'what', keyword_name)
         
         return lit_messages
+        
+    def get_tf_indra(self, target_names, stmt_types, keyword_name):
+        """
+        wrap message for multiple regulators case
+        target_names: list
+        stmt_types: indra statement type
+        keyword_name: str
+        """
+        lit_messages = ''
+        stmts_d = defaultdict(list)
+        if len(target_names) > 1:
+            target_str = ', '.join(target_names[:-1]) + ' and ' + target_names[-1]
+        else:
+            target_str = target_names[0]
+        for target in target_names:
+            stmts = self.tfta.find_statement_indraDB(obj=target, stmt_types=stmt_types)
+            if len(stmts):
+                stmts_d[target] = stmts
+            else:
+                self.send_background_support([], target_str, 'what', keyword_name)
+                return lit_messages
+        tfs, stmt_f = self.tfta.find_tfs_indra(stmts_d)        
+        
+        if len(tfs):
+            lit_messages += wrap_message(':tfs', tfs)
+        #provenance support
+        self.send_background_support(stmt_f, target_str, 'what', keyword_name)
+        
+        return lit_messages
+
 
     def send_table_to_provenance_mirna(self, mirna_name, target_name, experiment, support_type, pmid, nl_question):
         """
