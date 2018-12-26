@@ -6,6 +6,7 @@ from bioagents.tests.util import ekb_from_text, ekb_kstring_from_text, \
 from bioagents.tests.integration import _IntegrationTest, _FailureTest
 from indra.sources.trips.processor import TripsProcessor
 
+#############################################################################
 #TEST IS-REGULATION
 ##Does STAT3 regulate the c-fos gene? (subtask: is-tf-target)
 class TestIsRegulation1(_IntegrationTest):
@@ -24,6 +25,140 @@ class TestIsRegulation1(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         assert output.gets('result') == 'TRUE', output
+        
+#protein family
+#Does stat3 regulate the SMURF gene?
+class TestIsRegulation11(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestIsRegulation11, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = ekb_kstring_from_text('STAT3')
+        target_arg = ekb_from_text('SMURF')
+        print('target=', target_arg)
+        get_gene_symbol(target_arg)
+        get_family_name(target_arg)
+        content = KQMLList('IS-REGULATION')
+        content.set('tf', tf)
+        content.set('target', KQMLString(target_arg))
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert len(output.get('reason')) == 1, output
+        print(type(output.get('reason')))
+        assert output.get('reason').to_string() == \
+        "((:for SMURF :error FAMILY_NAME_NOT_ALLOWED))", output.get('reason')
+
+#Does stat3 regulate the MEK gene?
+class TestIsRegulation12(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestIsRegulation12, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = ekb_kstring_from_text('STAT3')
+        target_arg = ekb_from_text('MEK')
+        print('target=', target_arg)
+        get_gene_symbol(target_arg)
+        get_family_name(target_arg)
+        content = KQMLList('IS-REGULATION')
+        content.set('tf', tf)
+        content.set('target', KQMLString(target_arg))
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert len(output.get('reason')) == 1, output
+        print(type(output.get('reason')))
+        assert output.get('reason').to_string() == \
+        "((:for MEK :error FAMILY_NAME_NOT_ALLOWED))", output.get('reason')
+        
+#Does stat3 regulate the AKT gene?
+#AKT is in ['ONT::PROTEIN', 'ONT::GENE', 'ONT::PROTEIN-FAMILY']
+class TestIsRegulation13(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestIsRegulation13, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = ekb_kstring_from_text('STAT3')
+        target_arg = ekb_from_text('AKT')
+        print('target=', target_arg)
+        get_gene_symbol(target_arg)
+        get_family_name(target_arg)
+        content = KQMLList('IS-REGULATION')
+        content.set('tf', tf)
+        content.set('target', KQMLString(target_arg))
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.get('result') == 'FALSE', output
+
+##Does MEK regulate the c-fos gene? (subtask: is-tf-target)
+class TestIsRegulation14(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestIsRegulation14, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = ekb_kstring_from_text('MEK')
+        target = ekb_kstring_from_text('c-fos')
+        content = KQMLList('IS-REGULATION')
+        content.set('tf', tf)
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason').to_string() == \
+        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
+        
+##Does AKT regulate the MEK gene? (subtask: is-tf-target)
+class TestIsRegulation15(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestIsRegulation15, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = ekb_kstring_from_text('AKT')
+        target = ekb_kstring_from_text('MEK')
+        content = KQMLList('IS-REGULATION')
+        content.set('tf', tf)
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason').to_string() == \
+        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
+        
+##does srf regulate acta1?
+class TestIsRegulation16(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestIsRegulation16, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf_arg = ekb_from_text('srf')
+        target_arg = ekb_from_text('acta1')
+        target = get_gene_symbol(target_arg)
+        content = KQMLList('IS-REGULATION')
+        content.set('tf', KQMLString(tf_arg))
+        content.set('target', KQMLString(target_arg))
+        #print(content, '\n')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('result'))=", str(len(output.get('result'))))
+        print('result=', output.get('result'))
+        print('db=', output.get('db'))
+        print('literature=', output.get('literature'))
+        assert output.get('result') == 'TRUE', output
+        assert output.get('db') == 'TRUE', output
         
 #Does STAT3 regulate the JUN gene in the lung? (subtask: is-tf-target-tissue)
 class TestIsRegulation2(_IntegrationTest):
@@ -105,8 +240,9 @@ class TestIsRegulation23(_IntegrationTest):
         return get_request(content), content
         
     def check_response_to_message(self, output):
-        assert output.head() == 'SUCCESS', output
-        assert output.gets('result') == 'FALSE', output
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason').to_string() == \
+        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
         
 #Does AKT regulate the c-fos gene in the lung? (subtask: is-tf-target-tissue)
 class TestIsRegulation24(_IntegrationTest):
@@ -147,128 +283,12 @@ class TestIsRegulation25(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
         assert output.gets('reason') == 'INVALID_TISSUE', output
-        
-#Does miR-20b-5p target STAT3? (subtask: is-mirna-target)
+
+#keyword
+#Does STAT3 increase transcription of the c-fos gene?
 class TestIsRegulation3(_IntegrationTest):
     def __init__(self, *args):
         super(TestIsRegulation3, self).__init__(TFTA_Module)
-
-    def create_message(self):
-        # Here we create a KQML request that the TFTA needs to respond to
-        target = ekb_kstring_from_text('STAT3')
-        mirna = ekb_kstring_from_text('miR-20b-5p')
-        content = KQMLList('IS-MIRNA-TARGET')
-        content.set('target', target)
-        content.set('miRNA', mirna)
-        return get_request(content), content
-        
-    def check_response_to_message(self, output):
-        assert output.head() == 'SUCCESS', output
-        assert output.get('is-miRNA-target') == 'TRUE', output
-        
-#Does miR-20b-5p target MEK? (subtask: is-mirna-target)
-class TestIsRegulation31(_IntegrationTest):
-    def __init__(self, *args):
-        super(TestIsRegulation31, self).__init__(TFTA_Module)
-
-    def create_message(self):
-        # Here we create a KQML request that the TFTA needs to respond to
-        target = ekb_kstring_from_text('MEK')
-        mirna = ekb_kstring_from_text('miR-20b-5p')
-        print('mirna=', str(mirna))
-        content = KQMLList('IS-MIRNA-TARGET')
-        content.set('target', target)
-        content.set('miRNA', mirna)
-        return get_request(content), content
-        
-    def check_response_to_message(self, output):
-        assert output.head() == 'SUCCESS', output
-        assert output.get('is-miRNA-target') == 'FALSE', output
-        
-#test gene family as input
-##Does MEK regulate the c-fos gene? (subtask: is-tf-target)
-class TestIsRegulation4(_IntegrationTest):
-    def __init__(self, *args):
-        super(TestIsRegulation4, self).__init__(TFTA_Module)
-
-    def create_message(self):
-        # Here we create a KQML request that the TFTA needs to respond to
-        tf = ekb_kstring_from_text('MEK')
-        target = ekb_kstring_from_text('c-fos')
-        content = KQMLList('IS-REGULATION')
-        content.set('tf', tf)
-        content.set('target', target)
-        return get_request(content), content
-        
-    def check_response_to_message(self, output):
-        assert output.head() == 'SUCCESS', output
-        assert output.get('result') == 'FALSE', output
-        
-##Does STAT3 regulate the MEK gene? (subtask: is-tf-target)
-class TestIsRegulation41(_IntegrationTest):
-    def __init__(self, *args):
-        super(TestIsRegulation41, self).__init__(TFTA_Module)
-
-    def create_message(self):
-        # Here we create a KQML request that the TFTA needs to respond to
-        tf = ekb_kstring_from_text('STAT3')
-        target = ekb_kstring_from_text('MEK')
-        content = KQMLList('IS-REGULATION')
-        content.set('tf', tf)
-        content.set('target', target)
-        return get_request(content), content
-        
-    def check_response_to_message(self, output):
-        assert output.head() == 'SUCCESS', output
-        assert output.gets('result') == 'FALSE', output
-        
-##Does AKT regulate the MEK gene? (subtask: is-tf-target)
-class TestIsRegulation42(_IntegrationTest):
-    def __init__(self, *args):
-        super(TestIsRegulation42, self).__init__(TFTA_Module)
-
-    def create_message(self):
-        # Here we create a KQML request that the TFTA needs to respond to
-        tf = ekb_kstring_from_text('AKT')
-        target = ekb_kstring_from_text('MEK')
-        content = KQMLList('IS-REGULATION')
-        content.set('tf', tf)
-        content.set('target', target)
-        return get_request(content), content
-        
-    def check_response_to_message(self, output):
-        assert output.head() == 'SUCCESS', output
-        assert output.get('result') == 'FALSE', output
-        
-##does srf regulate acta1?
-class TestIsRegulation43(_IntegrationTest):
-    def __init__(self, *args):
-        super(TestIsRegulation43, self).__init__(TFTA_Module)
-
-    def create_message(self):
-        # Here we create a KQML request that the TFTA needs to respond to
-        tf_arg = ekb_from_text('srf')
-        target_arg = ekb_from_text('acta1')
-        target = get_gene_symbol(target_arg)
-        content = KQMLList('IS-REGULATION')
-        content.set('tf', KQMLString(tf_arg))
-        content.set('target', KQMLString(target_arg))
-        #print(content, '\n')
-        return get_request(content), content
-        
-    def check_response_to_message(self, output):
-        assert output.head() == 'SUCCESS', output
-        print("len(output.get('result'))=", str(len(output.get('result'))))
-        print('result=', output.get('result'))
-        print('db=', output.get('db'))
-        print('literature=', output.get('literature'))
-        assert output.get('result') == 'TRUE', output
-        assert output.get('db') == 'TRUE', output
-
-#Does STAT3 increase transcription of the c-fos gene?
-class TestIsRegulation5(_IntegrationTest):
-    def __init__(self, *args):
-        super(TestIsRegulation5, self).__init__(TFTA_Module)
 
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
@@ -291,6 +311,71 @@ class TestIsRegulation5(_IntegrationTest):
         print('literature=', output.get('literature'))
         assert output.get('result') == 'TRUE', output
         
+#Does STAT3 upregulate MEK gene?
+class TestIsRegulation31(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestIsRegulation31, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf_arg = ekb_from_text('stat3')
+        target_arg = ekb_from_text('MEK')
+        target = get_gene_symbol(target_arg)
+        keyword = 'increase'
+        content = KQMLList('IS-REGULATION')
+        content.set('tf', KQMLString(tf_arg))
+        content.set('target', KQMLString(target_arg))
+        content.set('keyword', keyword)
+        #print(content, '\n')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason').to_string() == \
+        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
+
+######################################################################################
+#IS-MIRNA-TARGET
+#Does miR-20b-5p target STAT3? (subtask: is-mirna-target)
+class TestIsMirnaTarget1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestIsMirnaTarget1, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('STAT3')
+        mirna = ekb_kstring_from_text('miR-20b-5p')
+        content = KQMLList('IS-MIRNA-TARGET')
+        content.set('target', target)
+        content.set('miRNA', mirna)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.get('is-miRNA-target') == 'TRUE', output
+
+#protein family
+#Does miR-20b-5p target MEK? (subtask: is-mirna-target)
+class TestIsMirnaTarget11(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestIsMirnaTarget11, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('MEK')
+        mirna = ekb_kstring_from_text('miR-20b-5p')
+        print('mirna=', str(mirna))
+        content = KQMLList('IS-MIRNA-TARGET')
+        content.set('target', target)
+        content.set('miRNA', mirna)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason').to_string() == \
+        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
+
+####################################################################################
 #TEST FIND-TF
 #Which transcription factors regulate frizzled8? (subtask: find-target-tf)
 class TestFindTf1(_IntegrationTest):
@@ -308,7 +393,7 @@ class TestFindTf1(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('tfs')) == 2, output
         
-##What regulates SMURF2?
+##What transcription factors regulate SMURF2?
 #What are the regulators of SMURF2? (subtask: find-target-tf)
 class TestFindTf11(_IntegrationTest):
     def __init__(self, *args):
@@ -326,7 +411,7 @@ class TestFindTf11(_IntegrationTest):
         assert len(output.get('tfs')) == 3, output
         
 #test failures, such as using gene family as input
-#What are the regulators of MEK? (subtask: find-target-tf)
+#What transcription factors regulate MEK? (subtask: find-target-tf)
 class TestFindTf12(_IntegrationTest):
     def __init__(self, *args):
         super(TestFindTf12, self).__init__(TFTA_Module)
@@ -340,9 +425,10 @@ class TestFindTf12(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
-        assert output.get('reason') == 'NO_TARGET_NAME'
+        assert output.get('reason').to_string() == \
+        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
         
-##What are the regulators of AKT? (subtask: find-target-tf)
+##What transcription factors regulate AKT? (subtask: find-target-tf)
 class TestFindTf13(_IntegrationTest):
     def __init__(self, *args):
         super(TestFindTf13, self).__init__(TFTA_Module)
@@ -372,11 +458,68 @@ class TestFindTf14(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
-        assert output.get('reason') == 'NO_TARGET_NAME', output
+        assert output.get('reason').to_string() == \
+        '((:for SOS :error FAMILY_NAME_NOT_ALLOWED))', output
 
-#TEST USING FULL GENE NAME
+#check keyword parameter
+#Which transcription factors upregulate cfos?
+class TestFindTf15(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTf15, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('cfos')
+        print(target)
+        content = KQMLList('FIND-TF')
+        content.set('target', target)
+        content.set('keyword', 'increase')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('tfs'))=", str(len(output.get('tfs'))))
+        assert len(output.get('tfs')) == 42, output
+        
+#Which transcription factors downregulate cfos?
+class TestFindTf16(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTf16, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('cfos')
+        print(target)
+        content = KQMLList('FIND-TF')
+        content.set('target', target)
+        content.set('keyword', 'decrease')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('tfs'))=", str(len(output.get('tfs'))))
+        assert len(output.get('tfs')) == 24, output
 
+#Which transcription factors downregulate MEK?
+class TestFindTf17(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTf17, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('MEK')
+        print(target)
+        content = KQMLList('FIND-TF')
+        content.set('target', target)
+        content.set('keyword', 'decrease')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason').to_string() == \
+        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
 
+#tissues
 #Which transcription factors regulate frizzled8 in liver? (subtask: find-target-tf-tissue)
 class TestFindTf2(_IntegrationTest):
     def __init__(self, *args):
@@ -469,7 +612,8 @@ class TestFindTf24(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
-        assert output.get('reason') == 'NO_TARGET_NAME', output
+        assert output.get('reason').to_string() == \
+        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
         
 #Which transcription factors regulate mapk14 in breast cancer?
 class TestFindTf25(_IntegrationTest):
@@ -479,7 +623,7 @@ class TestFindTf25(_IntegrationTest):
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
         target = ekb_kstring_from_text('mapk14')
-        print(target)
+        #print(target)
         tissue = 'breast'
         content = KQMLList('FIND-TF')
         content.set('target', target)
@@ -490,10 +634,90 @@ class TestFindTf25(_IntegrationTest):
         assert output.head() == 'FAILURE', output
         assert output.get('reason') == 'INVALID_TISSUE', output
         
-#What transcription factors are in the calcium regulated pathways? (subtask: find-tf-keyword)
+##What transcription factors regulate insulin?
 class TestFindTf3(_IntegrationTest):
     def __init__(self, *args):
         super(TestFindTf3, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('insulin')
+        print(target, '\n')
+        target_arg = ekb_from_text('insulin')
+        get_gene_symbol(target_arg)
+        content = KQMLList('FIND-TF')
+        content.set('target', target)
+       
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('tfs'))=", str(len(output.get('tfs'))))
+        assert len(output.get('tfs')) == 31, output
+        
+##What transcription factors regulate cofilin? (which was taken as a protein, then get COF1)
+class TestFindTf31(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTf31, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('cofilin')
+        print(target, '\n')
+        target_arg = ekb_from_text('cofilin')
+        get_gene_symbol(target_arg)
+        content = KQMLList('FIND-TF')
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.get('tfs') == 'NIL', output
+        
+##What transcription factors regulate cofilin gene? (which was taken as a protein, then get COF1)
+class TestFindTf32(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTf32, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('cofilin gene')
+        print(target, '\n')
+        target_arg = ekb_from_text('cofilin gene')
+        get_gene_symbol(target_arg)
+        content = KQMLList('FIND-TF')
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.get('tfs') == 'NIL', output
+        
+##What transcription factors regulate cofilin 1? (CFL1)
+class TestFindTf33(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTf33, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('cofilin 1')
+        print(target, '\n')
+        target_arg = ekb_from_text('cofilin 1')
+        get_gene_symbol(target_arg)
+        content = KQMLList('FIND-TF')
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('tfs')) == 17, output
+
+###################################################################################
+#FIND-TF-PATHWAY
+#What transcription factors are in the calcium regulated pathways? (subtask: find-tf-keyword)
+class TestFindTfPathway1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTfPathway1, self).__init__(TFTA_Module)
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
@@ -507,10 +731,29 @@ class TestFindTf3(_IntegrationTest):
         print("len(output.get('pathways'))=", str(len(output.get('pathways'))))
         assert len(output.get('pathways')) == 3, output
         
-#What transcription factors are shared by the SRF, HRAS, and elk1 genes? (subtask: find-common-tf-genes)
-class TestFindTf4(_IntegrationTest):
+#Which transcription factors are in the MAPK signaling pathway? (subtask: find-tf-pathway)
+class TestFindTfPathway11(_IntegrationTest):
     def __init__(self, *args):
-        super(TestFindTf4, self).__init__(TFTA_Module)
+        super(TestFindTfPathway11, self).__init__(TFTA_Module)
+    
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        pathway = ekb_kstring_from_text('MAPK')
+        content = KQMLList('FIND-TF-PATHWAY')
+        content.set('pathway', pathway)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", str(len(output.get('pathways'))))
+        assert len(output.get('pathways')) == 14, output
+
+###############################################################################
+#FIND-COMMON-TF-GENES
+#What transcription factors are shared by the SRF, HRAS, and elk1 genes? (subtask: find-common-tf-genes)
+class TestFindCommonTfGenes1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindCommonTfGenes1, self).__init__(TFTA_Module)
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
@@ -526,9 +769,9 @@ class TestFindTf4(_IntegrationTest):
         assert len(output.get('tfs')) == 3, output
         
 #What transcription factors are in common to the STAT3, SOCS3, and CREB5 genes?
-class TestFindTf41(_IntegrationTest):
+class TestFindCommonTfGenes11(_IntegrationTest):
     def __init__(self, *args):
-        super(TestFindTf41, self).__init__(TFTA_Module)
+        super(TestFindCommonTfGenes11, self).__init__(TFTA_Module)
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
@@ -542,9 +785,9 @@ class TestFindTf41(_IntegrationTest):
         assert len(output.get('tfs')) == 3, output
 
 #What transcription factors are in common to the STAT3, SOCS3, IFNG, FOXO3, and CREB5 genes?        
-class TestFindTf42(_IntegrationTest):
+class TestFindCommonTfGenes12(_IntegrationTest):
     def __init__(self, *args):
-        super(TestFindTf42, self).__init__(TFTA_Module)
+        super(TestFindCommonTfGenes12, self).__init__(TFTA_Module)
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
@@ -560,9 +803,10 @@ class TestFindTf42(_IntegrationTest):
         
 #test gene family
 #What transcription factors are in common to the STAT3, SOCS3, and MEK genes?
-class TestFindTf43(_IntegrationTest):
+#MEK will be ignored in this case
+class TestFindCommonTfGenes13(_IntegrationTest):
     def __init__(self, *args):
-        super(TestFindTf43, self).__init__(TFTA_Module)
+        super(TestFindCommonTfGenes13, self).__init__(TFTA_Module)
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
@@ -576,9 +820,9 @@ class TestFindTf43(_IntegrationTest):
         assert len(output.get('tfs')) == 1, output
         
 #What transcription factors are in common to the STAT3, SOCS3, and AKT genes?
-class TestFindTf44(_IntegrationTest):
+class TestFindCommonTfGenes14(_IntegrationTest):
     def __init__(self, *args):
-        super(TestFindTf44, self).__init__(TFTA_Module)
+        super(TestFindCommonTfGenes14, self).__init__(TFTA_Module)
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
@@ -590,24 +834,8 @@ class TestFindTf44(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('tfs')) == 1, output
-        
-#Which transcription factors are in the MAPK signaling pathway? (subtask: find-tf-pathway)
-class TestFindTf5(_IntegrationTest):
-    def __init__(self, *args):
-        super(TestFindTf5, self).__init__(TFTA_Module)
-    
-    def create_message(self):
-        # Here we create a KQML request that the TFTA needs to respond to
-        pathway = ekb_kstring_from_text('MAPK')
-        content = KQMLList('FIND-TF-PATHWAY')
-        content.set('pathway', pathway)
-        return get_request(content), content
-        
-    def check_response_to_message(self, output):
-        assert output.head() == 'SUCCESS', output
-        print("len(output.get('pathways'))=", str(len(output.get('pathways'))))
-        assert len(output.get('pathways')) == 14, output
-        
+
+#####################################################################################
 #TEST FIND-TARGET
 #what genes are regulated by smad2? (subtask: find-tf-target)
 class TestFindTarget1(_IntegrationTest):
@@ -675,7 +903,8 @@ class TestFindTarget13(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
-        assert output.get('reason') == 'NO_TF_NAME', output
+        assert output.get('reason').to_string() == \
+        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
         
 #what genes are regulated by AKT (subtask: find-tf-target)
 class TestFindTarget14(_IntegrationTest):
@@ -727,7 +956,7 @@ class TestFindTarget21(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('targets')) == 3, output
+        assert output.get('targets') == 'NIL', output
         
 ##what genes does MEK regulate in liver? (subtask: find-tf-target-tissue)
 class TestFindTarget22(_IntegrationTest):
@@ -745,7 +974,8 @@ class TestFindTarget22(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
-        assert output.get('reason') == 'NO_TF_NAME', output
+        assert output.get('reason').to_string() == \
+        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
         
 #what genes does AKT regulate in liver? (subtask: find-tf-target-tissue)
 class TestFindTarget23(_IntegrationTest):
@@ -782,8 +1012,47 @@ class TestFindTarget3(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('targets'))=", str(len(output.get('targets'))))
-        assert len(output.get('targets')) == 2, output
+        assert len(output.get('targets')) == 79, output
         
+#What genes does smad2 downregulate?
+class TestFindTarget31(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTarget31, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = ekb_kstring_from_text('smad2')
+        keyword = 'decrease'
+        content = KQMLList('FIND-TARGET')
+        content.set('tf', tf)
+        content.set('keyword', keyword)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets'))=", str(len(output.get('targets'))))
+        assert len(output.get('targets')) == 49, output
+        
+#What genes does MEK downregulate?
+class TestFindTarget32(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTarget32, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = ekb_kstring_from_text('MEK')
+        keyword = 'decrease'
+        content = KQMLList('FIND-TARGET')
+        content.set('tf', tf)
+        content.set('keyword', keyword)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason').to_string() == \
+        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
+
+#################################################################################
 #What genes does miR-20b-5p target? (subtask: find-target-mirna)
 class TestFindTargetMirna1(_IntegrationTest):
     def __init__(self, *args):
@@ -816,6 +1085,26 @@ class TestFindTargetMirna2(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('targets')) = ", len(output.get('targets')))
         assert len(output.get('targets')) == 190, output
+        
+#What genes are regulated by miR-20b-5p and MIR-29B-1-5P? (subtask: find-target-mirna)
+class TestFindTargetMirna21(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTargetMirna21, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        #mirna = ekb_kstring_from_text('miR-20b-5p, miR-29B-1-5P')
+        mirna = ekb_kstring_from_text('miR-20b-5p and MIR-29B-1-5P')
+        print("mirna=", mirna)
+        content = KQMLList('FIND-TARGET-MIRNA')
+        content.set('miRNA', mirna)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets')) = ", len(output.get('targets')))
+        assert len(output.get('targets')) == 12, output
+        
         
 #What are the genes that have strong evidence of being regulated by mir-122-5p.? (subtask: find-target-mirna)
 class TestFindTargetMirna3(_IntegrationTest):
@@ -853,12 +1142,12 @@ class TestFindTargetMirna4(_IntegrationTest):
         print("len(output.get('targets')) = ", len(output.get('targets')))
         assert len(output.get('targets')) == 556, output
 
-        
+#####################################################################################
 #What genes are most frequently regulated by miR-335-5p, miR-155-5p, miR-145-5p, and miR-20a-5p?
 #(subtask: FIND-GENE-COUNT-MIRNA)
-class TestFindTarget4(_IntegrationTest):
+class TestFindGeneCountMirna1(_IntegrationTest):
     def __init__(self, *args):
-        super(TestFindTarget4, self).__init__(TFTA_Module)
+        super(TestFindGeneCountMirna1, self).__init__(TFTA_Module)
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
@@ -876,9 +1165,9 @@ class TestFindTarget4(_IntegrationTest):
         
 #What genes are most frequently regulated by miR-335-5p, miR-155-5p and miR-145-5p?
 #(subtask: FIND-GENE-COUNT-MIRNA)
-class TestFindTarget41(_IntegrationTest):
+class TestFindGeneCountMirna11(_IntegrationTest):
     def __init__(self, *args):
-        super(TestFindTarget41, self).__init__(TFTA_Module)
+        super(TestFindGeneCountMirna11, self).__init__(TFTA_Module)
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
@@ -893,8 +1182,9 @@ class TestFindTarget41(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('targets'))=", str(len(output.get('targets'))))
         assert len(output.get('targets')) == 33, output
-        
-#TEST FIND-GENE
+
+#####################################################################################
+#TEST FIND-GENE-PATHWAY
 #What genes are in the MAPK signaling pathway? (subtask: find-gene-pathway)
 class TestFindGenePathway1(_IntegrationTest):
     def __init__(self, *args):
@@ -912,14 +1202,14 @@ class TestFindGenePathway1(_IntegrationTest):
         assert len(output.get('pathways')) == 21, output
         
 #What genes are involved in the il-12 pathway?
-class TestFindGene11(_IntegrationTest):
+class TestFindGenePathway11(_IntegrationTest):
     def __init__(self, *args):
-        super(TestFindGene11, self).__init__(TFTA_Module)
+        super(TestFindGenePathway11, self).__init__(TFTA_Module)
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
         pathway = ekb_kstring_from_text('il-12')
-        content = KQMLList('FIND-GENE')
+        content = KQMLList('FIND-GENE-PATHWAY')
         content.set('pathway', pathway)
         content.set('subtype', 'gene')
         return get_request(content), content
@@ -930,14 +1220,14 @@ class TestFindGene11(_IntegrationTest):
         assert len(output.get('pathways')) == 2, output
         
 #What genes are in the immune system pathway?
-class TestFindGene12(_IntegrationTest):
+class TestFindGenePathway12(_IntegrationTest):
     def __init__(self, *args):
-        super(TestFindGene12, self).__init__(TFTA_Module)
+        super(TestFindGenePathway12, self).__init__(TFTA_Module)
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
         pathway = ekb_kstring_from_text('immune system')
-        content = KQMLList('FIND-GENE')
+        content = KQMLList('FIND-GENE-PATHWAY')
         content.set('pathway', pathway)
         content.set('subtype', 'gene')
         return get_request(content), content
@@ -946,8 +1236,7 @@ class TestFindGene12(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('pathways')) == 4, output
         
-#not implemented for find-gene-go-tf
-
+###################################################################################
 #TEST FIND-PATHWAY
 #What pathways involve SRF? (subtask: find-pathway-gene)
 class TestFindPathway1(_IntegrationTest):
@@ -995,7 +1284,8 @@ class TestFindPathway12(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
-        assert output.get('reason') == 'NO_GENE_NAME', output
+        assert output.get('reason').to_string() == \
+        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
 
 ##What pathways involve AKT? (subtask: find-pathway-gene)        
 class TestFindPathway13(_IntegrationTest):
@@ -1064,8 +1354,9 @@ class TestFindPathway22(_IntegrationTest):
         return get_request(content), content
         
     def check_response_to_message(self, output):
-        assert output.head() == 'SUCCESS', output
-        assert output.get('pathways') == 'NIL', output
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason').to_string() == \
+        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
         
 #Which KEGG pathways utilize AKT? (subtask: find-pathway-db-gene)
 class TestFindPathway23(_IntegrationTest):
@@ -1151,32 +1442,11 @@ class TestFindPathway33(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('pathways'))=", str(len(output.get('pathways'))))
         assert len(output.get('pathways')) == 4, output
-
         
-#Which pathways are shared by STAT3, SOCS3, IFNG, FOXO3, and CREB5 genes? 
-#(subtask: find-common-pathway-genes)
+#What signaling pathways are shared by STAT3 and SRF? (subtask: find-common-pathway-genes)
 class TestFindPathway4(_IntegrationTest):
     def __init__(self, *args):
         super(TestFindPathway4, self).__init__(TFTA_Module)
-        
-    def create_message(self):
-        # Here we create a KQML request that the TFTA needs to respond to
-        target = ekb_kstring_from_text('STAT3, SOCS3, IFNG, FOXO3, CREB5')
-        #count = 'count'
-        content = KQMLList('find-common-pathway-genes')
-        content.set('target', target)
-        #content.set('count', count)
-        return get_request(content), content
-        
-    def check_response_to_message(self, output):
-        print('len(output)=' + str(len(output.get('pathways'))))
-        assert output.head() == 'SUCCESS', output
-        assert len(output.get('pathways')) == 8, output
-        
-#What signaling pathways are shared by STAT3 and SRF? (subtask: find-common-pathway-genes)
-class TestFindPathway41(_IntegrationTest):
-    def __init__(self, *args):
-        super(TestFindPathway41, self).__init__(TFTA_Module)
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
@@ -1190,78 +1460,6 @@ class TestFindPathway41(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('pathways')) == 6, output
-        
-#What signaling pathways are shared by STAT3, AKT and SRF? (subtask: find-common-pathway-genes)
-class TestFindPathway42(_IntegrationTest):
-    def __init__(self, *args):
-        super(TestFindPathway42, self).__init__(TFTA_Module)
-        
-    def create_message(self):
-        # Here we create a KQML request that the TFTA needs to respond to
-        target = ekb_kstring_from_text('STAT3, AKT, SRF')
-        #count = 'count'
-        content = KQMLList('FIND-COMMON-PATHWAY-GENES')
-        content.set('target', target)
-        #content.set('count', count)
-        return get_request(content), content
-        
-    def check_response_to_message(self, output):
-        assert output.head() == 'SUCCESS', output
-        assert len(output.get('pathways')) == 6, output
-        
-#What signaling pathways are shared by STAT3, MEK and SRF? (subtask: find-common-pathway-genes)
-class TestFindPathway43(_IntegrationTest):
-    def __init__(self, *args):
-        super(TestFindPathway43, self).__init__(TFTA_Module)
-        
-    def create_message(self):
-        # Here we create a KQML request that the TFTA needs to respond to
-        target = ekb_kstring_from_text('STAT3, MEK, SRF')
-        #count = 'count'
-        content = KQMLList('FIND-COMMON-PATHWAY-GENES')
-        content.set('target', target)
-        #content.set('count', count)
-        return get_request(content), content
-        
-    def check_response_to_message(self, output):
-        assert output.head() == 'SUCCESS', output
-        assert len(output.get('pathways')) == 6, output
-        
-#which of those are in the immune pathways? 
-class TestFindPathway44(_IntegrationTest):
-    def __init__(self, *args):
-        super(TestFindPathway44, self).__init__(TFTA_Module)
-        
-    def create_message(self):
-        # Here we create a KQML request that the TFTA needs to respond to
-        target = 'STAT3, MEK1, SRF, HRAS, KRAS, JAK2, JAK1'
-        keyword = 'immune'
-        content = KQMLList('FIND-COMMON-PATHWAY-GENES')
-        content.set('target', target)
-        content.set('keyword', keyword)
-        return get_request(content), content
-        
-    def check_response_to_message(self, output):
-        assert output.head() == 'SUCCESS', output
-        print("len(output.get('pathways')) = ", len(output.get('pathways')))
-        assert len(output.get('pathways')) == 3, output
-        
-#which of those have common pathways? 
-class TestFindPathway45(_IntegrationTest):
-    def __init__(self, *args):
-        super(TestFindPathway45, self).__init__(TFTA_Module)
-        
-    def create_message(self):
-        # Here we create a KQML request that the TFTA needs to respond to
-        target = 'STAT3, MEK1, SRF, HRAS, KRAS, JAK2, JAK1'
-        content = KQMLList('FIND-COMMON-PATHWAY-GENES')
-        content.set('target', target)
-        return get_request(content), content
-        
-    def check_response_to_message(self, output):
-        assert output.head() == 'SUCCESS', output
-        print("len(output.get('pathways')) = ", len(output.get('pathways')))
-        assert len(output.get('pathways')) == 74, output
         
 #What immune pathways involve kras and elk1? (subtask: find-pathway-gene-keyword)
 class TestFindPathway5(_IntegrationTest):
@@ -1336,11 +1534,147 @@ class TestFindPathway53(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         assert output.get('pathways') == 'NIL', output
         
+##What immune pathways involve MEK? (subtask: find-pathway-gene-keyword)
+class TestFindPathway54(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindPathway54, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        gene = ekb_kstring_from_text('MEK')
+        keyword = 'immune'
+        content = KQMLList('FIND-PATHWAY')
+        content.set('gene', gene)
+        content.set('keyword', keyword)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason').to_string() == \
+        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
+        
+#Which immune system pathways involve stat3?
+#(subtask: find-pathway-gene-keyword)
+class TestFindPathway55(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindPathway55, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        gene = ekb_kstring_from_text('STAT3')
+        keyword = 'immune-system'
+        #count = 'count'
+        content = KQMLList('FIND-PATHWAY')
+        content.set('gene', gene)
+        content.set('keyword', keyword)
+        #content.set('count', count)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        print('len(output)=' + str(len(output.get('pathways'))))
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 2, output
+
+#################################################################################
+#find-common-pathway-genes
+#Which pathways are shared by STAT3, SOCS3, IFNG, FOXO3, and CREB5 genes? 
+#(subtask: find-common-pathway-genes)
+class TestFindCommonPathwayGene1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindCommonPathwayGene1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('STAT3, SOCS3, IFNG, FOXO3, CREB5')
+        #count = 'count'
+        content = KQMLList('find-common-pathway-genes')
+        content.set('target', target)
+        #content.set('count', count)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        print('len(output)=' + str(len(output.get('pathways'))))
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 8, output
+        
+#What signaling pathways are shared by STAT3, AKT and SRF? (subtask: find-common-pathway-genes)
+class TestFindCommonPathwayGene11(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindCommonPathwayGene11, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('STAT3, AKT, SRF')
+        #count = 'count'
+        content = KQMLList('FIND-COMMON-PATHWAY-GENES')
+        content.set('target', target)
+        #content.set('count', count)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 6, output
+        
+#What signaling pathways are shared by STAT3, MEK and SRF? (subtask: find-common-pathway-genes)
+#MEK is ignored
+class TestFindCommonPathwayGene12(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindCommonPathwayGene12, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('STAT3, MEK, SRF')
+        #count = 'count'
+        content = KQMLList('FIND-COMMON-PATHWAY-GENES')
+        content.set('target', target)
+        #content.set('count', count)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 6, output
+        
+#which of those are in the immune pathways? 
+class TestFindCommonPathwayGene13(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindCommonPathwayGene13, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = 'STAT3, MEK1, SRF, HRAS, KRAS, JAK2, JAK1'
+        keyword = 'immune'
+        content = KQMLList('FIND-COMMON-PATHWAY-GENES')
+        content.set('target', target)
+        content.set('keyword', keyword)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways')) = ", len(output.get('pathways')))
+        assert len(output.get('pathways')) == 3, output
+        
+#which of those have common pathways? 
+class TestFindCommonPathwayGene14(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindCommonPathwayGene14, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = 'STAT3, MEK1, SRF, HRAS, KRAS, JAK2, JAK1'
+        content = KQMLList('FIND-COMMON-PATHWAY-GENES')
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways')) = ", len(output.get('pathways')))
+        assert len(output.get('pathways')) == 74, output
+        
 #Which immune pathways are shared by STAT3, SOCS3, and CREB5 genes?
 #(subtask: find-common-pathway-genes-keyword)
-class TestFindPathway6(_IntegrationTest):
+class TestFindCommonPathwayGene15(_IntegrationTest):
     def __init__(self, *args):
-        super(TestFindPathway6, self).__init__(TFTA_Module)
+        super(TestFindCommonPathwayGene15, self).__init__(TFTA_Module)
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
@@ -1360,9 +1694,9 @@ class TestFindPathway6(_IntegrationTest):
         
 ##Which immune pathways are shared by AKT, STAT3, SOCS3, and CREB5 genes?
 #(subtask: find-common-pathway-genes-keyword)
-class TestFindPathway61(_IntegrationTest):
+class TestFindCommonPathwayGene16(_IntegrationTest):
     def __init__(self, *args):
-        super(TestFindPathway61, self).__init__(TFTA_Module)
+        super(TestFindCommonPathwayGene16, self).__init__(TFTA_Module)
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
@@ -1382,9 +1716,9 @@ class TestFindPathway61(_IntegrationTest):
         
 #Which immune pathways are shared by MEK, STAT3, SOCS3, and CREB5 genes?
 #(subtask: find-common-pathway-genes-keyword)
-class TestFindPathway62(_IntegrationTest):
+class TestFindCommonPathwayGene17(_IntegrationTest):
     def __init__(self, *args):
-        super(TestFindPathway62, self).__init__(TFTA_Module)
+        super(TestFindCommonPathwayGene17, self).__init__(TFTA_Module)
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
@@ -1404,9 +1738,9 @@ class TestFindPathway62(_IntegrationTest):
         
 #What KEGG pathways involve ERBB2, JUN, and MAPK8?
 #sub-task:find-common-pathway-genes-db
-class TestFindPathway7(_IntegrationTest):
+class TestFindCommonPathwayGene2(_IntegrationTest):
     def __init__(self, *args):
-        super(TestFindPathway7, self).__init__(TFTA_Module)
+        super(TestFindCommonPathwayGene2, self).__init__(TFTA_Module)
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
@@ -1424,6 +1758,7 @@ class TestFindPathway7(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('pathways')) == 4, output
         
+#####################################################################################
 #Does the mTor pathway utilize SGK1? (subtask: is-pathway-gene)
 class TestIsPathwayGene1(_IntegrationTest):
     def __init__(self, *args):
@@ -1441,7 +1776,7 @@ class TestIsPathwayGene1(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('pathways'))=", str(len(output.get('pathways'))))
-        assert len(output.get('pathways')) == 2, output
+        assert len(output.get('pathways')) == 1, output
         
 ##Does the mTor pathway utilize MEK? (subtask: is-pathway-gene)
 class TestIsPathwayGene11(_IntegrationTest):
@@ -1459,32 +1794,35 @@ class TestIsPathwayGene11(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
-        assert output.get('reason') == 'NO_GENE_NAME', output
+        assert output.get('reason').to_string() == \
+        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
         
 #Does the mTor pathway utilize AKT? (subtask: is-pathway-gene)
-#strange here: why TFTA can find the pathways since there's no gene named AKT in the db file
 class TestIsPathwayGene12(_IntegrationTest):
     def __init__(self, *args):
         super(TestIsPathwayGene12, self).__init__(TFTA_Module)
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
-        gene = ekb_kstring_from_text('AKT')
+        gene = ekb_from_text('AKT')
+        get_gene_symbol(gene)
+        get_family_name(gene)
         pathway = ekb_kstring_from_text('mTor pathway')
         content = KQMLList('IS-PATHWAY-GENE')
-        content.set('gene', gene)
+        content.set('gene', KQMLString(gene))
         content.set('pathway', pathway)
         return get_request(content), content
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('pathways'))=", str(len(output.get('pathways'))))
-        assert len(output.get('pathways')) == 2, output
-        
+        assert output.get('pathways') == 'NIL', output
+
+#################################################################################
 #What KEGG pathways involve immune signaling? (subtask: find-pathway-db-keyword)
-class TestFindPathway8(_IntegrationTest):
+class TestFindPathwayDbKeyword1(_IntegrationTest):
     def __init__(self, *args):
-        super(TestFindPathway8, self).__init__(TFTA_Module)
+        super(TestFindPathwayDbKeyword1, self).__init__(TFTA_Module)
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
@@ -1500,9 +1838,9 @@ class TestFindPathway8(_IntegrationTest):
         assert len(output.get('pathways')) == 1, output
         
 #What KEGG pathways involve immune system? (subtask: find-pathway-db-keyword)
-class TestFindPathway81(_IntegrationTest):
+class TestFindPathwayDbKeyword11(_IntegrationTest):
     def __init__(self, *args):
-        super(TestFindPathway81, self).__init__(TFTA_Module)
+        super(TestFindPathwayDbKeyword11, self).__init__(TFTA_Module)
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
@@ -1518,9 +1856,9 @@ class TestFindPathway81(_IntegrationTest):
         assert output.get('pathways') == 'NIL', output
         
 #What reactome pathways involve immune system? (subtask: find-pathway-db-keyword)
-class TestFindPathway82(_IntegrationTest):
+class TestFindPathwayDbKeyword12(_IntegrationTest):
     def __init__(self, *args):
-        super(TestFindPathway82, self).__init__(TFTA_Module)
+        super(TestFindPathwayDbKeyword12, self).__init__(TFTA_Module)
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
@@ -1534,29 +1872,8 @@ class TestFindPathway82(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('pathways')) == 4, output
-        
-#Which immune system pathways involve stat3?
-#(subtask: find-pathway-gene-keyword)
-class TestFindPathway9(_IntegrationTest):
-    def __init__(self, *args):
-        super(TestFindPathway9, self).__init__(TFTA_Module)
-        
-    def create_message(self):
-        # Here we create a KQML request that the TFTA needs to respond to
-        gene = ekb_kstring_from_text('STAT3')
-        keyword = 'immune-system'
-        #count = 'count'
-        content = KQMLList('FIND-PATHWAY')
-        content.set('gene', gene)
-        content.set('keyword', keyword)
-        #content.set('count', count)
-        return get_request(content), content
-        
-    def check_response_to_message(self, output):
-        print('len(output)=' + str(len(output.get('pathways'))))
-        assert output.head() == 'SUCCESS', output
-        assert len(output.get('pathways')) == 2, output
-        
+
+###########################################################################
 #TEST FIND-MIRNA
 #What microRNAs target STAT3? (subtask: FIND-MIRNA-TARGET)
 class TestFindMirna1(_IntegrationTest):
@@ -1588,7 +1905,8 @@ class TestFindMirna11(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
-        assert output.get('reason') == 'NO_TARGET_NAME', output
+        assert output.get('reason').to_string() == \
+        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
         
 #What microRNAs target AKT? (subtask: FIND-MIRNA-TARGET)
 class TestFindMirna12(_IntegrationTest):
@@ -1605,18 +1923,20 @@ class TestFindMirna12(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         assert output.get('miRNAs') == 'NIL', output
-        
+
+######################################################################
+#FIND-MIRNA-COUNT-GENE
 #What miRNAs most frequently regulate EGFR, SRF, STAT3, JAK2, and SMAD3?
 #(subtask: FIND-MIRNA-COUNT-GENE)
-class TestFindMirna2(_IntegrationTest):
+class TestFindMirnaCountGene1(_IntegrationTest):
     def __init__(self, *args):
-        super(TestFindMirna2, self).__init__(TFTA_Module)
+        super(TestFindMirnaCountGene1, self).__init__(TFTA_Module)
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
         target = ekb_kstring_from_text('EGFR, SRF, STAT3, JAK2, SMAD3')
         count = 'count'
-        content = KQMLList('FIND-MIRNA')
+        content = KQMLList('FIND-MIRNA-COUNT-GENE')
         content.set('target', target)
         content.set('count', count)
         return get_request(content), content
@@ -1624,8 +1944,9 @@ class TestFindMirna2(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('miRNAs')) == 23, output
-        
-#find tissue
+
+############################################################################
+#find-tissue
 #What tissues is STAT3 expressed in?
 class TestFindTissue1(_IntegrationTest):
     def __init__(self, *args):
@@ -1655,8 +1976,9 @@ class TestFindTissue11(_IntegrationTest):
         return get_request(content), content
         
     def check_response_to_message(self, output):
-        assert output.head() == 'SUCCESS', output
-        assert len(output.get('tissue')) == 3, output
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason').to_string() == \
+        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
         
 #What tissues is AKT expressed in?
 class TestFindTissue12(_IntegrationTest):
@@ -1672,7 +1994,7 @@ class TestFindTissue12(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('tissue')) == 3, output
+        assert output.get('tissue') == 'NIL', output
         
 #what tissues can I ask 
 class TestFindTissue13(_IntegrationTest):
@@ -1708,6 +2030,8 @@ class TestFindTissue14(_IntegrationTest):
         print("len(output.get('tissue'))=", str(len(output.get('tissue'))))
         assert len(output.get('tissue')) == 2, output
 
+####################################################################################
+#IS-GENE-ONTO
 #Is stat3 a kinase?    
 class TestIsGeneOnto1(_IntegrationTest):
     def __init__(self, *args):
@@ -1798,6 +2122,27 @@ class TestIsGeneOnto5(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         assert output.get('result') == 'TRUE', output
 
+#TEST FAMILY NAME
+#Is SMURF a transcription factor?
+class TestIsGeneOnto6(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestIsGeneOnto6, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        gene = ekb_kstring_from_text('SMURF')
+        keyword = 'transcription factor'
+        content = KQMLList('is-gene-onto')
+        content.set('keyword', keyword)
+        content.set('gene', gene)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason').to_string() == \
+        '((:for SMURF :error FAMILY_NAME_NOT_ALLOWED))', output
+        
+#################################################################################
 #TEST FIND-GENE-ONTO
 #Among STAT3, JAK1, JAK2, ELK1, and FOS, which are protein kinases?
 class TestFindGeneOnto1(_IntegrationTest):
@@ -2011,7 +2356,8 @@ class TestFindGeneOnto61(_IntegrationTest):
         print('len(output)=' + str(len(output.get('genes'))))
         assert output.head() == 'SUCCESS', output
         assert len(output.get('genes')) == 5, output
-        
+
+#######################################################################################
 #FIND-KINASE-REGULATION
 #Which kinases regulate the cfos gene?
 class TestFindKinaseReg1(_IntegrationTest):
@@ -2048,7 +2394,8 @@ class TestFindKinaseReg11(_IntegrationTest):
     def check_response_to_message(self, output):
         
         assert output.head() == 'FAILURE', output
-        assert output.get('reason') == 'NO_TARGET_NAME', output
+        assert output.get('reason').to_string() == \
+        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
         
 #Which kinases regulate the AKT gene?
 class TestFindKinaseReg12(_IntegrationTest):
@@ -2127,7 +2474,8 @@ class TestFindKinaseReg22(_IntegrationTest):
     def check_response_to_message(self, output):
         
         assert output.head() == 'FAILURE', output
-        assert output.get('reason') == 'NO_TARGET_NAME', output
+        assert output.get('reason').to_string() == \
+        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
 
 #Which kinases positively regulate the AKT gene?
 class TestFindKinaseReg23(_IntegrationTest):
@@ -2149,102 +2497,7 @@ class TestFindKinaseReg23(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         assert output.get('kinase') == 'NIL', output
 
-##What regulates insulin?
-class TestFindTf15(_IntegrationTest):
-    def __init__(self, *args):
-        super(TestFindTf15, self).__init__(TFTA_Module)
-
-    def create_message(self):
-        # Here we create a KQML request that the TFTA needs to respond to
-        target = ekb_kstring_from_text('insulin')
-        print(target, '\n')
-        target_arg = ekb_from_text('insulin')
-        get_gene_symbol(target_arg)
-        content = KQMLList('FIND-TF')
-        content.set('target', target)
-       
-        return get_request(content), content
-        
-    def check_response_to_message(self, output):
-        assert output.head() == 'SUCCESS', output
-        assert len(output.get('tfs')) == 27, output
-        
-##What regulates cofilin? (which was taken as a protein, then get COF1)
-class TestFindTf16(_IntegrationTest):
-    def __init__(self, *args):
-        super(TestFindTf16, self).__init__(TFTA_Module)
-
-    def create_message(self):
-        # Here we create a KQML request that the TFTA needs to respond to
-        target = ekb_kstring_from_text('cofilin')
-        print(target, '\n')
-        target_arg = ekb_from_text('cofilin')
-        get_gene_symbol(target_arg)
-        content = KQMLList('FIND-TF')
-        content.set('target', target)
-        return get_request(content), content
-        
-    def check_response_to_message(self, output):
-        assert output.head() == 'SUCCESS', output
-        assert output.get('tfs') == 'NIL', output
-
-##What regulates cofilin gene? (which was taken as a protein, then get COF1)
-class TestFindTf17(_IntegrationTest):
-    def __init__(self, *args):
-        super(TestFindTf17, self).__init__(TFTA_Module)
-
-    def create_message(self):
-        # Here we create a KQML request that the TFTA needs to respond to
-        target = ekb_kstring_from_text('cofilin gene')
-        print(target, '\n')
-        target_arg = ekb_from_text('cofilin gene')
-        get_gene_symbol(target_arg)
-        content = KQMLList('FIND-TF')
-        content.set('target', target)
-        return get_request(content), content
-        
-    def check_response_to_message(self, output):
-        assert output.head() == 'SUCCESS', output
-        assert output.get('tfs') == 'NIL', output
-        
-##What regulates cofilin 1? (CFL1)
-class TestFindTf18(_IntegrationTest):
-    def __init__(self, *args):
-        super(TestFindTf18, self).__init__(TFTA_Module)
-
-    def create_message(self):
-        # Here we create a KQML request that the TFTA needs to respond to
-        target = ekb_kstring_from_text('cofilin 1')
-        print(target, '\n')
-        target_arg = ekb_from_text('cofilin 1')
-        get_gene_symbol(target_arg)
-        content = KQMLList('FIND-TF')
-        content.set('target', target)
-        return get_request(content), content
-        
-    def check_response_to_message(self, output):
-        assert output.head() == 'SUCCESS', output
-        assert len(output.get('tfs')) == 17, output
-
-##What regulates insulin?
-class TestFindTf15(_IntegrationTest):
-    def __init__(self, *args):
-        super(TestFindTf15, self).__init__(TFTA_Module)
-
-    def create_message(self):
-        # Here we create a KQML request that the TFTA needs to respond to
-        target_arg = ekb_from_text('insulin')
-        print(target_arg, '\n')
-        get_gene_symbol(target_arg)
-        content = KQMLList('FIND-TF')
-        content.set('target', KQMLString(target_arg))
-        return get_request(content), content
-        
-    def check_response_to_message(self, output):
-        assert output.head() == 'SUCCESS', output
-        print("len(output.get('tfs'))=", str(len(output.get('tfs'))))
-        assert len(output.get('tfs')) == 31, output
-
+##############################################################################
 #TEST FIND-TF-MIRNA
 ##what transcription factors does miR-124-3p regulate? 
 class TestFindTfMirna1(_IntegrationTest):
@@ -2284,7 +2537,6 @@ class TestFindTfMirna11(_IntegrationTest):
         assert len(output.get('clarification')) == 5, output
         assert len(output.get('clarification').get('as')) == 2, output
         
-        
 ##what transcription factors does miR-200c-3p regulate? 
 class TestFindTfMirna12(_IntegrationTest):
     def __init__(self, *args):
@@ -2303,6 +2555,7 @@ class TestFindTfMirna12(_IntegrationTest):
         print("len(output.get('tfs'))=", str(len(output.get('tfs'))))
         assert len(output.get('tfs')) == 39, output
 
+################################################################################
 #FIND-REGULATION
 ###what regulate myc? 
 class TestFindRegulation1(_IntegrationTest):
@@ -2372,7 +2625,6 @@ class TestFindRegulation12(_IntegrationTest):
         print("len(output.get('regulators'))=", str(len(output.get('regulators'))))
         assert len(output.get('regulators')) == 12, output
     
-
 ##what regulate frizzled8? 
 class TestFindRegulation2(_IntegrationTest):
     def __init__(self, *args):
@@ -2454,7 +2706,8 @@ class TestFindRegulation4(_IntegrationTest):
         if output.get('regulators').get('tf-literature') is not None:
             print("len(output.get('regulators').get('tf-literature'))=", str(len(output.get('regulators').get('tf-literature'))))
         assert len(output.get('regulators')) == 10, output
-        
+
+#What regulate cfos from literature?
 class TestFindRegulation5(_IntegrationTest):
     def __init__(self, *args):
         super(TestFindRegulation5, self).__init__(TFTA_Module)
@@ -2522,6 +2775,47 @@ class TestFindRegulation61(_IntegrationTest):
         print("len(output.get('regulators'))=", str(len(output.get('regulators'))))
         assert len(output.get('regulators')) == 2, output
         
+#Which transcription factors regulate frizzled8?
+class TestFindRegulation62(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindRegulation62, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target_arg = ekb_from_text('frizzled8')
+        #print(target_arg, '\n')
+        target = get_gene_symbol(target_arg)
+        content = KQMLList('FIND-REGULATION')
+        content.set('target', KQMLString(target_arg))
+        content.set('keyword', 'regulate')
+        content.set('regulator', 'transcription factor')
+        print("content=", str(content))
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        #print("len(output.get('regulators'))=", str(len(output.get('regulators'))))
+        assert len(output.get('regulators')) == 2, output
+        
+#Which transcription factors regulate frizzled8 in liver? (subtask: find-target-tf-tissue)
+class TestFindRegulation63(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindRegulation63, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('frizzled8')
+        tissue = 'liver'
+        content = KQMLList('FIND-REGULATION')
+        content.set('target', target)
+        content.set('tissue', tissue)
+        content.set('regulator', 'transcription factor')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.get('regulators') == 'NIL', output
+        
 ###What are the regulators of MAPK14 in bladder?
 class TestFindRegulation7(_IntegrationTest):
     def __init__(self, *args):
@@ -2568,9 +2862,9 @@ class TestFindRegulation8(_IntegrationTest):
         assert output.get('regulators') == 'NIL', output
         
 #what increase the amount of mzd8? 
-class TestFindRegulation9(_IntegrationTest):
+class TestFindRegulation81(_IntegrationTest):
     def __init__(self, *args):
-        super(TestFindRegulation9, self).__init__(TFTA_Module)
+        super(TestFindRegulation81, self).__init__(TFTA_Module)
 
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
@@ -2589,6 +2883,26 @@ class TestFindRegulation9(_IntegrationTest):
             print("len(output.get('regulators').get('tf-literature'))=", str(len(output.get('regulators').get('tf-literature'))))
         assert len(output.get('regulators')) == 8, output
         
+#Which transcription factors regulate frizzled8 in liver? (subtask: find-target-tf-tissue)
+class TestFindRegulation9(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindRegulation9, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('frizzled8')
+        tissue = 'liver'
+        content = KQMLList('FIND-REGULATION')
+        content.set('target', target)
+        content.set('tissue', tissue)
+        content.set('regulator', 'transcription factor')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.get('regulators') == 'NIL', output
+        
+#################################################################################
 #FIND-EVIDENCE
 ##Show me evidence that kras regulate frizzled8? 
 class TestFindEvidence1(_IntegrationTest):
@@ -2725,9 +3039,9 @@ class TestFindEvidence6(_IntegrationTest):
         assert len(output.get('evidence')) == 4, output
         
 #IncreaseAmount(miR_491(), GFAP())
-class TestFindEvidence5(_IntegrationTest):
+class TestFindEvidence7(_IntegrationTest):
     def __init__(self, *args):
-        super(TestFindEvidence5, self).__init__(TFTA_Module)
+        super(TestFindEvidence7, self).__init__(TFTA_Module)
 
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
@@ -2745,28 +3059,7 @@ class TestFindEvidence5(_IntegrationTest):
         assert output.head() == 'FAILURE', output
         assert output.get('reason') == 'NO_REGULATOR_NAME', output
 
-#test source
-#What is the evidence that SRF binds the FOS gene?
-class TestFindEvidence6(_IntegrationTest):
-    def __init__(self, *args):
-        super(TestFindEvidence6, self).__init__(TFTA_Module)
-
-    def create_message(self):
-        # Here we create a KQML request that the TFTA needs to respond to
-        regulator_arg = ekb_from_text('srf')
-        target_arg = ekb_from_text('cfos')
-        target = get_gene_symbol(target_arg)
-        content = KQMLList('FIND-EVIDENCE')
-        content.set('regulator', KQMLString(regulator_arg))
-        content.set('target', KQMLString(target_arg))
-        content.set('keyword', 'bind')
-        return get_request(content), content
-        
-    def check_response_to_message(self, output):
-        assert output.head() == 'SUCCESS', output
-        print("len(output.get('evidence'))=", str(len(output.get('evidence'))))
-        assert len(output.get('evidence')) == 2, output
-
+########################################################################
 #FIND-GENE-TISSUE        
 #what genes are expressed in liver? 
 class TestFindGeneTissue1(_IntegrationTest):
@@ -2844,7 +3137,8 @@ class TestFindGeneTissue13(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('genes'))=", len(output.get('genes')))
         assert len(output.get('genes')) == 172, output
-        
+
+########################################################################
 #IS-TISSUE-GENE
 ###Is stat3 expressed in liver? 
 class TestIsTissueGene1(_IntegrationTest):
@@ -3021,7 +3315,8 @@ class TestIsTissueGene9(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         assert output.get('result') == 'TRUE', output
-        
+
+##############################################################################
 #FIND-KINASE-PATHWAY
 #What kinases are in the MAPK signaling pathway?
 class TestFindKinasePathway1(_IntegrationTest):
@@ -3058,7 +3353,8 @@ class TestFindKinasePathway2(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('pathways'))=", len(output.get('pathways')))
         assert len(output.get('pathways')) == 4, output
-        
+
+#########################################################################
 #TEST FIND-EVIDENCE-MIRNA-TARGET
 #show me evidence that miR-148a-3p targets DNMT1?
 class TestFindEvidenceMirnaTarget1(_IntegrationTest):
@@ -3079,19 +3375,56 @@ class TestFindEvidenceMirnaTarget1(_IntegrationTest):
         print("len(output.get('evidence'))=", len(output.get('evidence')))
         assert len(output.get('evidence')) == 7, output
 
+#########################################################################
 #functions
 def get_gene_symbol(target_arg):
-        agent = []
-        targets = []
-        ont1 = ['ONT::PROTEIN', 'ONT::GENE-PROTEIN', 'ONT::GENE']
-        tp = TripsProcessor(target_arg)
-        for term in tp.tree.findall('TERM'):
-            if term.find('type').text in ont1:
-                term_id = term.attrib['id']
-                agent.append(tp._get_agent_by_id(term_id, None))
-        for ag in agent:
-            targets.append(ag.name)
-        print('targets=' + ','.join(targets))
+    agent = []
+    targets = []
+    ont1 = ['ONT::PROTEIN', 'ONT::GENE-PROTEIN', 'ONT::GENE']
+    tp = TripsProcessor(target_arg)
+    for term in tp.tree.findall('TERM'):
+        if term.find('type').text in ont1:
+            term_id = term.attrib['id']
+            agent.append(tp._get_agent_by_id(term_id, None))
+    for ag in agent:
+        targets.append(ag.name)
+    print('targets=' + ','.join(targets))
+
+def get_family_name(target_arg):
+    agent = []
+    targets = []
+    ont1 = ['ONT::PROTEIN-FAMILY', 'ONT::GENE-FAMILY']
+    tp = TripsProcessor(target_arg)
+    for term in tp.tree.findall('TERM'):
+        if term.find('type').text in ont1:
+            term_id = term.attrib['id']
+            agent.append(tp._get_agent_by_id(term_id, None))
+    for ag in agent:
+        targets.append(ag.name)
+    print('family_name = ' + ','.join(targets))
+        
+############################################
+#TEST-FUNCTION
+class TestGetFamilyName(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestGetFamilyName, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        family_arg = ekb_from_text('SMURF')
+        print('family_arg=', family_arg)
+        family_name = get_family_name(family_arg)
+        content = KQMLList('TEST-FUNCTION')
+        content.set('family', KQMLString(family_arg))
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        print("len(output.get('reason'))=", len(output.get('reason')))
+        #It seems KQML calculate the number by space split
+        assert len(output.get('reason')) == 4, output
+    
+
 
 #########################################
 ##UNIT TEST##############################
@@ -3114,7 +3447,7 @@ def test_map_exclusive_tissue_gene():
     gene_exp_exclusive = tfta.map_exclusive_tissue_gene()
     print('len(gene_exp_exclusive)=', len(gene_exp_exclusive))
     assert(len(gene_exp_exclusive) == 30)
-    
+
 
 if __name__ == '__main__':
     TestIsRegulation1().run_test()
