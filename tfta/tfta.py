@@ -649,20 +649,19 @@ class TFTA:
             else:
                 raise PathwayNotFoundException
                     
-            upid = list(set(pids)) 
+            upid = list(set(pids))
+            fpid = []
             for pthID in upid:
                 t = (pthID,)
                 res1 = self.tfdb.execute("SELECT DISTINCT genesymbol FROM pathway2Genes "
                                         "WHERE pathwayID = ? ORDER BY genesymbol", t).fetchall()
                 genes = [r[0] for r in res1]
                 overlap_genes = list(set(gene_names) & set(genes))
-                if len(overlap_genes) < len(gene_names):
-                    del pname[pthID]
-                    del plink[pthID]
-                    upid.remove(pthID)
-            if not len(upid):
+                if len(overlap_genes) == len(gene_names):
+                    fpid.append(pthID)
+            if not len(fpid):
                 raise PathwayNotFoundException
-            return upid, pname, plink
+            return fpid, pname, plink
 
     def find_pathway_gene_keyword(self,gene_names, keyword):
         """
