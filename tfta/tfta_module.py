@@ -48,7 +48,7 @@ class TFTA_Module(Bioagent):
              'FIND-TF', 'FIND-PATHWAY', 'FIND-TARGET', 'FIND-GENE', 'FIND-MIRNA',
              'IS-GENE-ONTO', 'FIND-GENE-ONTO', 'FIND-KINASE-REGULATION',
              'FIND-TF-MIRNA', 'FIND-REGULATION', 'FIND-EVIDENCE', 'FIND-GENE-TISSUE',
-             'IS-GENE-TISSUE', 'FIND-KINASE-PATHWAY']
+             'IS-GENE-TISSUE', 'FIND-KINASE-PATHWAY','TEST-FUNCTION']
     #keep the genes from the most recent previous call, which are used to input 
     #find-gene-onto if there's no gene input 
     #gene_list = ['STAT3', 'JAK1', 'JAK2', 'ELK1', 'FOS', 'SMAD2', 'KDM4B']
@@ -251,7 +251,10 @@ class TFTA_Module(Bioagent):
             gene = _get_target(gene_arg)
             gene_name = gene.name
         except Exception as e:
-            reply = make_failure('NO_GENE_NAME')
+            reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
+            return reply
+        if not gene_name:
+            reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
             return reply
         try:
             is_onto = self.tfta.Is_gene_onto(keyword_name, gene_name)
@@ -306,8 +309,12 @@ class TFTA_Module(Bioagent):
             if self.gene_list:
                 gene_names = self.gene_list
             else:
-                reply = make_failure('NO_GENE_NAME')
+                reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
                 return reply
+        if not gene_names:
+            reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
+            return reply
+            
         try:
             results = self.tfta.find_gene_onto(keyword_name, gene_names)
         except GONotFoundException:
@@ -349,7 +356,10 @@ class TFTA_Module(Bioagent):
                 regulator_arg_str = regulator_arg_str.upper()
                 regulator_names = regulator_arg_str.split(',')
         except Exception as e:
-            reply = make_failure('NO_REGULATOR_NAME')
+            reply = _wrap_family_message(regulator_arg, 'NO_REGULATOR_NAME')
+            return reply
+        if not regulator_names:
+            reply = _wrap_family_message(regulator_arg, 'NO_REGULATOR_NAME')
             return reply
         #get genes regulated by regulators in regulator_names
         try:
@@ -385,14 +395,20 @@ class TFTA_Module(Bioagent):
             tf = _get_target(tf_arg)
             tf_name = tf.name
         except Exception as e:
-            reply = make_failure('NO_TF_NAME')
+            reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
+            return reply
+        if not tf_name:
+            reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
             return reply
         target_arg = content.gets('target')
         try:
             target = _get_target(target_arg)
             target_name = target.name
         except Exception as e:
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
+            return reply
+        if not target_name:
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         #check if it exists in literature
         stmts = self.tfta.find_statement_indraDB(subj=tf_name, obj=target_name, stmt_types=['RegulateAmount'])
@@ -435,14 +451,20 @@ class TFTA_Module(Bioagent):
             tf = _get_target(tf_arg)
             tf_name = tf.name
         except Exception as e:
-            reply = make_failure('NO_TF_NAME')
+            reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
+            return reply
+        if not tf_name:
+            reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
             return reply
         target_arg = content.gets('target')
         try:
             target = _get_target(target_arg)
             target_name = target.name
         except Exception as e:
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
+            return reply
+        if not target_name:
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         try:
             keyword_arg = content.get('keyword')
@@ -486,14 +508,20 @@ class TFTA_Module(Bioagent):
             tf = _get_target(tf_arg)
             tf_name = tf.name
         except Exception as e:
-            reply = make_failure('NO_TF_NAME')
+            reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
+            return reply
+        if not tf_name:
+            reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
             return reply
         target_arg = content.gets('target')
         try:
             target = _get_target(target_arg)
             target_name = target.name
         except Exception as e:
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
+            return reply
+        if not target_name:
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         try:
             tissue_arg = content.get('tissue')
@@ -535,11 +563,12 @@ class TFTA_Module(Bioagent):
             for tf in tfs:
                 tf_names.append(tf.name)
         except Exception as e:
-            reply = make_failure('NO_TF_NAME')
+            reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
             return reply
         if not len(tf_names):
-            reply = make_failure('NO_TF_NAME')
+            reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
             return reply
+
         tf_str = ', '.join(tf_names[:-1]) + ' and ' + tf_names[-1]
         #consider an optional parameter for subsequent query
         of_targets_names = []
@@ -587,11 +616,12 @@ class TFTA_Module(Bioagent):
             for tf in tfs:
                 tf_names.append(tf.name)
         except Exception as e:
-            reply = make_failure('NO_TF_NAME')
+            reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
             return reply
         if not len(tf_names):
-            reply = make_failure('NO_TF_NAME')
+            reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
             return reply
+            
         try:
             keyword_arg = content.get('keyword')
             keyword_name = keyword_arg.data
@@ -623,10 +653,10 @@ class TFTA_Module(Bioagent):
             for tf in tfs:
                 tf_names.append(tf.name)
         except Exception as e:
-            reply = make_failure('NO_TF_NAME')
+            reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
             return reply
         if not len(tf_names):
-            reply = make_failure('NO_TF_NAME')
+            reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
             return reply
         try:
             tissue_arg = content.get('tissue')
@@ -681,12 +711,12 @@ class TFTA_Module(Bioagent):
             for target in targets:
                 target_names.append(target.name)
         except Exception as e:
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         if not len(target_names):
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
-        target_str = ', '.join(target_names[:-1]) + ' and ' + target_names[-1]
+            
         #consider an optional parameter for subsequent query
         of_tfs_names = []
         of_tfs_arg = content.get('of-tfs')
@@ -729,10 +759,10 @@ class TFTA_Module(Bioagent):
             for target in targets:
                 target_names.append(target.name)
         except Exception as e:
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         if not len(target_names):
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         try:
             keyword_arg = content.get('keyword')
@@ -765,10 +795,10 @@ class TFTA_Module(Bioagent):
             for target in targets:
                 target_names.append(target.name)
         except Exception as e:
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         if not len(target_names):
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         try:
             tissue_arg = content.get('tissue')
@@ -823,11 +853,12 @@ class TFTA_Module(Bioagent):
             for gene in genes:
                 gene_names.append(gene.name)
         except Exception as e:
-            reply = make_failure('NO_GENE_NAME')
+            reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
             return reply
         if not len(gene_names):
-            reply = make_failure('NO_GENE_NAME')
+            reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
             return reply
+            
         try:
             pathwayName, dblink = \
                 self.tfta.find_pathways_from_genelist(gene_names)
@@ -867,11 +898,12 @@ class TFTA_Module(Bioagent):
             for gene in genes:
                 gene_names.append(gene.name)
         except Exception as e:
-            reply = make_failure('NO_GENE_NAME')
+            reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
             return reply
         if not len(gene_names):
-            reply = make_failure('NO_GENE_NAME')
+            reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
             return reply
+            
         try:
             pathwayName, dblink = \
                 self.tfta.find_pathway_gene_keyword(gene_names, keyword_name)
@@ -911,8 +943,12 @@ class TFTA_Module(Bioagent):
             for gene in genes:
                 gene_names.append(gene.name)
         except Exception as e:
-            reply = make_failure('NO_GENE_NAME')
+            reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
             return reply
+        if not gene_names:
+            reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
+            return reply
+            
         try:
             pathwayId, pathwayName, externalId, source, dblink = \
                 self.tfta.find_pathways_from_dbsource_geneName(db_name,gene_names)
@@ -1131,8 +1167,12 @@ class TFTA_Module(Bioagent):
             for target in targets:
                 target_names.append(target.name)
         except Exception as e:
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
+        if not target_names:
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
+            return reply
+            
         try:
             tf_counts = self.tfta.find_tfs_count(target_names)
         except TFNotFoundException:
@@ -1167,8 +1207,12 @@ class TFTA_Module(Bioagent):
             for target in targets:
                 target_names.append(target.name)
         except Exception as e:
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
+        if not target_names:
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
+            return reply
+            
         try:
             tf_targets = self.tfta.find_common_tfs(target_names)
         except TFNotFoundException:
@@ -1207,7 +1251,7 @@ class TFTA_Module(Bioagent):
             for tf in tfs:
                 tf_names.append(tf.name)
         except Exception as e:
-            reply = make_failure('NO_TF_NAME')
+            reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
             return reply
         target_arg = content.gets('target')
         try:
@@ -1216,7 +1260,7 @@ class TFTA_Module(Bioagent):
             for tg in targets:
                 target_names.append(tg.name)
         except Exception as e:
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply        
         try:
             overlap_targets = \
@@ -1247,8 +1291,12 @@ class TFTA_Module(Bioagent):
             for tg in targets:
                 target_names.append(tg.name)
         except Exception as e:
-            reply = make_failure('NO_GENE_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_GENE_NAME')
             return reply
+        if not target_names:
+            reply = _wrap_family_message(target_arg, 'NO_GENE_NAME')
+            return reply
+            
         try:
             pathwayName,externalId,source,dblink,counts = self.tfta.find_pathway_count_genes(target_names)
         except PathwayNotFoundException:
@@ -1289,8 +1337,12 @@ class TFTA_Module(Bioagent):
                 target_names.append(tg.name)
             target_names = list(set(target_names))
         except Exception as e:
-            reply = make_failure('NO_GENE_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_GENE_NAME')
             return reply
+        if not target_names:
+            reply = _wrap_family_message(target_arg, 'NO_GENE_NAME')
+            return reply
+            
         try:
             pathwayName,externalId,source,dblink,counts = \
                self.tfta.find_pathway_count_genes_keyword(target_names, keyword_name[0])
@@ -1332,8 +1384,12 @@ class TFTA_Module(Bioagent):
             if self.gene_list:
                 gene_names = self.gene_list
             else:
-                reply = make_failure('NO_GENE_NAME')
+                reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
                 return reply
+        if not len(gene_names):
+            reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
+            return reply
+            
         try:
             pathwayName, dblink, genes = self.tfta.find_common_pathway_genes(gene_names)
         except PathwayNotFoundException:
@@ -1389,8 +1445,12 @@ class TFTA_Module(Bioagent):
             if self.gene_list:
                 gene_names = self.gene_list
             else:
-                reply = make_failure('NO_GENE_NAME')
+                reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
                 return reply
+        if not len(gene_names):
+            reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
+            return reply
+            
         try:
             pathwayName,dblink,genes = \
                self.tfta.find_common_pathway_genes_keyword(gene_names, keyword_name[0])
@@ -1447,8 +1507,12 @@ class TFTA_Module(Bioagent):
             if self.gene_list:
                 gene_names = self.gene_list
             else:
-                reply = make_failure('NO_GENE_NAME')
+                reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
                 return reply
+        if not len(gene_names):
+            reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
+            return reply
+            
         try:
             pathwayName,dblink,genes = \
                self.tfta.find_common_pathway_genes_db(gene_names, db_name)
@@ -1486,11 +1550,12 @@ class TFTA_Module(Bioagent):
             for gene in genes:
                 gene_names.append(gene.name)
         except Exception as e:
-            reply = make_failure('NO_GENE_NAME')
+            reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
             return reply
         if not len(gene_names):
-              reply = make_failure('NO_GENE_NAME')
-              return reply
+            reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
+            return reply
+            
         try:
             pids, pathwayName, dblink = \
                 self.tfta.Is_pathway_gene(pathway_names, gene_names)
@@ -1532,7 +1597,7 @@ class TFTA_Module(Bioagent):
             for tf in tfs:
                 tf_names.append(tf.name)
         except Exception as e:
-            reply = make_failure('NO_TF_NAME')
+            reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
             return reply            
         try:
             go_ids,go_types,go_names,go_genes = \
@@ -1576,7 +1641,7 @@ class TFTA_Module(Bioagent):
             for tf in tfs:
                 tf_names.append(tf.name)
         except Exception as e:
-            reply = make_failure('NO_TF_NAME')
+            reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
             return reply           
         try:
             go_ids,go_types,go_names,go_genes = \
@@ -1615,44 +1680,12 @@ class TFTA_Module(Bioagent):
             target = _get_target(target_arg)
             target_name = target.name
         except Exception as e:
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         if not len(target_name):
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
-        try:
-            is_target = self.tfta.Is_miRNA_target(miRNA_name[0], target_name)
-        except miRNANotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :is-miRNA-target FALSE)')
-            return reply
-        except TargetNotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :is-miRNA-target FALSE)')
-            return reply            
-        reply = KQMLList('SUCCESS')
-        is_target_str = 'TRUE' if is_target else 'FALSE'
-        reply.set('is-miRNA-target', is_target_str)
-        return reply
-        
-    def respond_is_miRNA_target(self, content):
-        """
-        Respond to IS-MIRNA-TARGET request
-        """
-        #assume the miRNA is also in EKB XML format
-        miRNA_arg = content.gets('miRNA')
-        miRNA_name = _get_miRNA_name(miRNA_arg)
-        if not len(miRNA_name):
-            reply = make_failure('NO_MIRNA_NAME')
-            return reply       
-        target_arg = content.gets('target')
-        try:
-            target = _get_target(target_arg)
-            target_name = target.name
-        except Exception as e:
-            reply = make_failure('NO_TARGET_NAME')
-            return reply
-        if not len(target_name):
-            reply = make_failure('NO_TARGET_NAME')
-            return reply
+            
         try:
             is_target = self.tfta.Is_miRNA_target(miRNA_name[0], target_name)
         except miRNANotFoundException:
@@ -1680,15 +1713,17 @@ class TFTA_Module(Bioagent):
             target = _get_target(target_arg)
             target_name = target.name
         except Exception as e:
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         if not len(target_name):
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         
         is_target,expr,supt,pmid = self.tfta.Is_miRNA_target2(miRNA_name[0], target_name)
+        
         #provenance support
         self.send_background_support_mirna(miRNA_name[0], target_name, expr, supt, pmid)
+        
         #respond to BA
         reply = KQMLList('SUCCESS')
         is_target_str = 'TRUE' if is_target else 'FALSE'
@@ -1706,11 +1741,12 @@ class TFTA_Module(Bioagent):
             for target in targets:
                 target_names.append(target.name)
         except Exception as e:
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         if not len(target_names):
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
+            
         try:
             miRNA_names = self.tfta.find_miRNA_target(target_names)
         except TargetNotFoundException:
@@ -1827,8 +1863,12 @@ class TFTA_Module(Bioagent):
             target = _get_target(target_arg)
             target_name = target.name
         except Exception as e:
-            reply = make_failure('NO_TARGET_NAME')
-            return reply           
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
+            return reply
+        if not len(target_name):
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
+            return reply
+                   
         try:
             experiments,supportType,pmlink = \
                 self.tfta.find_evidence_miRNA_target(miRNA_name[0], target_name)
@@ -1894,11 +1934,12 @@ class TFTA_Module(Bioagent):
             for tg in targets:
                 target_names.append(tg.name)
         except Exception as e:
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         if not len(target_names):
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
+            
         try:
             mirnas,counts,genes = self.tfta.find_miRNA_count_gene(target_names)
         except miRNANotFoundException:
@@ -1977,11 +2018,12 @@ class TFTA_Module(Bioagent):
             gene = _get_target(gene_arg)
             gene_name = gene.name
         except Exception as e:
-            reply = make_failure('NO_GENE_NAME')
+            reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
             return reply
         if not len(gene_name):
-            reply = make_failure('NO_GENE_NAME')
+            reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
             return reply
+            
         try:
             tissues = self.tfta.find_tissue_gene(gene_name)
         except TissueNotFoundException:
@@ -2005,11 +2047,12 @@ class TFTA_Module(Bioagent):
             for target in targets:
                 target_names.append(target.name)
         except Exception as e:
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         if not len(target_names):
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
+            
         try:
             kinases = self.tfta.find_kinase_target(target_names)
         except KinaseNotFoundException:
@@ -2033,11 +2076,12 @@ class TFTA_Module(Bioagent):
             for target in targets:
                 target_names.append(target.name)
         except Exception as e:
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         if not len(target_names):
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
+            
         try:
             keyword_arg = content.get('keyword')
             keyword_name = keyword_arg.data
@@ -2121,10 +2165,10 @@ class TFTA_Module(Bioagent):
             for target in targets:
                 target_names.append(target.name)
         except Exception as e:
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         if not len(target_names):
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         target_names = list(set(target_names))
         try:
@@ -2176,12 +2220,13 @@ class TFTA_Module(Bioagent):
             for target in targets:
                 target_names.append(target.name)
         except Exception as e:
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         if not len(target_names):
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         target_names = list(set(target_names))
+        
         try:
             keyword_arg = content.get('keyword')
             keyword_name = keyword_arg.data
@@ -2226,12 +2271,13 @@ class TFTA_Module(Bioagent):
             for target in targets:
                 target_names.append(target.name)
         except Exception as e:
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         if not len(target_names):
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         target_names = list(set(target_names))
+        
         try:
             keyword_arg = content.get('keyword')
             keyword_name = keyword_arg.data
@@ -2310,21 +2356,23 @@ class TFTA_Module(Bioagent):
             regulator = _get_target(regulator_arg)
             regulator_name = regulator.name
         except Exception as e:
-            reply = make_failure('NO_REGULATOR_NAME')
+            reply = _wrap_family_message(regulator_arg, 'NO_REGULATOR_NAME')
             return reply
         if not regulator_name:
-            reply = make_failure('NO_REGULATOR_NAME')
+            reply = _wrap_family_message(regulator_arg, 'NO_REGULATOR_NAME')
             return reply
+            
         try:
             target_arg = content.gets('target')
             target = _get_target(target_arg)
             target_name = target.name
         except Exception as e:
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         if not target_name:
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
+            
         try:
             keyword_arg = content.get('keyword')
             keyword_name = keyword_arg.data
@@ -2371,21 +2419,23 @@ class TFTA_Module(Bioagent):
             regulator = _get_target(regulator_arg)
             regulator_name = regulator.name
         except Exception as e:
-            reply = make_failure('NO_REGULATOR_NAME')
+            reply = _wrap_family_message(regulator_arg, 'NO_REGULATOR_NAME')
             return reply
         if not regulator_name:
-            reply = make_failure('NO_REGULATOR_NAME')
+            reply = _wrap_family_message(regulator_arg, 'NO_REGULATOR_NAME')
             return reply
+            
         try:
             target_arg = content.gets('target')
             target = _get_target(target_arg)
             target_name = target.name
         except Exception as e:
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         if not target_name:
-            reply = make_failure('NO_TARGET_NAME')
+            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
+            
         db_names = self.tfta.find_evidence_dbname(regulator_name, target_name)
         if len(db_names):
             db_str = ''
@@ -2487,10 +2537,10 @@ class TFTA_Module(Bioagent):
             gene = _get_target(gene_arg)
             gene_name = gene.name
         except Exception as e:
-            reply = make_failure('NO_GENE_NAME')
+            reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
             return reply
         if not gene_name:
-            reply = make_failure('NO_GENE_NAME')
+            reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
             return reply
         #optional keyword
         try:
@@ -2515,7 +2565,17 @@ class TFTA_Module(Bioagent):
         reply.set('result', is_express_str)
         return reply
         
-    
+#
+    def respond_get_family_name(self, content):
+        family_arg = content.gets('family')
+        
+        agent = _get_family_name(family_arg)
+        if agent:
+            res_str = ' (:for ' + agent[0].name + ' :error FAMILY_NAME_NOT_ALLOWED)'
+            reply = make_failure(res_str)
+        else:
+            reply = KQMLList.from_string('(SUCCESS :family NIL)')
+        return reply
         
     
         
@@ -2557,7 +2617,8 @@ class TFTA_Module(Bioagent):
                  'FIND-EVIDENCE':respond_find_evidence,
                  'FIND-GENE-TISSUE':respond_find_gene_tissue,
                  'IS-GENE-TISSUE':respond_is_gene_tissue,
-                 'FIND-KINASE-PATHWAY':respond_find_kinase_pathway}
+                 'FIND-KINASE-PATHWAY':respond_find_kinase_pathway,
+                 'TEST-FUNCTION':respond_get_family_name}
     
     def receive_request(self, msg, content):
         """If a "request" message is received, decode the task and
@@ -2898,11 +2959,17 @@ class TFTA_Module(Bioagent):
                                                 cause=for_what, reason=reason))
         return self.tell(content)
         
+    
+        
 def _get_target(target_str):
+    agent = None
+    ont1 = ['ONT::PROTEIN', 'ONT::GENE-PROTEIN', 'ONT::GENE']
     tp = TripsProcessor(target_str)
-    terms = tp.tree.findall('TERM')
-    term_id = terms[0].attrib['id']
-    agent = tp._get_agent_by_id(term_id, None)
+    for term in tp.tree.findall('TERM'):
+        if term.find('type').text in ont1:
+            term_id = term.attrib['id']
+            agent = tp._get_agent_by_id(term_id, None)
+            break
     return agent
 
 def _get_targets(target_arg):
@@ -2914,6 +2981,31 @@ def _get_targets(target_arg):
             term_id = term.attrib['id']
             agent.append(tp._get_agent_by_id(term_id, None))
     return agent
+    
+def _get_family_name(target_arg):
+    agent = []
+    ont1 = ['ONT::PROTEIN-FAMILY', 'ONT::GENE-FAMILY']
+    tp = TripsProcessor(target_arg)
+    for term in tp.tree.findall('TERM'):
+        if term.find('type').text in ont1:
+            term_id = term.attrib['id']
+            agent.append(tp._get_agent_by_id(term_id, None))
+    return agent
+    
+def _wrap_family_message(target_arg, msg):
+    family = _get_family_name(target_arg)
+    family_name = []
+    for f in family:
+        family_name.append(f.name)
+    if family_name:
+        res_str = ''
+        for f in family_name:
+            res_str += '(:for ' + f + ' :error FAMILY_NAME_NOT_ALLOWED) '
+        res_str = '(' + res_str + ')'
+        reply = make_failure(res_str)
+    else:
+        reply = make_failure(msg)
+    return reply
 
 def _get_pathway_name(target_str):
     #print('In _get_pathway_name')
