@@ -49,7 +49,7 @@ class TestIsRegulation11(_IntegrationTest):
         assert len(output.get('reason')) == 1, output
         print(type(output.get('reason')))
         assert output.get('reason').to_string() == \
-        "((:for SMURF :error FAMILY_NAME_NOT_ALLOWED))", output.get('reason')
+        "((:for V35246 :error FAMILY_NAME_NOT_ALLOWED))", output.get('reason')
 
 #Does stat3 regulate the MEK gene?
 class TestIsRegulation12(_IntegrationTest):
@@ -73,7 +73,7 @@ class TestIsRegulation12(_IntegrationTest):
         assert len(output.get('reason')) == 1, output
         print(type(output.get('reason')))
         assert output.get('reason').to_string() == \
-        "((:for MEK :error FAMILY_NAME_NOT_ALLOWED))", output.get('reason')
+        "((:for V14939346 :error FAMILY_NAME_NOT_ALLOWED))", output.get('reason')
         
 #Does stat3 regulate the AKT gene?
 #AKT is in ['ONT::PROTEIN', 'ONT::GENE', 'ONT::PROTEIN-FAMILY']
@@ -114,7 +114,7 @@ class TestIsRegulation14(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
         assert output.get('reason').to_string() == \
-        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
+        '((:for V14939346 :error FAMILY_NAME_NOT_ALLOWED))', output
         
 ##Does AKT regulate the MEK gene? (subtask: is-tf-target)
 class TestIsRegulation15(_IntegrationTest):
@@ -133,7 +133,7 @@ class TestIsRegulation15(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
         assert output.get('reason').to_string() == \
-        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
+        '((:for V14939346 :error FAMILY_NAME_NOT_ALLOWED))', output
         
 ##does srf regulate acta1?
 class TestIsRegulation16(_IntegrationTest):
@@ -242,7 +242,7 @@ class TestIsRegulation23(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
         assert output.get('reason').to_string() == \
-        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
+        '((:for V14939346 :error FAMILY_NAME_NOT_ALLOWED))', output
         
 #Does AKT regulate the c-fos gene in the lung? (subtask: is-tf-target-tissue)
 class TestIsRegulation24(_IntegrationTest):
@@ -320,6 +320,7 @@ class TestIsRegulation31(_IntegrationTest):
         # Here we create a KQML request that the TFTA needs to respond to
         tf_arg = ekb_from_text('stat3')
         target_arg = ekb_from_text('MEK')
+        print(target_arg)
         target = get_gene_symbol(target_arg)
         keyword = 'increase'
         content = KQMLList('IS-REGULATION')
@@ -331,9 +332,8 @@ class TestIsRegulation31(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
-        assert output.get('reason').to_string() == \
-        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
-
+        print("len(output.get('reason'))=", len(output.get('reason')))
+        assert len(output.get('reason'))==1, output
 ######################################################################################
 #IS-MIRNA-TARGET
 #Does miR-20b-5p target STAT3? (subtask: is-mirna-target)
@@ -373,7 +373,7 @@ class TestIsMirnaTarget11(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
         assert output.get('reason').to_string() == \
-        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
+        '((:for V14939346 :error FAMILY_NAME_NOT_ALLOWED))', output
 
 ####################################################################################
 #TEST FIND-TF
@@ -426,7 +426,7 @@ class TestFindTf12(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
         assert output.get('reason').to_string() == \
-        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
+        '((:for V14939346 :error FAMILY_NAME_NOT_ALLOWED))', output
         
 ##What transcription factors regulate AKT? (subtask: find-target-tf)
 class TestFindTf13(_IntegrationTest):
@@ -459,7 +459,7 @@ class TestFindTf14(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
         assert output.get('reason').to_string() == \
-        '((:for SOS :error FAMILY_NAME_NOT_ALLOWED))', output
+        '((:for V106700 :error FAMILY_NAME_NOT_ALLOWED))', output
 
 #check keyword parameter
 #Which transcription factors upregulate cfos?
@@ -517,7 +517,7 @@ class TestFindTf17(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
         assert output.get('reason').to_string() == \
-        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
+        '((:for V14939346 :error FAMILY_NAME_NOT_ALLOWED))', output
 
 #tissues
 #Which transcription factors regulate frizzled8 in liver? (subtask: find-target-tf-tissue)
@@ -613,7 +613,7 @@ class TestFindTf24(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
         assert output.get('reason').to_string() == \
-        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
+        '((:for V14939346 :error FAMILY_NAME_NOT_ALLOWED))', output
         
 #Which transcription factors regulate mapk14 in breast cancer?
 class TestFindTf25(_IntegrationTest):
@@ -896,7 +896,7 @@ class TestFindTarget13(_IntegrationTest):
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
-        tf = ekb_kstring_from_text('mek')
+        tf = ekb_kstring_from_text('MEK')
         content = KQMLList('FIND-TARGET')
         content.set('tf', tf)
         return get_request(content), content
@@ -904,7 +904,7 @@ class TestFindTarget13(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
         assert output.get('reason').to_string() == \
-        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
+        '((:for V14939346 :error FAMILY_NAME_NOT_ALLOWED))', output
         
 #what genes are regulated by AKT (subtask: find-tf-target)
 class TestFindTarget14(_IntegrationTest):
@@ -975,7 +975,7 @@ class TestFindTarget22(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
         assert output.get('reason').to_string() == \
-        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
+        '((:for V14939346 :error FAMILY_NAME_NOT_ALLOWED))', output
         
 #what genes does AKT regulate in liver? (subtask: find-tf-target-tissue)
 class TestFindTarget23(_IntegrationTest):
@@ -1050,7 +1050,7 @@ class TestFindTarget32(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
         assert output.get('reason').to_string() == \
-        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
+        '((:for V14939346 :error FAMILY_NAME_NOT_ALLOWED))', output
 
 #################################################################################
 #What genes does miR-20b-5p target? (subtask: find-target-mirna)
@@ -1285,7 +1285,7 @@ class TestFindPathway12(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
         assert output.get('reason').to_string() == \
-        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
+        '((:for V14939346 :error FAMILY_NAME_NOT_ALLOWED))', output
 
 ##What pathways involve AKT? (subtask: find-pathway-gene)        
 class TestFindPathway13(_IntegrationTest):
@@ -1356,7 +1356,7 @@ class TestFindPathway22(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
         assert output.get('reason').to_string() == \
-        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
+        '((:for V14939346 :error FAMILY_NAME_NOT_ALLOWED))', output
         
 #Which KEGG pathways utilize AKT? (subtask: find-pathway-db-gene)
 class TestFindPathway23(_IntegrationTest):
@@ -1551,7 +1551,7 @@ class TestFindPathway54(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
         assert output.get('reason').to_string() == \
-        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
+        '((:for V14939346 :error FAMILY_NAME_NOT_ALLOWED))', output
         
 #Which immune system pathways involve stat3?
 #(subtask: find-pathway-gene-keyword)
@@ -1795,7 +1795,7 @@ class TestIsPathwayGene11(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
         assert output.get('reason').to_string() == \
-        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
+        '((:for V14939346 :error FAMILY_NAME_NOT_ALLOWED))', output
         
 #Does the mTor pathway utilize AKT? (subtask: is-pathway-gene)
 class TestIsPathwayGene12(_IntegrationTest):
@@ -1906,7 +1906,7 @@ class TestFindMirna11(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
         assert output.get('reason').to_string() == \
-        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
+        '((:for V14939346 :error FAMILY_NAME_NOT_ALLOWED))', output
         
 #What microRNAs target AKT? (subtask: FIND-MIRNA-TARGET)
 class TestFindMirna12(_IntegrationTest):
@@ -1978,7 +1978,7 @@ class TestFindTissue11(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
         assert output.get('reason').to_string() == \
-        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
+        '((:for V14939346 :error FAMILY_NAME_NOT_ALLOWED))', output
         
 #What tissues is AKT expressed in?
 class TestFindTissue12(_IntegrationTest):
@@ -2140,7 +2140,7 @@ class TestIsGeneOnto6(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
         assert output.get('reason').to_string() == \
-        '((:for SMURF :error FAMILY_NAME_NOT_ALLOWED))', output
+        '((:for V35246 :error FAMILY_NAME_NOT_ALLOWED))', output
         
 #################################################################################
 #TEST FIND-GENE-ONTO
@@ -2385,7 +2385,7 @@ class TestFindKinaseReg11(_IntegrationTest):
 
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
-        target = ekb_kstring_from_text('mek')
+        target = ekb_kstring_from_text('MEK')
         print(target)
         content = KQMLList('FIND-KINASE-REGULATION')
         content.set('target', target)
@@ -2395,7 +2395,7 @@ class TestFindKinaseReg11(_IntegrationTest):
         
         assert output.head() == 'FAILURE', output
         assert output.get('reason').to_string() == \
-        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
+        '((:for V14939346 :error FAMILY_NAME_NOT_ALLOWED))', output
         
 #Which kinases regulate the AKT gene?
 class TestFindKinaseReg12(_IntegrationTest):
@@ -2475,7 +2475,7 @@ class TestFindKinaseReg22(_IntegrationTest):
         
         assert output.head() == 'FAILURE', output
         assert output.get('reason').to_string() == \
-        '((:for MEK :error FAMILY_NAME_NOT_ALLOWED))', output
+        '((:for V14939346 :error FAMILY_NAME_NOT_ALLOWED))', output
 
 #Which kinases positively regulate the AKT gene?
 class TestFindKinaseReg23(_IntegrationTest):
