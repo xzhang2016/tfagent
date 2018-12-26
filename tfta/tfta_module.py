@@ -2992,7 +2992,29 @@ def _get_family_name(target_arg):
             agent.append(tp._get_agent_by_id(term_id, None))
     return agent
     
+def _get_term_id(target_arg):
+    term_id = []
+    ont1 = ['ONT::PROTEIN-FAMILY', 'ONT::GENE-FAMILY']
+    tp = TripsProcessor(target_arg)
+    for term in tp.tree.findall('TERM'):
+        if term.find('type').text in ont1:
+            term_id.append(term.attrib['id'])
+    #print('term_id = ' + ','.join(term_id))
+    return term_id
+
 def _wrap_family_message(target_arg, msg):
+    term_id = _get_term_id(target_arg)
+    if len(term_id):
+        res_str = ''
+        for t in term_id:
+            res_str += '(:for ' + t + ' :error FAMILY_NAME_NOT_ALLOWED) '
+        res_str = '(' + res_str + ')'
+        reply = make_failure(res_str)
+    else:
+        reply = make_failure(msg)
+    return reply
+
+def _wrap_family_message2(target_arg, msg):
     family = _get_family_name(target_arg)
     family_name = []
     for f in family:
