@@ -74,11 +74,18 @@ class TFTA_Module(Bioagent):
         tf_arg = content.gets('tf')
         target_arg = content.gets('target')
         tissue_arg = content.get('tissue')
-        keyword_arg = content.get('keyword')
+        try:
+            keyword_arg = content.get('keyword')
+            keyword_name = keyword_arg.data
+        except Exception as e:
+            keyword_arg = None
         if all([tf_arg,target_arg,tissue_arg]):
             reply = self.respond_is_tf_target_tissue(content)
         elif all([tf_arg,target_arg, keyword_arg]):
-            reply = self.respond_is_tf_target_literature(content)
+            if keyword_name.lower() in ['increase', 'decrease']:
+                reply = self.respond_is_tf_target_literature(content)
+            else:
+                reply = self.respond_is_tf_target(content)
         elif all([tf_arg,target_arg]):
             reply = self.respond_is_tf_target(content)
         else:
