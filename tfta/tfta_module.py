@@ -2773,8 +2773,9 @@ class TFTA_Module(Bioagent):
         nl_question: str
         """
         publink = "https://www.ncbi.nlm.nih.gov/pubmed/"
-        head_str = '<head><style>table,th,td{border: 1px solid black; padding: 8px}</style></head>'
-        html_str = head_str + '<h4>Supporting information from TFTA: %s</h4>\n' % nl_question
+        #head_str = '<head><style>table,th,td{border: 1px solid black; padding: 8px}</style></head>'
+        #html_str = head_str + '<h4>Supporting information from TFTA: %s</h4>\n' % nl_question
+        html_str = '<h4>Supporting information from TFTA: %s</h4>\n' % nl_question
         html_str += '<table style="width:100%">\n'
         row_list = ['<th>MiRNA</th><th>Target</th><th>Experiment</th><th>Support Type</th><th>PMID</th>']
         for mirna,target,expe,st,pd in zip(mirna_name, target_name, experiment, support_type, pmid):
@@ -2848,8 +2849,9 @@ class TFTA_Module(Bioagent):
         nl_question: str
         """
         publink = "https://www.ncbi.nlm.nih.gov/pubmed/"
-        head_str = '<head><style>table,th,td{border:1px solid black;padding:8px}</style></head>'
-        html_str = head_str + '<h4>Supporting information from TFTA: %s</h4>\n' % nl_question
+        #head_str = '<head><style>table,th,td{border:1px solid black;padding:8px}</style></head>'
+        #html_str = head_str + '<h4>Supporting information from TFTA: %s</h4>\n' % nl_question
+        html_str = '<h4>Supporting information from TFTA: %s</h4>\n' % nl_question
         html_str += '<table style="width:100%">\n'
         row_list = ['<th>TF</th><th>Target</th><th>Source</th>']
         for tf,target,db in zip(tf_name, target_name, dbname):
