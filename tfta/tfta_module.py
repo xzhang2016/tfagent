@@ -2773,18 +2773,21 @@ class TFTA_Module(Bioagent):
         nl_question: str
         """
         publink = "https://www.ncbi.nlm.nih.gov/pubmed/"
-        #head_str = '<head><style>table,th,td{border: 1px solid black; padding: 8px}</style></head>'
-        #html_str = head_str + '<h4>Supporting information from TFTA: %s</h4>\n' % nl_question
-        html_str = '<h4>Supporting information from TFTA: %s</h4>\n' % nl_question
-        html_str += '<table style="width:100%">\n'
-        row_list = ['<th>MiRNA</th><th>Target</th><th>Experiment</th><th>Support Type</th><th>PMID</th>']
+        head_str = '<head><style>.table-borders{border:1px solid black;padding:8px;}</style></head>'
+        html_str = head_str + '<h4>Supporting information from TFTA: %s</h4>\n' % nl_question
+        #html_str = '<h4>Supporting information from TFTA: %s</h4>\n' % nl_question
+        html_str += '<table class = table-borders>\n'
+        row_list = ['<th class = table-borders>MiRNA</th><th class = table-borders>Target</th> \
+                   <th class = table-borders>Experiment</th><th class = table-borders>Support Type</th> \
+                   <th class = table-borders>PMID</th>']
         for mirna,target,expe,st,pd in zip(mirna_name, target_name, experiment, support_type, pmid):
             pd_list = pd.split(',')
             pd_str = ''
             for p in pd_list:
                 pd_str += '<a href=' + publink + p + ' target="_blank">' + p + '</a>;\n'
-            row_list.append('<td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td>'
-                            % (mirna, target, expe, st, pd_str[:-2]))
+            row_list.append('<td class = table-borders>%s</td><td class = table-borders>%s</td> \
+                             <td class = table-borders>%s</td><td class = table-borders>%s</td> \
+                             <td class = table-borders>%s</td>' % (mirna, target, expe, st, pd_str[:-2]))
         html_str += '\n'.join(['  <tr>%s</tr>\n' % row_str
                                for row_str in row_list])
         html_str += '</table>'
@@ -2850,17 +2853,19 @@ class TFTA_Module(Bioagent):
         """
         publink = "https://www.ncbi.nlm.nih.gov/pubmed/"
         #head_str = '<head><style>table,th,td{border:1px solid black;padding:8px}</style></head>'
-        #html_str = head_str + '<h4>Supporting information from TFTA: %s</h4>\n' % nl_question
-        html_str = '<h4>Supporting information from TFTA: %s</h4>\n' % nl_question
-        html_str += '<table style="width:100%">\n'
-        row_list = ['<th>TF</th><th>Target</th><th>Source</th>']
+        head_str = '<head><style>.table-borders{border:1px solid black;padding:8px;}</style></head>'
+        html_str = head_str + '<h4>Supporting information from TFTA: %s</h4>\n' % nl_question
+        #html_str = '<h4>Supporting information from TFTA: %s</h4>\n' % nl_question
+        html_str += '<table class = table-borders>\n'
+        row_list = ['<th class = table-borders>TF</th><th class = table-borders>Target</th> \
+                    <th class = table-borders>Source</th>']
         for tf,target,db in zip(tf_name, target_name, dbname):
             db_list = db.split(',')
             db_str = ''
             for d in db_list:
                 db_str += '<a href=' + publink + dbname_pmid_map[d] + ' target="_blank">' + d + '</a>,'
-            row_list.append('<td>%s</td><td>%s</td><td>%s</td>'
-                            % (tf, target, db_str[:-1]))
+            row_list.append('<td class = table-borders>%s</td><td class = table-borders>%s</td> \
+                             <td class = table-borders>%s</td>' % (tf, target, db_str[:-1]))
         html_str += '\n'.join(['  <tr>%s</tr>\n' % row_str
                                for row_str in row_list])
         html_str += '</table>'
@@ -2969,7 +2974,6 @@ class TFTA_Module(Bioagent):
         return self.tell(content)
         
     
-        
 def _get_target(target_str):
     agent = None
     ont1 = ['ONT::PROTEIN', 'ONT::GENE-PROTEIN', 'ONT::GENE']
