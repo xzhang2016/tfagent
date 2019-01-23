@@ -15,7 +15,7 @@ logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
 logger = logging.getLogger('TFTA')
 
 if has_config('INDRA_DB_REST_URL') and has_config('INDRA_DB_REST_API_KEY'):
-    from indra.sources.indra_db_rest.client_api import get_statements
+    from indra.sources.indra_db_rest import get_statements
     from indra.tools.assemble_corpus import filter_evidence_source
     CAN_CHECK_STATEMENTS = True
 else:
