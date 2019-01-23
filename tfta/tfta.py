@@ -1823,7 +1823,7 @@ class TFTA:
         statements = []
         try:
             for stype in stmt_types:
-                stmts = get_statements(subject=subj, object=obj, stmt_type=stype)
+                stmts = get_statements(subject=subj, object=obj, stmt_type=stype, simple_response=True)
                 if len(stmts):
                     stmts_filtered = filter_evidence_source(stmts, ['reach'], policy='one')
                     if len(stmts_filtered):
