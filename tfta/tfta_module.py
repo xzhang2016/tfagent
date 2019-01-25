@@ -1678,7 +1678,7 @@ class TFTA_Module(Bioagent):
         """
         #assume the miRNA is also in EKB XML format
         miRNA_arg = content.gets('miRNA')
-        miRNA_name = _get_miRNA_name(miRNA_arg)
+        miRNA_name = list(_get_miRNA_name(miRNA_arg).keys())
         if not len(miRNA_name):
             reply = make_failure('NO_MIRNA_NAME')
             return reply       
@@ -1711,7 +1711,7 @@ class TFTA_Module(Bioagent):
         Respond to IS-MIRNA-TARGET request
         """
         miRNA_arg = content.gets('miRNA')
-        miRNA_name = _get_miRNA_name(miRNA_arg)
+        miRNA_name = list(_get_miRNA_name(miRNA_arg).keys())
         if not len(miRNA_name):
             reply = make_failure('NO_MIRNA_NAME')
             return reply       
@@ -1833,11 +1833,11 @@ class TFTA_Module(Bioagent):
         #check if it's necessary for user clarification
         if len(miRNA_mis):
             try:
-                clari_mirna = self.tfta.get_similar_miRNAs(miRNA_mis)
+                clari_mirna = self.tfta.get_similar_miRNAs(list(miRNA_mis.keys())[0])
                 c_str = ''
                 for c in clari_mirna:
                     c_str += '(:name %s) ' % c
-                c_str = '(resolve :term ' + miRNA_mis + ' :as (' + c_str + '))'
+                c_str = '(resolve :term ' + list(miRNA_mis.values())[0] + ' :as (' + c_str + '))'
                 reply = make_failure_clarification('MIRNA_NOT_FOUND', c_str)
                 return reply
             except miRNANotFoundException:
@@ -1861,7 +1861,7 @@ class TFTA_Module(Bioagent):
         """
         #assume the miRNA is also in EKB XML format
         miRNA_arg = content.gets('miRNA')
-        miRNA_name = _get_miRNA_name(miRNA_arg)
+        miRNA_name = list(_get_miRNA_name(miRNA_arg).keys())
         if not len(miRNA_name):
             reply = make_failure('NO_MIRNA_NAME')
             return reply      
@@ -1879,10 +1879,7 @@ class TFTA_Module(Bioagent):
         try:
             experiments,supportType,pmlink = \
                 self.tfta.find_evidence_miRNA_target(miRNA_name[0], target_name)
-        except miRNANotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :evidence NIL)')
-            return reply
-        except TargetNotFoundException:
+        except Exception as e:
             reply = KQMLList.from_string('(SUCCESS :evidence NIL)')
             return reply            
         if len(experiments):
@@ -2139,11 +2136,11 @@ class TFTA_Module(Bioagent):
             #check if it's necessary for user clarification
             if len(miRNA_mis):
                 try:
-                    clari_mirna = self.tfta.get_similar_miRNAs(miRNA_mis)
+                    clari_mirna = self.tfta.get_similar_miRNAs(list(miRNA_mis.keys())[0])
                     c_str = ''
                     for c in clari_mirna:
                         c_str += '(:name %s) ' % c
-                    c_str = '(resolve :term ' + miRNA_mis + ' :as (' + c_str + '))'
+                    c_str = '(resolve :term ' + list(miRNA_mis.values())[0] + ' :as (' + c_str + '))'
                     reply = make_failure_clarification('MIRNA_NOT_FOUND', c_str)
                     return reply
                 except miRNANotFoundException:
@@ -2795,7 +2792,7 @@ class TFTA_Module(Bioagent):
         content.sets('html', html_str)
         return self.tell(content)
         
-    def send_background_support_mirna(self, mirna_name, target_name, experiment, support_type, pmid):
+    def send_background_support_mirna(self, mirna_name, target_name, experiment, support_type, pmid, find_mirna=False, find_target=False):
         """
         Send the evidence from the MiRNA-target database
         mirna_name: list or str
@@ -2811,7 +2808,7 @@ class TFTA_Module(Bioagent):
                 suptype_str = ';\n'.join(support_type[target_name])
                 pmid_str = ','.join(pmid[target_name])
                 self.send_table_to_provenance_mirna([mirna_name], [target_name], [exp_str], [suptype_str], [pmid_str], nl)
-            elif all([type(mirna_name).__name__ == 'list', type(target_name).__name__ == 'str']):
+            elif find_mirna:
                 nl = 'what miRNAs regulate ' + target_name + '?'
                 target_list = []
                 exp_list = []
@@ -2823,7 +2820,7 @@ class TFTA_Module(Bioagent):
                     sup_list.append(';\n'.join(support_type[mirna_name[i]]))
                     pmid_list.append(','.join(pmid[mirna_name[i]]))
                 self.send_table_to_provenance_mirna(mirna_name, target_list, exp_list, sup_list, pmid_list, nl)
-            elif all([type(mirna_name).__name__ == 'str', type(target_name).__name__ == 'list']):
+            elif find_target:
                 nl = 'what genes are regulated by ' + mirna_name + '?'
                 mirna_list = []
                 exp_list = []
@@ -3005,9 +3002,12 @@ def _get_family_name(target_arg):
             agent.append(tp._get_agent_by_id(term_id, None))
     return agent
     
-def _get_term_id(target_arg):
+def _get_term_id(target_arg, otype=1):
     term_id = []
-    ont1 = ['ONT::PROTEIN-FAMILY', 'ONT::GENE-FAMILY']
+    if otype == 1:
+        ont1 = ['ONT::PROTEIN-FAMILY', 'ONT::GENE-FAMILY']
+    else:
+        ont1 = ['ONT::RNA', 'ONT::GENE']
     tp = TripsProcessor(target_arg)
     for term in tp.tree.findall('TERM'):
         if term.find('type').text in ont1:
@@ -3082,7 +3082,7 @@ def _get_pathway_name(target_str):
     return pathway_name
 
 def _get_miRNA_name(xml_string):
-    miRNA_names = []
+    miRNA_names = dict()
     try:
         root = ET.fromstring(xml_string)
     except Exception as e:
@@ -3095,8 +3095,7 @@ def _get_miRNA_name(xml_string):
                 if s is not None:
                     s1 = s.text
                     s1 = rtrim_hyphen(s1)
-                    miRNA_names.append(s1.upper())
-        miRNA_names = list(set(miRNA_names))
+                    miRNA_names[s1.upper()] = term.attrib['id']
     except Exception as e:
         return miRNA_names
     return miRNA_names
