@@ -1340,13 +1340,14 @@ class TFTA:
                 miRNAs.sort()
         return miRNAs
         
-    def find_target_miRNA(self, miRNA_names):
+    def find_target_miRNA(self, miRNA_name_dict):
         """
         Return Targets regulated by the given miRNAs
         example: What genes does miR-20b-5p target?
         """
-        miRNA_mis = ''
+        miRNA_mis = dict()
         target_names = []
+        miRNA_names = list(miRNA_name_dict.keys())
         if self.tfdb is not None:
             t = (miRNA_names[0],)
             res = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo "
@@ -1355,7 +1356,7 @@ class TFTA:
                 target_names = [r[0] for r in res]
             else:
                 #raise miRNANotFoundException
-                miRNA_mis = miRNA_names[0]
+                miRNA_mis[miRNA_names[0]] = miRNA_name_dict[miRNA_names[0]]
                 return target_names,miRNA_mis 
             if len(miRNA_names)>1:
                 for i in range(1, len(miRNA_names)):
@@ -1366,18 +1367,19 @@ class TFTA:
                         target_names = list(set(target_names) & set([r[0] for r in res]))
                     else:
                         #raise miRNANotFoundException
-                        miRNA_mis = miRNA_names[i]
+                        miRNA_mis = miRNA_name_dict[miRNA_names[i]]
                         return target_names,miRNA_mis
             if len(target_names):
                 target_names.sort()       
         return target_names,miRNA_mis
         
-    def find_target_miRNA_strength(self, miRNA_names, evidence_strength):
+    def find_target_miRNA_strength(self, miRNA_name_dict, evidence_strength):
         """
         Return Targets regulated by the given miRNAs
         example: What genes does miR-20b-5p target?
         """
         target_names = []
+        miRNA_names = list(miRNA_name_dict.keys())
         if self.tfdb is not None:
             if evidence_strength == 'strong':
                 t = (miRNA_names[0], '%Weak%')
@@ -1447,12 +1449,14 @@ class TFTA:
         
     def find_evidence_miRNA_target(self, miRNA_name, target_name):
         """
+        miRNA_name: str
         Return experimental evidence that the given miRNA regulates the target
         example: What is the evidence that miR-148a-3p targets DNMT1?
         """
         experiments = []
         support_types = []
         pmid_link = []
+        #miRNA_name = list(miRNA_name_dict.keys())
         if self.tfdb is not None:
             t = (miRNA_name, target_name)
             res = self.tfdb.execute("SELECT * FROM mirnaInfo "
@@ -1461,20 +1465,6 @@ class TFTA:
                 experiments = [r[3] for r in res]
                 support_types = [r[4] for r in res]
                 pmid_link = [pmid_sublink+str(r[5]) for r in res]
-            else:
-                #check if miRNA_name in the database
-                t = (miRNA_name, )
-                res = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo "
-                                        "WHERE mirna LIKE ? ", t).fetchall()
-                if not res:
-                    raise miRNANotFoundException
-                else:
-                    #check if target_name in the database
-                    t = (target_name,)
-                    res = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo "
-                                            "WHERE target = ? ", t).fetchall()
-                    if not res:
-                        raise TargetNotFoundException
         return experiments, support_types, pmid_link
 
     def find_miRNA_count_gene(self, gene_names):
@@ -1518,7 +1508,7 @@ class TFTA:
                 raise miRNANotFoundException
         return mirna,counts,targets
                          
-    def find_gene_count_miRNA(self, miRNA_names):
+    def find_gene_count_miRNA(self, miRNA_name_dict):
         """
         For a given miRNA list, find the genes regulated by one of the miRNAs, and the
         frequency of the genes
@@ -1528,6 +1518,7 @@ class TFTA:
         counts = []
         temp = []
         mrna = defaultdict(list)
+        miRNA_names = list(miRNA_name_dict.keys())
         if self.tfdb is not None:
             for mir in miRNA_names:
                 t = (mir,)
