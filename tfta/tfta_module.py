@@ -428,18 +428,13 @@ class TFTA_Module(Bioagent):
             is_target,dbname = self.tfta.Is_tf_target(tf_name, target_name)
             #provenance support
             self.send_background_support_db(tf_name, target_name, dbname)
-        except TFNotFoundException:
+        except Exception as e:
             #provenance support
             self.send_background_support_db(tf_name, target_name, '')
             if not literature:
                 reply = KQMLList.from_string('(SUCCESS :result FALSE :db FALSE :literature FALSE)')
                 return reply
-        except TargetNotFoundException:
-            #provenance support
-            self.send_background_support_db(tf_name, target_name, '')
-            if not literature:
-                reply = KQMLList.from_string('(SUCCESS :result FALSE :db FALSE :literature FALSE)')
-                return reply
+        
         result = is_target or literature
         reply = KQMLList('SUCCESS')
         is_target_str = 'TRUE' if result else 'FALSE'
@@ -546,10 +541,7 @@ class TFTA_Module(Bioagent):
             return reply
         try:
             is_target = self.tfta.Is_tf_target_tissue(tf_name, target_name, tissue_name)
-        except TFNotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :result FALSE)')
-            return reply
-        except TargetNotFoundException:
+        except Exception as e:
             reply = KQMLList.from_string('(SUCCESS :result FALSE)')
             return reply
         reply = KQMLList('SUCCESS')
