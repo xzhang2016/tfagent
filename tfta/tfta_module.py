@@ -57,6 +57,8 @@ class TFTA_Module(Bioagent):
     def __init__(self, **kwargs):
         #Instantiate a singleton TFTA agent
         self.tfta = TFTA()
+        self.stmts_indra = dict()
+    
         # Call the constructor of Bioagent
         super(TFTA_Module, self).__init__(**kwargs)
         
@@ -418,7 +420,13 @@ class TFTA_Module(Bioagent):
             reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         #check if it exists in literature
-        stmts = self.tfta.find_statement_indraDB(subj=tf_name, obj=target_name, stmt_types=['RegulateAmount'])
+        term_tuple = (tf_name, target_name, 'REGULATE')
+        if term_tuple not in self.stmts_indra:
+            stmts,success = self.tfta.find_statement_indraDB(subj=tf_name, obj=target_name, stmt_types=['RegulateAmount'])
+            if success:
+                self.stmts_indra[term_tuple] = stmts
+        else:
+            stmts = self.stmts_indra[term_tuple]
         #provenance support
         self.send_background_support(stmts, tf_name, target_name, 'regulate')
         if len(stmts):
@@ -479,7 +487,13 @@ class TFTA_Module(Bioagent):
         except KeyError as e:
             reply = make_failure('INVALID_KEYWORD')
             return reply
-        stmts = self.tfta.find_statement_indraDB(subj=tf_name, obj=target_name, stmt_types=stmt_types)
+        term_tuple = (tf_name, target_name, keyword_name)
+        if term_tuple not in self.stmts_indra:
+            stmts,success = self.tfta.find_statement_indraDB(subj=tf_name, obj=target_name, stmt_types=stmt_types)
+            if success:
+                self.stmts_indra[term_tuple] = stmts
+        else:
+            stmts = self.stmts_indra[term_tuple]
         #provenance support
         self.send_background_support(stmts, tf_name, target_name, keyword_name)
         if len(stmts):
@@ -2382,7 +2396,13 @@ class TFTA_Module(Bioagent):
             return reply
         evi_message = ''
         db_message = ''
-        stmts = self.tfta.find_statement_indraDB(subj=regulator_name, obj=target_name, stmt_types=stmt_types)
+        term_tuple = (regulator_name, target_name, keyword_name)
+        if term_tuple not in self.stmts_indra:
+            stmts,success = self.tfta.find_statement_indraDB(subj=regulator_name, obj=target_name, stmt_types=stmt_types)
+            if success:
+                self.stmts_indra[term_tuple] = stmts
+        else:
+            stmts = self.stmts_indra[term_tuple]
         self.send_background_support(stmts, regulator_name, target_name, keyword_name)
         if len(stmts):
             evidences = self.tfta.find_evidence_indra(stmts)
@@ -2643,7 +2663,13 @@ class TFTA_Module(Bioagent):
         mirnas = defaultdict(set)
         genes = defaultdict(set)
         for target in target_names:
-            stmts = self.tfta.find_statement_indraDB(obj=target, stmt_types=stmt_types)
+            term_tuple = (target, 'target', keyword_name)
+            if term_tuple not in self.stmts_indra:
+                stmts,success = self.tfta.find_statement_indraDB(obj=target, stmt_types=stmt_types)
+                if success:
+                    self.stmts_indra[term_tuple] = stmts
+            else:
+                stmts = self.stmts_indra[term_tuple]
             #provenance support
             self.send_background_support(stmts, 'what', target, keyword_name)
             if len(stmts):
@@ -2681,7 +2707,7 @@ class TFTA_Module(Bioagent):
         mirnas = defaultdict(set)
         genes = defaultdict(set)
         for regulator in regulator_names:
-            stmts = self.tfta.find_statement_indraDB(subj=regulator, stmt_types=stmt_types)
+            stmts,success = self.tfta.find_statement_indraDB(subj=regulator, stmt_types=stmt_types)
             #provenance support
             self.send_background_support(stmts, regulator, 'what', keyword_name)
             if len(stmts):
@@ -2695,6 +2721,32 @@ class TFTA_Module(Bioagent):
             lit_messages += wrap_message(':targets', fgenes)
         return lit_messages
         
+    def get_target_indra1(self, regulator_names, stmt_types, keyword_name):
+        """
+        wrap message for multiple regulators case
+        regulator_names: list
+        stmt_types: indra statement type
+        keyword_name: str
+        """
+        lit_messages = ''
+        stmts_d = defaultdict(list)
+        regulator_str = ', '.join(regulator_names[:-1]) + ' and ' + regulator_names[-1]
+        for regulator in regulator_names:
+            stmts,success = self.tfta.find_statement_indraDB(subj=regulator, stmt_types=stmt_types)
+            if len(stmts):
+                stmts_d[regulator] = stmts
+            else:
+                self.send_background_support([], regulator_str, 'what', keyword_name)
+                return lit_messages
+        genes, stmt_f = self.tfta.find_target_indra_regulators(stmts_d)        
+        
+        if len(genes):
+            lit_messages += wrap_message(':targets', genes)
+        #provenance support
+        self.send_background_support(stmt_f, regulator_str, 'what', keyword_name)
+        
+        return lit_messages
+        
     def get_target_indra(self, regulator_names, stmt_types, keyword_name):
         """
         wrap message for multiple regulators case
@@ -2706,7 +2758,13 @@ class TFTA_Module(Bioagent):
         stmts_d = defaultdict(list)
         regulator_str = ', '.join(regulator_names[:-1]) + ' and ' + regulator_names[-1]
         for regulator in regulator_names:
-            stmts = self.tfta.find_statement_indraDB(subj=regulator, stmt_types=stmt_types)
+            term_tuple = (regulator,'regulator',keyword_name)
+            if term_tuple not in self.stmts_indra:
+                stmts,success = self.tfta.find_statement_indraDB(subj=regulator, stmt_types=stmt_types)
+                if success:
+                    self.stmts_indra[term_tuple] = stmts
+            else:
+                stmts = self.stmts_indra[term_tuple]
             if len(stmts):
                 stmts_d[regulator] = stmts
             else:
@@ -2735,7 +2793,13 @@ class TFTA_Module(Bioagent):
         else:
             target_str = target_names[0]
         for target in target_names:
-            stmts = self.tfta.find_statement_indraDB(obj=target, stmt_types=stmt_types)
+            term_tuple = (target, 'target', keyword_name)
+            if term_tuple not in self.stmts_indra:
+                stmts,success = self.tfta.find_statement_indraDB(obj=target, stmt_types=stmt_types)
+                if success:
+                    self.stmts_indra[term_tuple] = stmts
+            else:
+                stmts = self.stmts_indra[term_tuple]
             if len(stmts):
                 stmts_d[target] = stmts
             else:
