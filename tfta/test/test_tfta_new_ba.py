@@ -48,8 +48,6 @@ class TestIsRegulation11(_IntegrationTest):
         assert output.head() == 'FAILURE', output
         assert len(output.get('reason')) == 1, output
         print(type(output.get('reason')))
-        assert output.get('reason').to_string() == \
-        "((:for V35246 :error FAMILY_NAME_NOT_ALLOWED))", output.get('reason')
 
 #Does stat3 regulate the MEK gene?
 class TestIsRegulation12(_IntegrationTest):
@@ -458,8 +456,8 @@ class TestFindTf14(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
-        assert output.get('reason').to_string() == \
-        '((:for V106700 :error FAMILY_NAME_NOT_ALLOWED))', output
+        #assert output.get('reason').to_string() == \
+        #'((:for V106700 :error FAMILY_NAME_NOT_ALLOWED))', output
 
 #check keyword parameter
 #Which transcription factors upregulate cfos?
@@ -1217,7 +1215,7 @@ class TestFindGenePathway11(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('pathways'))=", str(len(output.get('pathways'))))
-        assert len(output.get('pathways')) == 2, output
+        assert len(output.get('pathways')) == 3, output
         
 #What genes are in the immune system pathway?
 class TestFindGenePathway12(_IntegrationTest):
@@ -1961,7 +1959,8 @@ class TestFindTissue1(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert len(output.get('tissue')) == 1, output
+        print("len(output.get('tissue'))=", str(len(output.get('tissue'))))
+        assert len(output.get('tissue')) == 8, output
 
 #What tissues is MEK expressed in?
 class TestFindTissue11(_IntegrationTest):
@@ -2028,7 +2027,7 @@ class TestFindTissue14(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('tissue'))=", str(len(output.get('tissue'))))
-        assert len(output.get('tissue')) == 2, output
+        assert len(output.get('tissue')) == 7, output
 
 ####################################################################################
 #IS-GENE-ONTO
@@ -2139,8 +2138,9 @@ class TestIsGeneOnto6(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'FAILURE', output
-        assert output.get('reason').to_string() == \
-        '((:for V35246 :error FAMILY_NAME_NOT_ALLOWED))', output
+        assert len(output.get('reason')) == 1, output.get('reason')
+        #assert output.get('reason').to_string() == \
+        #'((:for V35246 :error FAMILY_NAME_NOT_ALLOWED))', output
         
 #################################################################################
 #TEST FIND-GENE-ONTO
@@ -3077,7 +3077,7 @@ class TestFindGeneTissue1(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('genes'))=", len(output.get('genes')))
-        assert len(output.get('genes')) == 317, output
+        assert len(output.get('genes')) == 1929, output
         
 #among stat3,srf, kras, and hras, what genes are expressed in liver? 
 class TestFindGeneTissue11(_IntegrationTest):
@@ -3096,7 +3096,7 @@ class TestFindGeneTissue11(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('genes'))=", len(output.get('genes')))
-        assert len(output.get('genes')) == 3, output
+        assert len(output.get('genes')) == 1, output
         
 #what genes are exclusively expressed in liver? 
 class TestFindGeneTissue12(_IntegrationTest):
@@ -3116,7 +3116,7 @@ class TestFindGeneTissue12(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('genes'))=", len(output.get('genes')))
-        assert len(output.get('genes')) == 142, output
+        assert len(output.get('genes')) == 31, output
         
 #what genes are exclusively expressed in brain? 
 class TestFindGeneTissue13(_IntegrationTest):
@@ -3136,7 +3136,7 @@ class TestFindGeneTissue13(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('genes'))=", len(output.get('genes')))
-        assert len(output.get('genes')) == 172, output
+        assert len(output.get('genes')) == 44, output
 
 ########################################################################
 #IS-TISSUE-GENE
@@ -3157,7 +3157,7 @@ class TestIsTissueGene1(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
-        assert output.get('result') == 'FALSE', output
+        assert output.get('result') == 'TRUE', output
         
 ###Is kras expressed in liver? 
 class TestIsTissueGene2(_IntegrationTest):
@@ -3402,7 +3402,17 @@ def get_family_name(target_arg):
     for ag in agent:
         targets.append(ag.name)
     print('family_name = ' + ','.join(targets))
-        
+
+def get_term_id(target_arg):
+    term_id = []
+    ont1 = ['ONT::PROTEIN-FAMILY', 'ONT::GENE-FAMILY']
+    tp = TripsProcessor(target_arg)
+    for term in tp.tree.findall('TERM'):
+        if term.find('type').text in ont1:
+            term_id.append(term.attrib['id'])
+    print('term_id = ' + ','.join(term_id))
+    return ','.join(term_id)
+    
 ############################################
 #TEST-FUNCTION
 class TestGetFamilyName(_IntegrationTest):
@@ -3446,7 +3456,7 @@ def test_map_exclusive_tissue_gene():
     tfta = TFTA()
     gene_exp_exclusive = tfta.map_exclusive_tissue_gene()
     print('len(gene_exp_exclusive)=', len(gene_exp_exclusive))
-    assert(len(gene_exp_exclusive) == 30)
+    assert(len(gene_exp_exclusive) == 26)
 
 
 if __name__ == '__main__':
