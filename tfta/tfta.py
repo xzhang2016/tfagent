@@ -1803,8 +1803,8 @@ class TFTA:
                         statements += stmts_filtered
         except Exception as e:
             #print(e)
-            return statements
-        return statements
+            return statements,False
+        return statements,True
             
     def find_regulator_indra(self, stmts):
         """
