@@ -80,7 +80,7 @@ def _get_hgnc_genes():
     
 hgnc_genes_set = _get_hgnc_genes()
 
-
+EXP_THR = 1.5
 
 class TFTA:
     #transcription factor list, will set when it's first 
@@ -107,22 +107,15 @@ class TFTA:
         """
         Return True if the tf regulates the target, and False if not
         """
-        dbname = []
+        dbname = ''
         if self.tfdb is not None:
             #check if target_name in the database
-            t = (target_name,)
-            res = self.tfdb.execute("SELECT DISTINCT TF FROM CombinedDB WHERE Target = ? ", t).fetchall()
-            if not res:
-                raise TargetNotFoundException
-            else:
-                t = (tf_name,)
-                res = self.tfdb.execute("SELECT DISTINCT Target, dbnames FROM CombinedDB WHERE TF = ? ", t).fetchall()
-                if not res:
-                    raise TFNotFoundException
-                for r in res:
-                    if r[0].upper() == target_name.upper():
-                        dbname = r[1]
-                        return True,dbname
+            t = (target_name,tf_name)
+            res = self.tfdb.execute("SELECT DISTINCT dbnames FROM CombinedDB WHERE Target = ? "
+                                    "AND TF = ?", t).fetchone()
+            if res:
+                dbname = res['dbnames']
+                return True,dbname
         return False,dbname
         
     def Is_gene_onto(self, go_name, gene_name):
@@ -190,19 +183,7 @@ class TFTA:
                                     "WHERE TF = ? AND Target = ? AND Tissue LIKE ? ", t).fetchall()
             if res:
                 return True
-            else:
-                #check if tf_name in the database
-                t = (tf_name,)
-                res = self.tfdb.execute("SELECT DISTINCT Target FROM Target2TF2Tissue "
-                                    "WHERE TF = ? ", t).fetchall()
-                if not res:
-                    raise TFNotFoundException  
-                #check if target_name in database
-                t = (target_name,)
-                res = self.tfdb.execute("SELECT DISTINCT TF FROM Target2TF2Tissue "
-                                    "WHERE Target = ? ", t).fetchall()
-                if not res:
-                    raise TargetNotFoundException
+            
         return False
 
     def find_tfs(self,target_names):
@@ -1626,9 +1607,9 @@ class TFTA:
         """
         tissue_names = []
         if self.tfdb is not None:
-            t = (gene_name,)
+            t = (gene_name, EXP_THR)
             res = self.tfdb.execute("SELECT DISTINCT tissue FROM geneTissue "
-                                    "WHERE genesymbol = ? AND enrichment > 5 ", t).fetchall()
+                                    "WHERE genesymbol = ? AND enrichment > ? ", t).fetchall()
             if res:
                 tissue_names = [r[0] for r in res]
             else:
@@ -1698,9 +1679,9 @@ class TFTA:
         gene_names = []
         if self.tfdb is not None:
             regstr = '%' + tissue_name + '%'
-            t = (regstr,)
+            t = (regstr, EXP_THR)
             res = self.tfdb.execute("SELECT DISTINCT genesymbol FROM geneTissue "
-                                    "WHERE tissue LIKE ? AND enrichment > 5 ", t).fetchall()
+                                    "WHERE tissue LIKE ? AND enrichment > ? ", t).fetchall()
             if res:
                 gene_names = [r[0] for r in res]
             else:
@@ -1729,10 +1710,10 @@ class TFTA:
         For a given gene and a tissue, return if this gene is expressed in this tissue
         """
         if self.tfdb is not None:
-            t = (tissue_name, gene_name)
+            t = (tissue_name, gene_name, EXP_THR)
             res = self.tfdb.execute("SELECT DISTINCT genesymbol FROM geneTissue "
                                     "WHERE tissue LIKE ? AND genesymbol = ? "
-                                    "AND enrichment > 5 ", t).fetchall()
+                                    "AND enrichment > ? ", t).fetchall()
             if res:
                 return True
             else:
@@ -1743,9 +1724,9 @@ class TFTA:
         For a given gene and a tissue, return if this gene is exclusively expressed in this tissue
         """
         if self.tfdb is not None:
-            t = (gene_name,)
+            t = (gene_name, EXP_THR)
             res = self.tfdb.execute("SELECT DISTINCT genesymbol, tissue FROM geneTissue "
-                                    "WHERE genesymbol = ? AND enrichment > 5 ", t).fetchall()
+                                    "WHERE genesymbol = ? AND enrichment > ? ", t).fetchall()
             if res:
                 tissues = set([r[1] for r in res])
                 if len(tissues) == 1 and tissue_name in tissues:
@@ -1762,15 +1743,16 @@ class TFTA:
         gene_exp_all = defaultdict(set)
         gene_exp_exclusive = defaultdict(set)
         if self.tfdb is not None:
+            t = (EXP_THR,)
             res = self.tfdb.execute("SELECT DISTINCT tissue FROM geneTissue "
-                                    "WHERE enrichment > 5 ").fetchall()
+                                    "WHERE enrichment > ? ", t).fetchall()
             tissues = [r[0] for r in res]
             #print('tissues: ', ','.join(tissues))
             #print('number of tissues: ', len(tissues))
             for tiss in tissues:
-                t = (tiss,)
+                t = (tiss, EXP_THR)
                 res = self.tfdb.execute("SELECT DISTINCT genesymbol FROM geneTissue "
-                                    "WHERE tissue LIKE ? AND enrichment > 5 ", t).fetchall()
+                                    "WHERE tissue LIKE ? AND enrichment > ? ", t).fetchall()
                 gene_exp_all[tiss] = set([r[0] for r in res])
             #get exclusively expressed genes
             for i in range(len(tissues)):
