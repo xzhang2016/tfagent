@@ -3011,7 +3011,7 @@ class TFTA_Module(Bioagent):
             interaction = stmt_provenance_map[keyword_name.lower()]
             for_what = 'that ' + regulator_name + ' ' + interaction + ' ' + target_name
         if len(stmts):
-            self.send_provenance_for_stmts(stmts, for_what, limit = 100)
+            self.send_provenance_for_stmts(stmts, for_what, limit = 50)
         else:
             cause_txt = 'literature'
             reason_txt = ''
