@@ -2843,7 +2843,7 @@ class TFTA_Module(Bioagent):
                              <td class = table-borders>%s</td>' % (mirna, target, expe, st, pd_str[:-2]))
         html_str += '\n'.join(['  <tr>%s</tr>\n' % row_str
                                for row_str in row_list])
-        html_str += '</table>'
+        html_str += '</table> <hr>'
         content = KQMLList('add-provenance')
         content.sets('html', html_str)
         return self.tell(content)
@@ -2921,7 +2921,7 @@ class TFTA_Module(Bioagent):
                              <td class = table-borders>%s</td>' % (tf, target, db_str[:-1]))
         html_str += '\n'.join(['  <tr>%s</tr>\n' % row_str
                                for row_str in row_list])
-        html_str += '</table>'
+        html_str += '</table> <hr>'
         content = KQMLList('add-provenance')
         content.sets('html', html_str)
         return self.tell(content)
@@ -3006,10 +3006,10 @@ class TFTA_Module(Bioagent):
         logger.info('Sending support for %d statements' % len(stmts))
         if target_name == 'what':
             interaction = stmt_provenance_map_target[keyword_name.lower()]
-            for_what = 'that what genes are ' + interaction + ' by ' + regulator_name
+            for_what = 'what genes are ' + interaction + ' by ' + regulator_name
         else:
             interaction = stmt_provenance_map[keyword_name.lower()]
-            for_what = 'that ' + regulator_name + ' ' + interaction + ' ' + target_name
+            for_what = regulator_name + ' ' + interaction + ' ' + target_name
         if len(stmts):
             self.send_provenance_for_stmts(stmts, for_what, limit = 50)
         else:
