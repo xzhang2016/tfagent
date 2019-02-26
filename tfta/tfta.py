@@ -72,13 +72,15 @@ def _get_mirna_indra():
 mirna_indra_set = _get_mirna_indra()
 
 def _get_hgnc_genes():
-    lines = open(_resource_dir + 'hgnc_official_symbol_20180518.txt', 'rt').readlines()
-    hgnc_genes = set()
+    lines = open(_resource_dir + 'hgnc_symbol_id_20190225.txt', 'rt').readlines()
+    hgnc_genes = dict()
     for line in lines:
-        hgnc_genes.add(line.strip())
+        s = line.strip().split('\t')
+        hgnc_genes[s[1]] = s[0]
     return hgnc_genes
-    
-hgnc_genes_set = _get_hgnc_genes()
+
+hgnc_symbol_id = _get_hgnc_genes()
+hgnc_genes_set = set(hgnc_symbol_id)
 
 EXP_THR = 1.5
 
@@ -1927,7 +1929,9 @@ class TFTA:
                 evidences.add((source_api, pmid, text))
         return evidences
             
-    
+    def get_hgnc_mapping(self):
+        return hgnc_symbol_id
+        
 #test functions
 #if __name__ == "__main__":
     #a = TFTA()
