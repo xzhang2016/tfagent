@@ -1010,7 +1010,7 @@ class TestFindTarget3(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('targets'))=", str(len(output.get('targets'))))
-        assert len(output.get('targets')) == 79, output
+        assert len(output.get('targets')) == 77, output
         
 #What genes does smad2 downregulate?
 class TestFindTarget31(_IntegrationTest):
@@ -1029,7 +1029,7 @@ class TestFindTarget31(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('targets'))=", str(len(output.get('targets'))))
-        assert len(output.get('targets')) == 49, output
+        assert len(output.get('targets')) == 48, output
         
 #What genes does MEK downregulate?
 class TestFindTarget32(_IntegrationTest):
@@ -3440,8 +3440,9 @@ class TestGetFamilyName(_IntegrationTest):
 ##UNIT TEST##############################
 def test_find_tf_indra():
     tfta = TFTA()
-    stmts = tfta.find_statement_indraDB(obj='MYC', stmt_types=['IncreaseAmount'])
+    stmts,ind = tfta.find_statement_indraDB(obj='MYC', stmt_types=['IncreaseAmount'])
     print('len(stmts)=', len(stmts))
+    print('ind=', ind)
     tfs, genes, mirnas, other = tfta.find_regulator_indra(stmts)
     print('len(tfs)=', (len(tfs)))
     print('len(mirnas)=', len(mirnas))
