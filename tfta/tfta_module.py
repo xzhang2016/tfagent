@@ -29,6 +29,7 @@ stmt_type_map = {'increase':['IncreaseAmount'], 'decrease':['DecreaseAmount'],
 dbname_pmid_map = {'TRED':'17202159', 'ITFP':'18713790', 'ENCODE':'22955616',
                  'TRRUST':'26066708', 'Marbach2016':'26950747', 'Neph2012':'22959076'}
 
+
 class TFTA_Module(Bioagent):
     """TFTA module is used to receive and decode messages and send
     responses from and to other agents in the system."""
@@ -58,6 +59,7 @@ class TFTA_Module(Bioagent):
         #Instantiate a singleton TFTA agent
         self.tfta = TFTA()
         self.stmts_indra = dict()
+        self.hgnc_info = dict()
     
         # Call the constructor of Bioagent
         super(TFTA_Module, self).__init__(**kwargs)
@@ -2325,7 +2327,7 @@ class TFTA_Module(Bioagent):
         else:
             tf_names = []
         if len(tf_names):
-            tf_messages = wrap_message(':tf-db', tf_names)
+            tf_messages = self.wrap_message(':tf-db', tf_names)
             messages = _combine_messages([tf_messages, kin_messages, lit_messages])
             reply = KQMLList.from_string(
                 '(SUCCESS :regulators (' + messages + '))')
@@ -2686,13 +2688,13 @@ class TFTA_Module(Bioagent):
                 fothers = fothers.intersection(others[target_names[i]])
                 fgenes = fgenes.intersection(genes[target_names[i]])
         if len(ftfs):
-            lit_messages += wrap_message(':tf-literature', ftfs)
+            lit_messages += self.wrap_message(':tf-literature', ftfs)
         if len(fgenes):
-            lit_messages += wrap_message(':gene-literature', fgenes)
+            lit_messages += self.wrap_message(':gene-literature', fgenes)
         if len(fmirnas):
-            lit_messages += wrap_message(':miRNA-literature', fmirnas)
+            lit_messages += self.wrap_message(':miRNA-literature', fmirnas, hgnc_id=False)
         if len(fothers):
-            lit_messages += wrap_message(':other-literature', fothers)
+            lit_messages += self.wrap_message(':other-literature', fothers, hgnc_id=False)
         return lit_messages
         
     def get_target_indra0(self, regulator_names, stmt_types, keyword_name):
@@ -2718,7 +2720,7 @@ class TFTA_Module(Bioagent):
             for i in range(1, len(regulator_names)):
                 fgenes = fgenes.intersection(genes[regulator_names[i]])
         if len(fgenes):
-            lit_messages += wrap_message(':targets', fgenes)
+            lit_messages += self.wrap_message(':targets', fgenes)
         return lit_messages
         
     def get_target_indra1(self, regulator_names, stmt_types, keyword_name):
@@ -2741,7 +2743,7 @@ class TFTA_Module(Bioagent):
         genes, stmt_f = self.tfta.find_target_indra_regulators(stmts_d)        
         
         if len(genes):
-            lit_messages += wrap_message(':targets', genes)
+            lit_messages += self.wrap_message(':targets', genes)
         #provenance support
         self.send_background_support(stmt_f, regulator_str, 'what', keyword_name)
         
@@ -2773,7 +2775,7 @@ class TFTA_Module(Bioagent):
         genes, stmt_f = self.tfta.find_target_indra_regulators(stmts_d)        
         
         if len(genes):
-            lit_messages += wrap_message(':targets', genes)
+            lit_messages += self.wrap_message(':targets', genes)
         #provenance support
         self.send_background_support(stmt_f, regulator_str, 'what', keyword_name)
         
@@ -2808,7 +2810,7 @@ class TFTA_Module(Bioagent):
         tfs, stmt_f = self.tfta.find_tfs_indra(stmts_d)        
         
         if len(tfs):
-            lit_messages += wrap_message(':tfs', tfs)
+            lit_messages += self.wrap_message(':tfs', tfs)
         #provenance support
         self.send_background_support(stmt_f, target_str, 'what', keyword_name)
         
@@ -2999,7 +3001,7 @@ class TFTA_Module(Bioagent):
             except KinaseNotFoundException:
                 return kin_messages
         if len(kinase_names):
-            kin_messages += wrap_message(':kinase-db', kinase_names)
+            kin_messages += self.wrap_message(':kinase-db', kinase_names)
         return kin_messages
         
     def send_background_support(self, stmts, regulator_name, target_name, keyword_name):
@@ -3025,6 +3027,34 @@ class TFTA_Module(Bioagent):
         content.sets('html', content_fmt.format(statement=stmt,
                                                 cause=for_what, reason=reason))
         return self.tell(content)
+        
+    def wrap_message(self, descr, data, hgnc_id=True):
+        if type(data) is set:
+            data = list(data)
+        if not self.hgnc_info:
+            self.hgnc_info = self.tfta.get_hgnc_mapping()
+        data.sort()  
+        tf_list_str = ''
+        #don't consider strings from literature containing double quote
+        dquote = '"'
+        if hgnc_id:
+            for tf in data:
+                if dquote not in tf:
+                    tf_str = '"' + tf + '"'
+                    try:
+                        id = self.hgnc_info[tf]
+                    except KeyError:
+                        id = None
+                    if id:
+                        tf_list_str += '(:name %s :hgnc_id %s) ' % (tf_str, str(id))
+                    else:
+                        tf_list_str += '(:name %s) ' % tf_str
+        else:
+            for tf in data:
+                if dquote not in tf:
+                    tf_str = '"' + tf + '"'
+                    tf_list_str += '(:name %s) ' % tf_str
+        return descr + ' (' + tf_list_str + ') '
         
     
 def _get_target(target_str):
@@ -3217,18 +3247,6 @@ def cluster_dict_by_value2(d):
         clusters[','.join(val)].append(key)
     return clusters
     
-def wrap_message(descr, data):
-    if type(data) is set:
-        data = list(data)
-    data.sort()  
-    tf_list_str = ''
-    #don't consider strings from literature containing double quote
-    dquote = '"'
-    for tf in data:
-        if dquote not in tf:
-            tf_str = '"' + tf + '"'
-            tf_list_str += '(:name %s) ' % tf_str
-    return descr + ' (' + tf_list_str + ') '
 
 def wrap_evidence_message(descr, evids, limit = 10):
     """
