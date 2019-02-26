@@ -332,11 +332,9 @@ class TFTA_Module(Bioagent):
             reply = make_failure('GO_NOT_FOUND')
             return reply
         if len(results):
-            gene_list_str = ''
-            for res in results:
-                gene_list_str += '(:name %s) ' % res
+            gene_list_str = self.wrap_message(':genes', results)
             reply = KQMLList.from_string(
-                '(SUCCESS :genes (' + gene_list_str + '))')
+                '(SUCCESS ' + gene_list_str + ')')
         else:
             reply = KQMLList.from_string('(SUCCESS :genes NIL)')
         return reply
@@ -385,11 +383,8 @@ class TFTA_Module(Bioagent):
                 reply = make_failure('GO_NOT_FOUND')
                 return reply
             if len(results):
-                gene_list_str = ''
-                for res in results:
-                    gene_list_str += '(:name %s) ' % res
-                reply = KQMLList.from_string(
-                    '(SUCCESS :genes (' + gene_list_str + '))')
+                gene_list_str = self.wrap_message(':genes', results)
+                reply = KQMLList.from_string('(SUCCESS ' + gene_list_str + ')')
             else:
                 reply = KQMLList.from_string('(SUCCESS :genes NIL)')
         else:
@@ -605,11 +600,8 @@ class TFTA_Module(Bioagent):
         if of_targets_names:
             target_names = list(set(of_targets_names) & set(target_names))
         if len(target_names):
-            target_list_str = ''
-            for tg in target_names:
-                target_list_str += '(:name %s ) ' % tg
-            reply = KQMLList.from_string(
-                '(SUCCESS :targets (' + target_list_str + '))')
+            gene_list_str = self.wrap_message(':targets', target_names)
+            reply = KQMLList.from_string('(SUCCESS ' + gene_list_str + ')')
         else:
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
             
@@ -704,11 +696,8 @@ class TFTA_Module(Bioagent):
         if of_targets_names:
             target_names = list(set(of_targets_names) & set(target_names))  
         if len(target_names):
-            target_list_str = ''
-            for tg in target_names:
-                target_list_str += '(:name %s) ' % tg
-            reply = KQMLList.from_string(
-                '(SUCCESS :targets (' + target_list_str + '))')
+            gene_list_str = self.wrap_message(':targets', target_names)
+            reply = KQMLList.from_string('(SUCCESS ' + gene_list_str + ')')
         else:
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
         self.gene_list = target_names
@@ -750,12 +739,9 @@ class TFTA_Module(Bioagent):
         #check if it's a subsequent query
         if of_tfs_names:
             tf_names = list(set(of_tfs_names) & set(tf_names))   
-        if len(tf_names):    
-            tf_list_str = ''
-            for tf in tf_names:
-                tf_list_str += '(:name %s) ' % tf
-            reply = KQMLList.from_string(
-                '(SUCCESS :tfs (' + tf_list_str + '))')
+        if len(tf_names):
+            gene_list_str = self.wrap_message(':tfs', tf_names)
+            reply = KQMLList.from_string('(SUCCESS ' + gene_list_str + ')')
         else:
             reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
         self.gene_list = tf_names
@@ -846,11 +832,8 @@ class TFTA_Module(Bioagent):
         if of_tfs_names:
             tf_names = list(set(of_tfs_names) & set(tf_names))         
         if len(tf_names):
-            tf_list_str = ''
-            for tf in tf_names:
-                tf_list_str += '(:name %s) ' % tf
-            reply = KQMLList.from_string(
-                '(SUCCESS :tfs (' + tf_list_str + '))')
+            gene_list_str = self.wrap_message(':tfs', tf_names)
+            reply = KQMLList.from_string('(SUCCESS ' + gene_list_str + ')')
         else:
             reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
         self.gene_list = tf_names
@@ -1813,11 +1796,8 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
             return reply
         if len(target_names):
-            target_list_str = ''
-            for tg in target_names:
-                target_list_str += '(:name %s ) ' % tg
-            reply = KQMLList.from_string(
-                '(SUCCESS :targets (' + target_list_str + '))')
+            gene_list_str = self.wrap_message(':targets', target_names)
+            reply = KQMLList.from_string('(SUCCESS ' + gene_list_str + ')')
         else:
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
         self.gene_list = target_names  
@@ -1853,11 +1833,8 @@ class TFTA_Module(Bioagent):
                 return reply
         else:
             if len(target_names):
-                target_list_str = ''
-                for tg in target_names:
-                    target_list_str += '(:name %s ) ' % tg
-                reply = KQMLList.from_string(
-                    '(SUCCESS :targets (' + target_list_str + '))')
+                gene_list_str = self.wrap_message(':targets', target_names)
+                reply = KQMLList.from_string('(SUCCESS ' + gene_list_str + ')')
             else:
                 reply = KQMLList.from_string('(SUCCESS :targets NIL)')
         self.gene_list = target_names  
@@ -2070,11 +2047,8 @@ class TFTA_Module(Bioagent):
         except KinaseNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :kinase NIL)')
             return reply
-        kinase_str = ''
-        for kn in kinases:
-            kinase_str += '(:name %s) ' % kn
-        reply = KQMLList.from_string(
-            '(SUCCESS :kinase (' + kinase_str + '))')
+        kinase_str = self.wrap_message(':kinase ', kinases)
+        reply = KQMLList.from_string('(SUCCESS ' + kinase_str + ')')
         return reply
         
     def respond_find_kinase_target_keyword(self, content):
@@ -2105,11 +2079,8 @@ class TFTA_Module(Bioagent):
         except KinaseNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :kinase NIL)')
             return reply
-        kinase_str = ''
-        for kn in kinases:
-            kinase_str += '(:name %s) ' % kn
-        reply = KQMLList.from_string(
-            '(SUCCESS :kinase (' + kinase_str + '))')
+        kinase_str = self.wrap_message(':kinase ', kinases)
+        reply = KQMLList.from_string('(SUCCESS ' + kinase_str + ')')
         return reply
         
     def respond_find_kinase_regulation(self, content):
@@ -2155,11 +2126,8 @@ class TFTA_Module(Bioagent):
                     reply = make_failure('NO_SIMILAR_MIRNA')
                     return reply
             else:
-                tf_list_str = ''
-                for tf in tf_names:
-                    tf_list_str += '(:name %s) ' % tf
-                reply = KQMLList.from_string(
-                    '(SUCCESS :tfs (' + tf_list_str + '))')
+                tf_list_str = self.wrap_message(':tfs ', tf_names)
+                reply = KQMLList.from_string('(SUCCESS ' + tf_list_str + ')')
         except TFNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
             return reply
@@ -2521,12 +2489,8 @@ class TFTA_Module(Bioagent):
             results = gene_list
         if len(results):
             results.sort()
-            gene_str = ''
-            for g in results:
-                g_str = '"' + g + '"'
-                gene_str += '(:name %s) ' % g
-            reply = KQMLList.from_string(
-            '(SUCCESS :genes (' + gene_str + '))')
+            gene_str = self.wrap_message(':genes ', results)
+            reply = KQMLList.from_string('(SUCCESS ' + gene_str + ')')
         else:
             reply = KQMLList.from_string('(SUCCESS :genes NIL)')
         return reply
