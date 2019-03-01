@@ -863,14 +863,7 @@ class TFTA_Module(Bioagent):
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
-        pathway_list_str = ''
-        for pn, dbl in zip(pathwayName, dblink):
-            pnslash = '"' + pn + '"'
-            dbl = '"' + dbl + '"'
-            pathway_list_str += \
-                '(:name %s :dblink %s) ' % (pnslash, dbl)
-        reply = KQMLList.from_string(
-            '(SUCCESS :pathways (' + pathway_list_str + '))')
+        reply = _wrap_pathway_message(pathwayName, dblink)
         return reply
 
     def respond_find_pathway_gene_keyword(self,content):
@@ -908,18 +901,7 @@ class TFTA_Module(Bioagent):
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
-        pathway_list_str = ''
-        for pn, dbl in zip(pathwayName, dblink):
-            if _filter_subword(pn, [keyword_name]):
-                pnslash = '"' + pn +'"'
-                dbl = '"' + dbl +'"'
-                pathway_list_str += \
-                    '(:name %s :dblink %s) ' % (pnslash, dbl)
-        if pathway_list_str:
-            reply = KQMLList.from_string(
-                '(SUCCESS :pathways (' + pathway_list_str + '))')
-        else:
-            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+        reply = _wrap_pathway_message(pathwayName, dblink, keyword=keyword_name)
         return reply
 
     def respond_find_pathway_db_gene(self, content):
@@ -953,14 +935,7 @@ class TFTA_Module(Bioagent):
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
-        pathway_list_str = ''
-        for pn, eid, src, dbl in zip(pathwayName, externalId, source, dblink):
-            pnslash = '"' + pn + '"'
-            dbl = '"' + dbl + '"'
-            pathway_list_str += \
-                '(:name %s :dblink %s) ' % (pnslash, dbl)
-        reply = KQMLList.from_string(
-            '(SUCCESS :pathways (' + pathway_list_str + '))')
+        reply = _wrap_pathway_message(pathwayName, dblink)
         return reply
 
     def respond_find_tf_pathway(self, content):
@@ -1098,18 +1073,7 @@ class TFTA_Module(Bioagent):
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
-        pathway_list_str = ''
-        for pn, dbl in zip(pathwayName,dblink):
-            if _filter_subword(pn, keyword_name):
-                pnslash = '"' + pn +'"'
-                dbl = '"' + dbl +'"'
-                pathway_list_str += \
-                    '(:name %s :dblink %s) ' % (pnslash, dbl)
-        if pathway_list_str:
-            reply = KQMLList.from_string(
-                '(SUCCESS :pathways (' + pathway_list_str + '))')
-        else:
-            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+        reply = _wrap_pathway_message(pathwayName, dblink, keyword=keyword_name)
         return reply
 
     def respond_find_tf_keyword(self, content):
@@ -3250,6 +3214,32 @@ def _wrap_mirna_clarification(miRNA_mis, clari_mirna):
         c_str += '(:name %s) ' % c
     c_str = '(resolve :term ' + list(miRNA_mis.values())[0] + ' :as (' + c_str + '))'
     return c_str
+    
+def _wrap_pathway_message(pathwayName, dblink, keyword=None):
+    pathway_list_str = ''
+    if keyword:
+        if type(keyword).__name__ == 'str':
+            keyword = [keyword]
+        for pn, dbl in zip(pathwayName, dblink):
+            if _filter_subword(pn, keyword):
+                pnslash = '"' + pn +'"'
+                dbl = '"' + dbl +'"'
+                pathway_list_str += '(:name %s :dblink %s) ' % (pnslash, dbl)
+        if pathway_list_str:
+            pathway_list_str = '(' + pathway_list_str + ')'
+            reply = KQMLList('SUCCESS')
+            reply.set('pathways', pathway_list_str)
+        else:
+            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+    else:
+        for pn, dbl in zip(pathwayName, dblink):
+            pnslash = '"' + pn + '"'
+            dbl = '"' + dbl + '"'
+            pathway_list_str += '(:name %s :dblink %s) ' % (pnslash, dbl)
+        pathway_list_str = '(' + pathway_list_str + ')'
+        reply = KQMLList('SUCCESS')
+        reply.set('pathways', pathway_list_str)
+    return reply
     
 def _filter_subword(sentence, pattern_list):
     """
