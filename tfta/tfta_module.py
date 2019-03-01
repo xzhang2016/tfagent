@@ -2382,7 +2382,7 @@ class TFTA_Module(Bioagent):
         if len(stmts):
             evidences = self.tfta.find_evidence_indra(stmts)
             if len(evidences):
-                evi_message = wrap_evidence_message(':literature', evidences)
+                evi_message = _wrap_evidence_message(':literature', evidences)
         if keyword_name.lower() == 'regulate':
             db_names = self.tfta.find_evidence_dbname(regulator_name, target_name)
             if len(db_names):
@@ -3015,7 +3015,7 @@ class TFTA_Module(Bioagent):
                     except KeyError:
                         id = None
                     if id:
-                        tf_list_str += '(:name %s :hgnc_id %s) ' % (tf_str, str(id))
+                        tf_list_str += '(:name %s :hgnc %s) ' % (tf_str, str(id))
                     else:
                         tf_list_str += '(:name %s) ' % tf_str
         else:
@@ -3217,7 +3217,7 @@ def cluster_dict_by_value2(d):
     return clusters
     
 
-def wrap_evidence_message(descr, evids, limit = 10):
+def _wrap_evidence_message(descr, evids, limit = 10):
     """
     descr: descriptor, for example: ':evidence'
     evids: set of tuple(source_api, pmid, text)
