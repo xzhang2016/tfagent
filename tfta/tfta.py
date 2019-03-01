@@ -71,6 +71,7 @@ def _get_mirna_indra():
 
 mirna_indra_set = _get_mirna_indra()
 
+#hgnc official symbol to id mapping
 def _get_hgnc_genes():
     lines = open(_resource_dir + 'hgnc_symbol_id_20190225.txt', 'rt').readlines()
     hgnc_genes = dict()
@@ -80,8 +81,9 @@ def _get_hgnc_genes():
     return hgnc_genes
 
 hgnc_symbol_id = _get_hgnc_genes()
-hgnc_genes_set = set(hgnc_symbol_id)
+hgnc_genes_set = set(hgnc_symbol_id.keys())
 
+#gene expression threshold
 EXP_THR = 1.5
 
 class TFTA:
@@ -1350,7 +1352,7 @@ class TFTA:
                         target_names = list(set(target_names) & set([r[0] for r in res]))
                     else:
                         #raise miRNANotFoundException
-                        miRNA_mis = miRNA_name_dict[miRNA_names[i]]
+                        miRNA_mis[miRNA_names[i]] = miRNA_name_dict[miRNA_names[i]]
                         return target_names,miRNA_mis
             if len(target_names):
                 target_names.sort()       
@@ -1409,7 +1411,8 @@ class TFTA:
     def find_tf_miRNA(self, miRNA_names):
         """
         Return TFs regulated by the given miRNAs
-        example: what transcription factors does miR-124-3p regulate? 
+        example: what transcription factors does miR-124-3p regulate?
+        miRNA_names: dict
         """
         target_names,miRNA_mis = self.find_target_miRNA(miRNA_names)
         tf_names = []
@@ -1890,7 +1893,7 @@ class TFTA:
         
     def find_tfs_indra(self, stmts_d):
         """
-        stmts: dict
+        stmts_d: dict
         return the list of tfs, as well as the filtered statements
         """
         targets = list(stmts_d.keys())
