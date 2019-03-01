@@ -1140,6 +1140,44 @@ class TestFindTargetMirna4(_IntegrationTest):
         print("len(output.get('targets')) = ", len(output.get('targets')))
         assert len(output.get('targets')) == 556, output
 
+#clarification test        
+#What are the genes that have weak evidence of being regulated by mir-128? (subtask: find-target-mirna)
+class TestFindTargetMirna5(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTargetMirna5, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = ekb_kstring_from_text('mir-128')
+        content = KQMLList('FIND-TARGET-MIRNA')
+        content.set('miRNA', mirna)
+        content.set('strength', 'weak')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        print("output.get('reason') = ", output.get('reason'))
+        assert output.get('reason') == 'MIRNA_NOT_FOUND', output
+        assert len(output.get('clarification').get('as')) == 3, output
+        
+#What genes are regulated by miR-200C? (subtask: find-target-mirna)
+class TestFindTargetMirna6(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTargetMirna6, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = ekb_kstring_from_text('miR-200C')
+        content = KQMLList('FIND-TARGET-MIRNA')
+        content.set('miRNA', mirna)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        print("output.get('reason') = ", output.get('targets'))
+        assert output.get('reason') == 'MIRNA_NOT_FOUND', output
+        assert len(output.get('clarification').get('as')) == 2, output
+
 #####################################################################################
 #What genes are most frequently regulated by miR-335-5p, miR-155-5p, miR-145-5p, and miR-20a-5p?
 #(subtask: FIND-GENE-COUNT-MIRNA)
