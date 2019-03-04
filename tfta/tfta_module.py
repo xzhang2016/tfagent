@@ -1032,18 +1032,28 @@ class TFTA_Module(Bioagent):
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
+        #consider an optional parameter for subsequent query
+        of_genes_names = []
+        of_genes_arg = content.get('of-genes')
+        if of_genes_arg:
+            of_genes_data = of_genes_arg.data
+            of_genes_data = of_genes_data.replace(' ', '')
+            of_genes_data = of_genes_data.upper()
+            of_genes_names = of_genes_data.split(',')
         pathway_list_str = ''
-        temp_genes = []
+        #temp_genes = []
         for pid in pathwayId:
             if _filter_subword(pathwayName[pid], pathway_names):
-                temp_genes += genelist[pid]
+                #temp_genes += genelist[pid]
                 gene_list_str = ''
-                for gene in genelist[pid]:
-                    gene_list_str += '(:name %s) ' % gene
-                gene_list_str = '(' + gene_list_str + ')'
-                pnslash = '"' + pathwayName[pid] +'"'
-                pwlink = '"' + plink[pid] + '"'
-                pathway_list_str += '(:name %s :dblink %s :genes %s) ' % (pnslash, pwlink, gene_list_str)
+                genes = set(of_genes_names) & set(genelist[pid])
+                if genes:
+                    for gene in genes:
+                        gene_list_str += '(:name %s) ' % gene
+                    gene_list_str = '(' + gene_list_str + ')'
+                    pnslash = '"' + pathwayName[pid] +'"'
+                    pwlink = '"' + plink[pid] + '"'
+                    pathway_list_str += '(:name %s :dblink %s :genes %s) ' % (pnslash, pwlink, gene_list_str)
         if pathway_list_str:
             reply = KQMLList.from_string(
                         '(SUCCESS :pathways (' + pathway_list_str + '))')
