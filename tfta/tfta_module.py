@@ -1879,8 +1879,8 @@ class TFTA_Module(Bioagent):
             #clarification
             if miRNA_mis:
                 try:
-                    clari_mirna = self.tfta.get_similar_miRNAs2(list(miRNA_mis.keys()))
-                    c_str = _wrap_mirna_clarification2(miRNA_mis, clari_mirna)
+                    clari_mirna = self.tfta.get_similar_miRNAs(list(miRNA_mis.keys())[0])
+                    c_str = _wrap_mirna_clarification(miRNA_mis, clari_mirna)
                     reply = make_failure_clarification('MIRNA_NOT_FOUND', c_str)
                     return reply
                 except miRNANotFoundException:
