@@ -1064,7 +1064,7 @@ class TFTA_Module(Bioagent):
 
     def respond_find_pathway_keyword(self, content):
         """
-        Response content to FIND_PATHWAY_KEYWORD request
+        Response content to FIND-PATHWAY-KEYWORD request
         For a given keyword, reply the pathways involving the keyword
         """
         try:
@@ -1088,7 +1088,7 @@ class TFTA_Module(Bioagent):
 
     def respond_find_tf_keyword(self, content):
         """
-        Response content to FIND_TF_KEYWORD request
+        Response content to FIND-TF-KEYWORD request
         For a given keyword, reply the tfs within the pathways
         involving the keyword
         """
@@ -1873,14 +1873,22 @@ class TFTA_Module(Bioagent):
         if not len(miRNA_names):
             reply = make_failure('NO_MIRNA_NAME')
             return reply
-        try:
-            targets,counts,mrna = self.tfta.find_gene_count_miRNA(miRNA_names)
-        except miRNANotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :targets NIL)')
-            return reply
-        except TargetNotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :targets NIL)')
-            return reply           
+            
+        targets,counts,mrna,miRNA_mis = self.tfta.find_gene_count_miRNA(miRNA_names)
+        if not len(targets):
+            #clarification
+            if miRNA_mis:
+                try:
+                    clari_mirna = self.tfta.get_similar_miRNAs2(list(miRNA_mis.keys()))
+                    c_str = _wrap_mirna_clarification2(miRNA_mis, clari_mirna)
+                    reply = make_failure_clarification('MIRNA_NOT_FOUND', c_str)
+                    return reply
+                except miRNANotFoundException:
+                    reply = make_failure('NO_SIMILAR_MIRNA')
+                    return reply
+            else:
+                reply = KQMLList.from_string('(SUCCESS :targets NIL)')
+                return reply           
         target_str = ''
         for t,ct in zip(targets,counts):
             ms = mrna[t]
@@ -3219,12 +3227,31 @@ def _combine_messages(mess_list):
     return messages
     
 def _wrap_mirna_clarification(miRNA_mis, clari_mirna):
+    """
+    miRNA_mis: dict
+    clari_mirna: list
+    """
     c_str = ''
     for c in clari_mirna:
         c_str += '(:name %s) ' % c
     c_str = '(resolve :term ' + list(miRNA_mis.values())[0] + ' :as (' + c_str + '))'
     return c_str
-    
+
+def _wrap_mirna_clarification2(miRNA_mis, clari_mirna):
+    """
+    miRNA_mis: dict
+    clari_mirna: dict
+    """
+    mir_str = ''
+    for mir in clari_mirna.keys():
+        c_str = ''
+        for c in clari_mirna[mir]:
+            c_str += '(:name %s) ' % c
+        c_str = '(:term ' + miRNA_mis[mir] + ' :as (' + c_str + '))'
+        mir_str += c_str
+    mir_str = '(resolve (' + mir_str + '))'
+    return mir_str
+
 def _wrap_pathway_message(pathwayName, dblink, keyword=None):
     pathway_list_str = ''
     if keyword:
