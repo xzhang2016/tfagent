@@ -1515,6 +1515,7 @@ class TFTA:
         counts = []
         temp = []
         mrna = defaultdict(list)
+        miRNA_mis = dict()
         miRNA_names = list(miRNA_name_dict.keys())
         if self.tfdb is not None:
             for mir in miRNA_names:
@@ -1525,28 +1526,23 @@ class TFTA:
                     temp = temp + [r[0] for r in res1]
                     for m in [r[0] for r in res1]:
                         mrna[m].append(mir)
-            #handle the case that all input miRNAs are not in the database
-            if not len(temp):
-                raise miRNANotFoundException
-            else:        
-                #gene count
+                else:
+                     miRNA_mis[mir] = miRNA_name_dict[mir]
+            if temp:        
                 ug = list(set(temp))
-                if len(miRNA_names)>1:
+                if len(miRNA_names) > 1:
                     for u in ug:
                         ct = temp.count(u)
                         if ct > 1:
                             genes.append(u)
                             counts.append(ct)
-                    #sort
-                    if len(genes) > 1:
-                        counts, genes = list(zip(*sorted(zip(counts,genes), reverse=True)))
                 else:
                     genes = ug
                     counts = np.ones(len(ug), dtype=np.int)
-                    
-            if not len(genes):
-                raise TargetNotFoundException
-        return genes,counts,mrna
+                #sort
+                if len(genes) > 1:
+                    counts, genes = list(zip(*sorted(zip(counts,genes), reverse=True)))
+        return genes,counts,mrna,miRNA_mis
 
     def find_pathway_db_keyword(self, db_source, pathway_names):
         """
@@ -1613,6 +1609,25 @@ class TFTA:
             if res:
                 clari_miRNA = [r[0] for r in res]
             else:
+                raise miRNANotFoundException
+        return clari_miRNA
+        
+    def get_similar_miRNAs2(self, miRNA_names):
+        """
+        For each miRNA, return a list of miRNAs beginning with the given miRNA which 
+        is not in the database, for user clarification purpose
+        miRNA_names is a list of given miRNA name
+        """
+        clari_miRNA = dict()
+        if self.tfdb is not None:
+            for miRNA_name in miRNA_names:
+                regstr = miRNA_name + '-%'
+                t = (regstr,)
+                res = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo "
+                                    "WHERE mirna LIKE ? ", t).fetchall()
+                if res:
+                    clari_miRNA[miRNA_name] = [r[0] for r in res]
+            if not clari_miRNA:
                 raise miRNANotFoundException
         return clari_miRNA
 
