@@ -581,13 +581,8 @@ class TFTA_Module(Bioagent):
 
         tf_str = ', '.join(tf_names[:-1]) + ' and ' + tf_names[-1]
         #consider an optional parameter for subsequent query
-        of_targets_names = []
-        of_targets_arg = content.get('of-targets')
-        if of_targets_arg:
-            of_targets_data = of_targets_arg.data
-            of_targets_data = of_targets_data.replace(' ', '')
-            of_targets_data = of_targets_data.upper()
-            of_targets_names = of_targets_data.split(',')  
+        of_targets_names = get_of_those_list(content)
+        
         try:
             target_names,dbname = self.tfta.find_targets(tf_names)
         except TFNotFoundException:
@@ -680,13 +675,8 @@ class TFTA_Module(Bioagent):
             reply = make_failure('INVALID_TISSUE')
             return reply
         #consider an optional parameter for sequencing query
-        of_targets_names = []
-        of_targets_arg = content.get('of-targets')
-        if of_targets_arg:
-            of_targets_data = of_targets_arg.data
-            of_targets_data = of_targets_data.replace(' ', '')
-            of_targets_data = of_targets_data.upper()
-            of_targets_names = of_targets_data.split(',')    
+        of_targets_names = get_of_those_list(content)
+        
         try:
             target_names = self.tfta.find_targets_tissue(tf_names, tissue_name)
         except TFNotFoundException:
@@ -722,13 +712,7 @@ class TFTA_Module(Bioagent):
             return reply
             
         #consider an optional parameter for subsequent query
-        of_tfs_names = []
-        of_tfs_arg = content.get('of-tfs')
-        if of_tfs_arg:
-            of_tfs_data = of_tfs_arg.data
-            of_tfs_data = of_tfs_data.replace(' ', '')
-            of_tfs_data = of_tfs_data.upper()
-            of_tfs_names = of_tfs_data.split(',')
+        of_tfs_names = get_of_those_list(content)
         try:
             tf_names,dbname = self.tfta.find_tfs(target_names)
         except TargetNotFoundException:
@@ -816,13 +800,8 @@ class TFTA_Module(Bioagent):
             reply = make_failure('INVALID_TISSUE')
             return reply
         #consider an optional parameter for sequencing query
-        of_tfs_names = []
-        of_tfs_arg = content.get('of-tfs')
-        if of_tfs_arg:
-            of_tfs_data = of_tfs_arg.data
-            of_tfs_data = of_tfs_data.replace(' ', '')
-            of_tfs_data = of_tfs_data.upper()
-            of_tfs_names = of_tfs_data.split(',')
+        of_tfs_names = get_of_those_list(content)
+        
         try:
             tf_names = self.tfta.find_tfs_tissue(target_names, tissue_name)
         except TargetNotFoundException:
@@ -1033,20 +1012,18 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
         #consider an optional parameter for subsequent query
-        of_genes_names = []
-        of_genes_arg = content.get('of-genes')
-        if of_genes_arg:
-            of_genes_data = of_genes_arg.data
-            of_genes_data = of_genes_data.replace(' ', '')
-            of_genes_data = of_genes_data.upper()
-            of_genes_names = of_genes_data.split(',')
+        of_genes_names = get_of_those_list(content)
+        
         pathway_list_str = ''
         #temp_genes = []
         for pid in pathwayId:
             if _filter_subword(pathwayName[pid], pathway_names):
                 #temp_genes += genelist[pid]
                 gene_list_str = ''
-                genes = set(of_genes_names) & set(genelist[pid])
+                if of_genes_names:
+                    genes = set(of_genes_names) & set(genelist[pid])
+                else:
+                    genes = genelist[pid]
                 if genes:
                     for gene in genes:
                         gene_list_str += '(:name %s) ' % gene
@@ -3294,6 +3271,27 @@ def _filter_subword(sentence, pattern_list):
             word = True
             break
     return word
+    
+def get_of_those_list(content):
+    """
+    return a list of genes by parsing of_those_arg
+    of_those_arg: str or EKB xml
+    """
+    #check if it's using ekb xml format
+    gene_names = []
+    gene_arg = content.gets('of-those')
+    if gene_arg:
+        if '<ekb' in gene_arg or '<EKB' in gene_arg:
+            genes = _get_targets(gene_arg)
+            for gene in genes:
+                gene_names.append(gene.name)
+        else:
+            gene_arg = content.get('of-those')
+            gene_arg_str = gene_arg.data
+            gene_arg_str = gene_arg_str.replace(' ', '')
+            gene_arg_str = gene_arg_str.upper()
+            gene_names = gene_arg_str.split(',')
+    return gene_names
             
 
 if __name__ == "__main__":
