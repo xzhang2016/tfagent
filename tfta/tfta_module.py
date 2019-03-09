@@ -617,16 +617,9 @@ class TFTA_Module(Bioagent):
         Response content to find-tf-target-tissue request
         For tf list, reply with the targets found within given tissue
         """
-        tf_arg = content.gets('tf')
-        try:
-            tfs = _get_targets(tf_arg)
-            tf_names = []
-            for tf in tfs:
-                tf_names.append(tf.name)
-        except Exception as e:
-            reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
-            return reply
+        tf_names = get_of_those_list(content, descr='tf')
         if not len(tf_names):
+            tf_arg = content.gets('tf')
             reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
             return reply
         try:
@@ -667,16 +660,9 @@ class TFTA_Module(Bioagent):
         Response content to find-target-tf request
         For a target list, reply the tfs found
         """
-        target_arg = content.gets('target')
-        try:
-            targets = _get_targets(target_arg)
-            target_names = []
-            for target in targets:
-                target_names.append(target.name)
-        except Exception as e:
-            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
-            return reply
+        target_names = get_of_those_list(content, descr='target')
         if not len(target_names):
+            target_arg = content.gets('target')
             reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
             
@@ -706,16 +692,9 @@ class TFTA_Module(Bioagent):
         """
         Respond to find-tf request with information in literatures
         """
-        target_arg = content.gets('target')
-        try:
-            targets = _get_targets(target_arg)
-            target_names = []
-            for target in targets:
-                target_names.append(target.name)
-        except Exception as e:
-            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
-            return reply
+        target_names = get_of_those_list(content, descr='target')
         if not len(target_names):
+            target_arg = content.gets('target')
             reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         try:
@@ -742,16 +721,9 @@ class TFTA_Module(Bioagent):
         Response content to find-target-tf-tissue request
         For a target list, reply the tfs found within a given tissue
         """
-        target_arg = content.gets('target')
-        try:
-            targets = _get_targets(target_arg)
-            target_names = []
-            for target in targets:
-                target_names.append(target.name)
-        except Exception as e:
-            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
-            return reply
+        target_names = get_of_those_list(content, descr='target')
         if not len(target_names):
+            target_arg = content.gets('target')
             reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         try:
@@ -877,7 +849,11 @@ class TFTA_Module(Bioagent):
         pathway_names = trim_word(pathway_names, 'pathway')
         if not len(pathway_names):
             reply = make_failure('NO_PATHWAY_NAME')
-            return reply    
+            return reply
+        
+        #consider another optional parameter for subsequent query
+        of_gene_names = get_of_those_list(content, descr='of-those')
+        
         try:
             pathwayName,tflist,dblink = \
                 self.tfta.find_tf_pathway(pathway_names)
@@ -886,18 +862,23 @@ class TFTA_Module(Bioagent):
             return reply
         pathway_list_str = ''
         keys = list(tflist.keys())
-        temp_tfs = [] #track all the tfs
+        #temp_tfs = [] #track all the tfs
         if keys:
             for key in keys:
                 if _filter_subword(pathwayName[key], pathway_names):
-                    temp_tfs += tflist[key]
+                    #temp_tfs += tflist[key]
                     tf_list_str = ''
-                    for tf in tflist[key]:
-                        tf_list_str += '(:name %s) ' % tf
-                    tf_list_str = '(' + tf_list_str + ')'
-                    pn = '"' + pathwayName[key] + '"'
-                    dl = '"' + dblink[key] + '"'
-                    pathway_list_str += '(:name %s :dblink %s :tfs %s) ' % (pn, dl, tf_list_str)
+                    if of_gene_names:
+                        tfs = set(of_gene_names) & set(tflist[key])
+                    else:
+                        tfs = tflist[key]
+                    if tfs:
+                        for tf in tfs:
+                            tf_list_str += '(:name %s) ' % tf
+                        tf_list_str = '(' + tf_list_str + ')'
+                        pn = '"' + pathwayName[key] + '"'
+                        dl = '"' + dblink[key] + '"'
+                        pathway_list_str += '(:name %s :dblink %s :tfs %s) ' % (pn, dl, tf_list_str)
             if pathway_list_str:
                 reply = KQMLList.from_string(
                         '(SUCCESS :pathways (' + pathway_list_str + '))')
@@ -906,7 +887,7 @@ class TFTA_Module(Bioagent):
         else:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
-        self.gene_list = list(set(temp_tfs))
+        #self.gene_list = list(set(temp_tfs))
         return reply
         
     def respond_find_kinase_pathway(self, content):
@@ -919,7 +900,11 @@ class TFTA_Module(Bioagent):
         pathway_names = trim_word(pathway_names, 'pathway')
         if not len(pathway_names):
             reply = make_failure('NO_PATHWAY_NAME')
-            return reply    
+            return reply
+            
+        #consider an optional parameter for subsequent query
+        of_those_names = get_of_those_list(content)
+        
         try:
             pathwayName, kinaselist, dblink = \
                 self.tfta.find_kinase_pathway(pathway_names)
@@ -931,12 +916,17 @@ class TFTA_Module(Bioagent):
         for key in keys:
             if _filter_subword(pathwayName[key], pathway_names):
                 kinase_list_str = ''
-                for kinase in kinaselist[key]:
-                    kinase_list_str += '(:name %s) ' % kinase
-                kinase_list_str = '(' + kinase_list_str + ')'
-                pn = '"' + pathwayName[key] + '"'
-                dl = '"' + dblink[key] + '"'
-                pathway_list_str += '(:name %s :dblink %s :kinase %s) ' % (pn, dl, kinase_list_str)
+                if of_those_names:
+                    kinases = set(of_those_names) & set(kinaselist[key])
+                else:
+                    kinases = kinaselist[key]
+                if kinases:
+                    for kinase in kinases:
+                        kinase_list_str += '(:name %s) ' % kinase
+                    kinase_list_str = '(' + kinase_list_str + ')'
+                    pn = '"' + pathwayName[key] + '"'
+                    dl = '"' + dblink[key] + '"'
+                    pathway_list_str += '(:name %s :dblink %s :kinase %s) ' % (pn, dl, kinase_list_str)
         if pathway_list_str:
             reply = KQMLList.from_string(
                     '(SUCCESS :pathways (' + pathway_list_str + '))')
@@ -1097,7 +1087,10 @@ class TFTA_Module(Bioagent):
             target_arg = content.gets('target')
             reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
-            
+        
+        #consider another parameter for subsequent query
+        of_those_names = get_of_those_list(content, descr='of-those')
+        
         try:
             tf_targets = self.tfta.find_common_tfs(target_names)
         except TFNotFoundException:
@@ -1108,19 +1101,27 @@ class TFTA_Module(Bioagent):
         tf_list_str = ''
         targets = list(tf_clustered.keys())
         for tg in targets:
-            target_list = tg.split(',')
-            target_str = ''
-            for t in target_list:
-                target_str += '(:name %s) ' % t
-            target_str = ':target-list (' + target_str + ')'
             tf_list = ''
-            for tf in tf_clustered[tg]:
-                tf_list += '(:name %s) ' % tf
-            tf_list = ':tf-list (' + tf_list + ') '
-            tf_list += target_str
-            tf_list_str += '(' + tf_list + ') '
-        reply = KQMLList.from_string(
-            '(SUCCESS :tfs (' + tf_list_str + '))')
+            if of_those_names:
+                tfs = set(of_those_names) & set(tf_clustered[tg])
+            else:
+                tfs = tf_clustered[tg]
+            if tfs:
+                target_list = tg.split(',')
+                target_str = ''
+                for t in target_list:
+                    target_str += '(:name %s) ' % t
+                target_str = ':target-list (' + target_str + ')'
+                for tf in tfs:
+                    tf_list += '(:name %s) ' % tf
+                tf_list = ':tf-list (' + tf_list + ') '
+                tf_list += target_str
+                tf_list_str += '(' + tf_list + ') '
+        if tf_list_str:
+            reply = KQMLList.from_string(
+                '(SUCCESS :tfs (' + tf_list_str + '))')
+        else:
+            reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
         return reply
 
     def respond_find_overlap_targets_tf_genes(self, content):
@@ -1214,9 +1215,9 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_KEYWORD')
             return reply
             
-        target_arg = content.gets('gene')
+        target_arg = content.gets('target')
         if not target_arg:
-            target_arg = content.gets('target')
+            target_arg = content.gets('gene')
         target_names = get_of_those_list(content, descr='target')
         if not target_names:
             target_names = get_of_those_list(content, descr='gene')
@@ -1243,12 +1244,12 @@ class TFTA_Module(Bioagent):
         """
         response content to FIND-COMMON-PATHWAY-GENES request
         """
-        gene_arg = content.gets('gene')
+        gene_arg = content.gets('target')
         if not gene_arg:
-            gene_arg = content.gets('target')
-        gene_names = get_of_those_list(content, descr='gene')
+            gene_arg = content.gets('gene')
+        gene_names = get_of_those_list(content, descr='target')
         if not gene_names:
-            gene_names = get_of_those_list(content, descr='target')
+            gene_names = get_of_those_list(content, descr='gene')
         if not len(gene_names):
             reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
             return reply
@@ -1287,12 +1288,12 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_KEYWORD')
             return reply
             
-        gene_arg = content.gets('gene')
+        gene_arg = content.gets('target')
         if not gene_arg:
-            gene_arg = content.gets('target')
-        gene_names = get_of_those_list(content, descr='gene')
+            gene_arg = content.gets('gene')
+        gene_names = get_of_those_list(content, descr='target')
         if not gene_names:
-            gene_names = get_of_those_list(content, descr='target')
+            gene_names = get_of_those_list(content, descr='gene')
         if not len(gene_names):
             reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
             return reply
@@ -1332,12 +1333,12 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_DB_NAME')
             return reply
             
-        gene_arg = content.gets('gene')
+        gene_arg = content.gets('target')
         if not gene_arg:
-            gene_arg = content.gets('target')
-        gene_names = get_of_those_list(content, descr='gene')
+            gene_arg = content.gets('gene')
+        gene_names = get_of_those_list(content, descr='target')
         if not gene_names:
-            gene_names = get_of_those_list(content, descr='target')
+            gene_names = get_of_those_list(content, descr='gene')
         if not len(gene_names):
             reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
             return reply
@@ -1372,16 +1373,10 @@ class TFTA_Module(Bioagent):
         if not len(pathway_names):
             reply = make_failure('NO_PATHWAY_NAME')
             return reply
-        gene_arg = content.gets('gene')
-        try:
-            genes = _get_targets(gene_arg)
-            gene_names = []
-            for gene in genes:
-                gene_names.append(gene.name)
-        except Exception as e:
-            reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
-            return reply
+            
+        gene_names = get_of_those_list(content, descr='gene')
         if not len(gene_names):
+            gene_arg = content.gets('gene')
             reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
             return reply
             
@@ -1612,6 +1607,10 @@ class TFTA_Module(Bioagent):
         except Exception as e:
             reply = make_failure('NO_STRENGTH_NAME')
             return reply
+            
+        #consider another parameter for subsequent query
+        of_those_names = get_of_those_list(content)
+        
         try:
             target_names,miRNA_mis = self.tfta.find_target_miRNA_strength(miRNA_names, strength_name.lower())
         except miRNANotFoundException:
@@ -1628,12 +1627,16 @@ class TFTA_Module(Bioagent):
                 reply = make_failure('NO_SIMILAR_MIRNA')
                 return reply
         else:
-            if len(target_names):
-                gene_list_str = self.wrap_message(':targets', target_names)
+            if of_those_names:
+                targets = set(of_those_names) & set(target_names)
+            else:
+                targets = target_names
+            if len(targets):
+                gene_list_str = self.wrap_message(':targets', targets)
                 reply = KQMLList.from_string('(SUCCESS ' + gene_list_str + ')')
             else:
                 reply = KQMLList.from_string('(SUCCESS :targets NIL)')
-        self.gene_list = target_names  
+        #self.gene_list = target_names  
         return reply
         
     def respond_find_target_miRNA_all(self, content):
@@ -1649,7 +1652,11 @@ class TFTA_Module(Bioagent):
             return reply
         if not len(miRNA_names):
             reply = make_failure('NO_MIRNA_NAME')
-            return reply 
+            return reply
+            
+        #consider another parameter for subsequent query
+        of_those_names = get_of_those_list(content)
+        
         target_names,miRNA_mis = self.tfta.find_target_miRNA(miRNA_names)
         #check if it's necessary for user clarification
         if len(miRNA_mis):
@@ -1662,12 +1669,16 @@ class TFTA_Module(Bioagent):
                 reply = make_failure('NO_SIMILAR_MIRNA')
                 return reply
         else:
-            if len(target_names):
-                gene_list_str = self.wrap_message(':targets', target_names)
+            if of_those_names:
+                targets = set(of_those_names) & set(target_names)
+            else:
+                targets = target_names
+            if len(targets):
+                gene_list_str = self.wrap_message(':targets', targets)
                 reply = KQMLList.from_string('(SUCCESS ' + gene_list_str + ')')
             else:
                 reply = KQMLList.from_string('(SUCCESS :targets NIL)')
-        self.gene_list = target_names  
+        #self.gene_list = target_names  
         return reply
         
     def respond_find_evidence_miRNA_target(self, content):
@@ -1721,7 +1732,10 @@ class TFTA_Module(Bioagent):
         if not len(miRNA_names):
             reply = make_failure('NO_MIRNA_NAME')
             return reply
-            
+        
+        #consider another parameter for subsequent query
+        of_those_names = get_of_those_list(content)
+        
         targets,counts,mrna,miRNA_mis = self.tfta.find_gene_count_miRNA(miRNA_names)
         if not len(targets):
             #clarification
@@ -1736,18 +1750,26 @@ class TFTA_Module(Bioagent):
                     return reply
             else:
                 reply = KQMLList.from_string('(SUCCESS :targets NIL)')
-                return reply           
+                return reply
+                
         target_str = ''
-        for t,ct in zip(targets,counts):
-            ms = mrna[t]
-            m_str = ''
-            for m in ms:
-                m_str += '(:name %s)' % m
-            m_str = '(' + m_str + ')'
-            target_str += '(:name %s :count %d :miRNA %s) ' % (t, ct, m_str)
-        reply = KQMLList.from_string(
-            '(SUCCESS :targets (' + target_str + '))')
-        self.gene_list = targets
+        if of_those_names:
+            ftargets = set(of_those_names) & set(targets)
+        else:
+            ftargets = targets
+        if ftargets:
+            for t in ftargets:
+                ct = counts[t]
+                ms = mrna[t]
+                m_str = ''
+                for m in ms:
+                    m_str += '(:name %s)' % m
+                m_str = '(' + m_str + ')'
+                target_str += '(:name %s :count %d :miRNA %s) ' % (t, ct, m_str)
+            reply = KQMLList.from_string('(SUCCESS :targets (' + target_str + '))')
+        else:
+            reply = KQMLList.from_string('(SUCCESS :targets NIL)')
+        #self.gene_list = targets
         return reply
              
     def respond_find_miRNA_count_target(self, content):
