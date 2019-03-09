@@ -1512,7 +1512,7 @@ class TFTA:
         What genes are most frequently (or commonly) regulated by a list of mIRs?
         """
         genes = []
-        counts = []
+        counts = dict()
         temp = []
         mrna = defaultdict(list)
         miRNA_mis = dict()
@@ -1535,13 +1535,15 @@ class TFTA:
                         ct = temp.count(u)
                         if ct > 1:
                             genes.append(u)
-                            counts.append(ct)
+                            counts[u] = ct
                 else:
                     genes = ug
-                    counts = np.ones(len(ug), dtype=np.int)
+                    for u in ug:
+                        counts[u] = 1
+                    #counts = np.ones(len(ug), dtype=np.int)
                 #sort
-                if len(genes) > 1:
-                    counts, genes = list(zip(*sorted(zip(counts,genes), reverse=True)))
+                #if len(genes) > 1:
+                    #counts, genes = list(zip(*sorted(zip(counts,genes), reverse=True)))
         return genes,counts,mrna,miRNA_mis
 
     def find_pathway_db_keyword(self, db_source, pathway_names):
