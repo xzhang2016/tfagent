@@ -250,13 +250,11 @@ class TFTA_Module(Bioagent):
         """
         Respond to is-gene-onto
         """
-        try:
-            keyword_arg = content.get('keyword')
-            keyword_name = keyword_arg.data
-            keyword_name = keyword_name.lower()
-        except Exception as e:
+        keyword_name = _get_keyword_name(content, descr='keyword')
+        if not keyword_name:
             reply = make_failure('NO_KEYWORD')
             return reply
+            
         try:
             gene_arg = content.gets('gene')
             gene = _get_target(gene_arg)
@@ -295,11 +293,8 @@ class TFTA_Module(Bioagent):
         """
         Respond to find-gene-onto
         """
-        try:
-            keyword_arg = content.get('keyword')
-            keyword_name = keyword_arg.data
-            keyword_name = keyword_name.lower()
-        except Exception as e:
+        keyword_name = _get_keyword_name(content, descr='keyword')
+        if not keyword_name:
             reply = make_failure('NO_KEYWORD')
             return reply
         
@@ -326,11 +321,8 @@ class TFTA_Module(Bioagent):
         """
         Respond to find-gene-onto
         """
-        try:
-            keyword_arg = content.get('keyword')
-            keyword_name = keyword_arg.data
-            keyword_name = keyword_name.lower()
-        except Exception as e:
+        keyword_name = _get_keyword_name(content, descr='keyword')
+        if not keyword_name:
             reply = make_failure('NO_KEYWORD')
             return reply
             
@@ -572,15 +564,14 @@ class TFTA_Module(Bioagent):
             tf_arg = content.gets('tf')
             reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
             return reply
-            
-        try:
-            keyword_arg = content.get('keyword')
-            keyword_name = keyword_arg.data
-        except Exception as e:
+        
+        keyword_name = _get_keyword_name(content, descr='keyword')
+        if not keyword_name:
             reply = make_failure('NO_KEYWORD')
             return reply
+    
         try:
-            stmt_types = stmt_type_map[keyword_name.lower()]
+            stmt_types = stmt_type_map[keyword_name]
         except KeyError as e:
             reply = make_failure('INVALID_KEYWORD')
             return reply
@@ -671,14 +662,14 @@ class TFTA_Module(Bioagent):
             target_arg = content.gets('target')
             reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
-        try:
-            keyword_arg = content.get('keyword')
-            keyword_name = keyword_arg.data
-        except Exception as e:
+        
+        keyword_name = _get_keyword_name(content, descr='keyword')
+        if not keyword_name:
             reply = make_failure('NO_KEYWORD')
             return reply
+        
         try:
-            stmt_types = stmt_type_map[keyword_name.lower()]
+            stmt_types = stmt_type_map[keyword_name]
         except KeyError as e:
             reply = make_failure('INVALID_KEYWORD')
             return reply
@@ -752,15 +743,8 @@ class TFTA_Module(Bioagent):
         Response content to find_pathway_gene_name request
         For a given gene list and keyword, reply the related pathways information
         """
-        keyword_arg = content.get('keyword')
-        try:
-            #keyword_name = keyword_arg.head()
-            keyword_name = keyword_arg.data
-            #keyword_name = keyword_name.replace('W::', '')
-            keyword_name = keyword_name.replace('-', ' ')
-            keyword_name = keyword_name.lower()
-            #keyword_name = trim_word([keyword_name], 'pathway')
-        except Exception as e:
+        keyword_name = _get_keyword_name(content, hyphen=True)
+        if not keyword_name:
             reply = make_failure('NO_KEYWORD')
             return reply
             
@@ -783,12 +767,8 @@ class TFTA_Module(Bioagent):
         """Response content to FIND-PATHWAY-DB-GENE request
         For a given gene list and certain db source, reply the related
         pathways information"""
-        db_arg = content.get('database')
-        try:
-            #db_name = db_arg.head()
-            db_name = db_arg.data
-            #db_name = trim_quotes(db_name)
-        except Exception as e:
+        db_name = _get_keyword_name(content, descr='database', low_case=False)
+        if not db_name:
             reply = make_failure('NO_DB_NAME')
             return reply
             
@@ -952,16 +932,13 @@ class TFTA_Module(Bioagent):
         Response content to FIND-PATHWAY-KEYWORD request
         For a given keyword, reply the pathways involving the keyword
         """
-        try:
-            keyword_arg = content.get('keyword')
-            keyword_name = keyword_arg.data
-            keyword_name = keyword_name.replace('W::', '')
-            keyword_name = keyword_name.replace('-', ' ')
-            keyword_name = keyword_name.lower()
-            keyword_name = trim_word([keyword_name], 'pathway')
-        except Exception as e:
+        keyword_name = _get_keyword_name(content, hyphen=True)
+        if not keyword_name:
             reply = make_failure('NO_PATHWAY_NAME')
             return reply
+        else:
+            keyword_name = trim_word([keyword_name], 'pathway')
+        
         try:
             pathwayName, dblink = \
                 self.tfta.find_pathway_keyword(keyword_name[0])
@@ -977,14 +954,11 @@ class TFTA_Module(Bioagent):
         For a given keyword, reply the tfs within the pathways
         involving the keyword
         """
-        keyword_arg = content.get('keyword')
-        try:
-            keyword_name = keyword_arg.data
-            keyword_name = keyword_name.replace('-', ' ')
-            keyword_name = keyword_name.lower()
-        except Exception as e:
+        keyword_name = _get_keyword_name(content, hyphen=True)
+        if not keyword_name:
             reply = make_failure('NO_PATHWAY_NAME')
             return reply
+        
         try:
             pathwayId, pathwayName, tflist, dblink = \
                 self.tfta.find_tf_keyword(keyword_name)
@@ -1159,17 +1133,12 @@ class TFTA_Module(Bioagent):
         """
         Response content to FIND-COMMON-PATHWAY-GENES-KEYWORD request
         """
-        keyword_arg = content.get('keyword')
-        try:
-            #keyword_name = keyword_arg.head()
-            keyword_name = keyword_arg.data
-            keyword_name = keyword_name.replace('W::', '')
-            keyword_name = keyword_name.replace('-', ' ')
-            keyword_name = keyword_name.lower()
-            keyword_name = trim_word([keyword_name], 'pathway')
-        except Exception as e:
+        keyword_name = _get_keyword_name(content, hyphen=True)
+        if not keyword_name:
             reply = make_failure('NO_KEYWORD')
             return reply
+        else:
+            keyword_name = trim_word([keyword_name], 'pathway')
             
         target_arg = content.gets('target')
         if not target_arg:
@@ -1232,17 +1201,12 @@ class TFTA_Module(Bioagent):
         """
         Response content to FIND-COMMON-PATHWAY-GENES-KEYWORD request
         """
-        keyword_arg = content.get('keyword')
-        try:
-            #keyword_name = keyword_arg.head()
-            keyword_name = keyword_arg.data
-            keyword_name = keyword_name.replace('W::', '')
-            keyword_name = keyword_name.replace('-', ' ')
-            keyword_name = keyword_name.lower()
-            keyword_name = trim_word([keyword_name], 'pathway')
-        except Exception as e:
+        keyword_name = _get_keyword_name(content, hyphen=True)
+        if not keyword_name:
             reply = make_failure('NO_KEYWORD')
             return reply
+        else:
+            keyword_name = trim_word([keyword_name], 'pathway')
             
         gene_arg = content.gets('target')
         if not gene_arg:
@@ -1281,11 +1245,8 @@ class TFTA_Module(Bioagent):
         """
         Response content to FIND-COMMON-PATHWAY-GENES-DB request
         """
-        db_arg = content.get('database')
-        try:
-            #keyword_name = keyword_arg.head()
-            db_name = db_arg.data
-        except Exception as e:
+        db_name = _get_keyword_name(content, descr='database', low_case=False)
+        if not db_name:
             reply = make_failure('NO_DB_NAME')
             return reply
             
@@ -1361,13 +1322,8 @@ class TFTA_Module(Bioagent):
         Respond content to FIND-GENE-GO-TF request
         The inputs here are keyword from GO names and tf list
         """
-        keyword_arg = content.get('keyword')
-        try:
-            #keyword_name = keyword_arg.head()
-            keyword_name = keyword_arg.data
-            #keyword = trim_quotes(keyword_name)
-            keyword = keyword_name.lower()
-        except Exception as e:
+        keyword_name = _get_keyword_name(content)
+        if not keyword_name:
             reply = make_failure('NO_GO_NAME')
             return reply
             
@@ -1379,7 +1335,7 @@ class TFTA_Module(Bioagent):
             
         try:
             go_ids,go_types,go_names,go_genes = \
-                self.tfta.find_genes_GO_tf(keyword, tf_names)
+                self.tfta.find_genes_GO_tf(keyword_name, tf_names)
         except TFNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :go-terms NIL)')
             return reply
@@ -1404,12 +1360,8 @@ class TFTA_Module(Bioagent):
         Respond content to FIND-GENE-GO-TF request
         The inputs here are GO id and tf list
         """
-        go_arg = content.get('goid')
-        try:
-            #goid = go_arg.head()
-            goid = go_arg.data
-            #goid = trim_quotes(goid)
-        except Exception as e:
+        goid = _get_keyword_name(content, descr='goid', low_case=False)
+        if not goid:
             reply = make_failure('NO_GO_ID')
             return reply
         
@@ -1762,23 +1714,18 @@ class TFTA_Module(Bioagent):
         """
         Respond to FIND-PATHWAY-DB-KEYWORD request
         """
-        try:
-            db_arg = content.get('database')
-            #db_name = db_arg.head()
-            db_name = db_arg.data
-        except Exception as e:
+        db_name = _get_keyword_name(content, descr='database', low_case=False)
+        if not db_name:
             reply = make_failure('NO_DB_NAME')
             return reply
-        try:
-            pathway_arg = content.get('keyword')
-            pathway_names = pathway_arg.data
-            pathway_names = pathway_names.replace('W::', '')
-            pathway_names = pathway_names.replace('-', ' ')
-            pathway_names = pathway_names.lower()
-            pathway_names = trim_word([pathway_names], 'pathway')
-        except Exception as e:
+        
+        pathway_names = _get_keyword_name(content, hyphen=True)
+        if not pathway_names:
             reply = make_failure('NO_PATHWAY_NAME')
             return reply
+        else:
+            pathway_names = trim_word([pathway_names], 'pathway')
+        
         try:
             pathwayId,pathwayName,dblink = \
                     self.tfta.find_pathway_db_keyword(db_name, pathway_names)
@@ -3102,6 +3049,19 @@ def _get_tissue_name(content):
     except Exception as e:
         return tissue_name
     return tissue_name
+
+def _get_keyword_name(content, descr='keyword', hyphen=False, low_case=True):
+    keyword_name = ''
+    try:
+        keyword_arg = content.get(descr)
+        keyword_name = keyword_arg.data
+        if low_case:
+            keyword_name = keyword_name.lower()
+        if hyphen:
+            keyword_name = keyword_name.replace('-', ' ')
+    except Exception as e:
+        return keyword_name
+    return keyword_name
             
 
 if __name__ == "__main__":
