@@ -505,15 +505,9 @@ class TFTA_Module(Bioagent):
         if not target_name:
             reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
-        try:
-            tissue_arg = content.get('tissue')
-            #tissue_name = tissue_arg.head()
-            tissue_name = tissue_arg.data
-            #tissue_name = trim_quotes(tissue_name)
-            tissue_name = tissue_name.lower()
-            tissue_name = tissue_name.replace(' ', '_')
-            tissue_name = tissue_name.replace('-', '_')
-        except Exception as e:
+        #get tissue name
+        tissue_name = _get_tissue_name(content)
+        if not tissue_name:
             reply = make_failure('NO_TISSUE_NAME')
             return reply
         if tissue_name not in self.tissue_list:
@@ -608,15 +602,9 @@ class TFTA_Module(Bioagent):
             tf_arg = content.gets('tf')
             reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
             return reply
-        try:
-            tissue_arg = content.get('tissue')
-            #tissue_name = tissue_arg.head()
-            tissue_name = tissue_arg.data
-            #tissue_name = trim_quotes(tissue_name)
-            tissue_name = tissue_name.lower()
-            tissue_name = tissue_name.replace(' ', '_')
-            tissue_name = tissue_name.replace('-', '_')
-        except Exception as e:
+        #get tissue name
+        tissue_name = _get_tissue_name(content)
+        if not tissue_name:
             reply = make_failure('NO_TISSUE_NAME')
             return reply
         if tissue_name not in self.tissue_list:
@@ -712,15 +700,9 @@ class TFTA_Module(Bioagent):
             target_arg = content.gets('target')
             reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
-        try:
-            tissue_arg = content.get('tissue')
-            #tissue_name = tissue_arg.head()
-            tissue_name = tissue_arg.data
-            #tissue_name = trim_quotes(tissue_name)
-            tissue_name = tissue_name.lower()
-            tissue_name = tissue_name.replace(' ', '_')
-            tissue_name = tissue_name.replace('-', '_')
-        except Exception as e:
+        #get tissue name
+        tissue_name = _get_tissue_name(content)
+        if not tissue_name:
             reply = make_failure('NO_TISSUE_NAME')
             return reply
         if tissue_name not in self.tissue_list:
@@ -2238,15 +2220,9 @@ class TFTA_Module(Bioagent):
         for example: which of these are expressed in liver?(subsequent query)
         what genes are expressed in liver?
         """
-        try:
-            tissue_arg = content.get('tissue')
-            #tissue_name = tissue_arg.head()
-            tissue_name = tissue_arg.data
-            #tissue_name = trim_quotes(tissue_name)
-            tissue_name = tissue_name.lower()
-            tissue_name = tissue_name.replace(' ', '_')
-            tissue_name = tissue_name.replace('-', '_')
-        except Exception as e:
+        #get tissue name
+        tissue_name = _get_tissue_name(content)
+        if not tissue_name:
             reply = make_failure('NO_TISSUE_NAME')
             return reply
         if tissue_name not in self.tissue_list:
@@ -2289,15 +2265,9 @@ class TFTA_Module(Bioagent):
         Respond to is-tissue-gene request
         Is stat3 expressed in liver?
         """
-        try:
-            tissue_arg = content.get('tissue')
-            #tissue_name = tissue_arg.head()
-            tissue_name = tissue_arg.data
-            #tissue_name = trim_quotes(tissue_name)
-            tissue_name = tissue_name.lower()
-            tissue_name = tissue_name.replace(' ', '_')
-            tissue_name = tissue_name.replace('-', '_')
-        except Exception as e:
+        #get tissue name
+        tissue_name = _get_tissue_name(content)
+        if not tissue_name:
             reply = make_failure('NO_TISSUE_NAME')
             return reply
         if tissue_name not in self.tissue_list:
@@ -3118,6 +3088,20 @@ def get_of_those_list(content, descr='of-those'):
             gene_arg_str = gene_arg_str.upper()
             gene_names = gene_arg_str.split(',')
     return gene_names
+    
+def _get_tissue_name(content):
+    tissue_name = ''
+    try:
+        tissue_arg = content.get('tissue')
+        #tissue_name = tissue_arg.head()
+        tissue_name = tissue_arg.data
+        #tissue_name = trim_quotes(tissue_name)
+        tissue_name = tissue_name.lower()
+        tissue_name = tissue_name.replace(' ', '_')
+        tissue_name = tissue_name.replace('-', '_')
+    except Exception as e:
+        return tissue_name
+    return tissue_name
             
 
 if __name__ == "__main__":
