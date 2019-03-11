@@ -535,20 +535,13 @@ class TFTA_Module(Bioagent):
         Covered by find-target
         For a tf list, reply with the targets found
         """
-        tf_arg = content.gets('tf')
-        try:
-            tfs = _get_targets(tf_arg)
-            tf_names = []
-            for tf in tfs:
-                tf_names.append(tf.name)
-        except Exception as e:
-            reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
-            return reply
+        tf_names = get_of_those_list(content, descr='tf')
         if not len(tf_names):
+            tf_arg = content.gets('tf')
             reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
             return reply
 
-        tf_str = ', '.join(tf_names[:-1]) + ' and ' + tf_names[-1]
+        #tf_str = ', '.join(tf_names[:-1]) + ' and ' + tf_names[-1]
         #consider an optional parameter for subsequent query
         of_targets_names = get_of_those_list(content)
         
@@ -580,16 +573,9 @@ class TFTA_Module(Bioagent):
         """
         Respond to find-target request with information in literatures
         """
-        tf_arg = content.gets('tf')
-        try:
-            tfs = _get_targets(tf_arg)
-            tf_names = []
-            for tf in tfs:
-                tf_names.append(tf.name)
-        except Exception as e:
-            reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
-            return reply
+        tf_names = get_of_those_list(content, descr='tf')
         if not len(tf_names):
+            tf_arg = content.gets('tf')
             reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
             return reply
             
@@ -1168,18 +1154,6 @@ class TFTA_Module(Bioagent):
         target_names = get_of_those_list(content, descr='target')
         if not target_names:
             target_names = get_of_those_list(content, descr='gene')
-        if not target_names:
-            reply = _wrap_family_message(target_arg, 'NO_GENE_NAME')
-            return reply
-        
-        try:
-            targets = _get_targets(target_arg)
-            target_names = []
-            for tg in targets:
-                target_names.append(tg.name)
-        except Exception as e:
-            reply = _wrap_family_message(target_arg, 'NO_GENE_NAME')
-            return reply
         if not target_names:
             reply = _wrap_family_message(target_arg, 'NO_GENE_NAME')
             return reply
@@ -1949,6 +1923,10 @@ class TFTA_Module(Bioagent):
         if not len(miRNA_names):
             reply = make_failure('NO_MIRNA_NAME')
             return reply 
+            
+        #consider an additional parameter for subsequent query
+        of_those_names = get_of_those_list(content, descr='of-those')
+        
         try:
             tf_names,miRNA_mis = self.tfta.find_tf_miRNA(miRNA_names)
             #check if it's necessary for user clarification
@@ -1962,12 +1940,14 @@ class TFTA_Module(Bioagent):
                     reply = make_failure('NO_SIMILAR_MIRNA')
                     return reply
             else:
+                if of_those_names:
+                    tf_names = set(of_those_names) & set(tf_names)
                 tf_list_str = self.wrap_message(':tfs ', tf_names)
                 reply = KQMLList.from_string('(SUCCESS ' + tf_list_str + ')')
         except TFNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
             return reply
-        self.gene_list = tf_names  
+        #self.gene_list = tf_names  
         return reply
     
     def respond_find_regulation_source(self, content):
