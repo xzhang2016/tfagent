@@ -375,9 +375,9 @@ class TestIsMirnaTarget11(_IntegrationTest):
         
 #clarification test
 #Does miR-200c target STAT3? (subtask: is-mirna-target)
-class TestIsMirnaTarget1(_IntegrationTest):
+class TestIsMirnaTarget2(_IntegrationTest):
     def __init__(self, *args):
-        super(TestIsMirnaTarget1, self).__init__(TFTA_Module)
+        super(TestIsMirnaTarget2, self).__init__(TFTA_Module)
 
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
@@ -3902,6 +3902,44 @@ class TestFindEvidenceMirnaTarget1(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('evidence'))=", len(output.get('evidence')))
         assert len(output.get('evidence')) == 7, output
+
+#clarification
+#show me evidence that miR-148a targets DNMT1?
+class TestFindEvidenceMirnaTarget2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindEvidenceMirnaTarget2, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = ekb_kstring_from_text('miR-148a')
+        target = ekb_kstring_from_text('DNMT1')
+        content = KQMLList('FIND-EVIDENCE-MIRNA-TARGET')
+        content.set('miRNA', mirna)
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason') == 'MIRNA_NOT_FOUND', output
+        assert len(output.get('clarification').get('as')) == 2, output
+        
+#show me evidence that miR-148 targets DNMT1?
+class TestFindEvidenceMirnaTarget3(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindEvidenceMirnaTarget3, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = ekb_kstring_from_text('miR-148')
+        target = ekb_kstring_from_text('DNMT1')
+        content = KQMLList('FIND-EVIDENCE-MIRNA-TARGET')
+        content.set('miRNA', mirna)
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason') == 'NO_SIMILAR_MIRNA', output
 
 #########################################################################
 #functions
