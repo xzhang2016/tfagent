@@ -372,6 +372,26 @@ class TestIsMirnaTarget11(_IntegrationTest):
         assert output.head() == 'FAILURE', output
         assert output.get('reason').to_string() == \
         '((:for V14939346 :error FAMILY_NAME_NOT_ALLOWED))', output
+        
+#clarification test
+#Does miR-200c target STAT3? (subtask: is-mirna-target)
+class TestIsMirnaTarget1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestIsMirnaTarget1, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = ekb_kstring_from_text('STAT3')
+        mirna = ekb_kstring_from_text('miR-200c')
+        content = KQMLList('IS-MIRNA-TARGET')
+        content.set('target', target)
+        content.set('miRNA', mirna)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason') == 'MIRNA_NOT_FOUND', output
+        assert len(output.get('clarification').get('as')) == 2, output
 
 ####################################################################################
 #TEST FIND-TF
@@ -2939,6 +2959,48 @@ class TestFindTfMirna12(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('tfs'))=", str(len(output.get('tfs'))))
         assert len(output.get('tfs')) == 39, output
+        
+#subsequent query
+##which of these transcription factors does miR-200c-3p regulate? 
+class TestFindTfMirna2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTfMirna2, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna_arg = ekb_from_text('miR-200c-3p')
+        #print(mirna_arg, '\n')
+        of_those = ekb_kstring_from_text('ATRX, DNMT3B, MBD5,stat3,ZMAT3')
+        content = KQMLList('FIND-TF-MIRNA')
+        content.set('miRNA', KQMLString(mirna_arg))
+        content.set('of-those', of_those)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('tfs'))=", str(len(output.get('tfs'))))
+        assert len(output.get('tfs')) == 3, output
+        
+##which of these transcription factors does miR-200c-3p regulate? 
+class TestFindTfMirna21(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTfMirna21, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna_arg = ekb_from_text('miR-200c-3p')
+        #print(mirna_arg, '\n')
+        of_those = 'ATRX, DNMT3B, MBD5,stat3,ZMAT3'
+        content = KQMLList('FIND-TF-MIRNA')
+        content.set('miRNA', KQMLString(mirna_arg))
+        content.set('of-those', of_those)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('tfs'))=", str(len(output.get('tfs'))))
+        assert len(output.get('tfs')) == 4, output
+
 
 ################################################################################
 #FIND-REGULATION
