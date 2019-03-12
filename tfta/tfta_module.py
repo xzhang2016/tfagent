@@ -1433,7 +1433,7 @@ class TFTA_Module(Bioagent):
         Respond to IS-MIRNA-TARGET request
         """
         miRNA_arg = content.gets('miRNA')
-        miRNA_name = list(_get_miRNA_name(miRNA_arg).keys())
+        miRNA_name = _get_miRNA_name(miRNA_arg)
         if not len(miRNA_name):
             reply = make_failure('NO_MIRNA_NAME')
             return reply
@@ -1449,15 +1449,26 @@ class TFTA_Module(Bioagent):
             reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         
-        is_target,expr,supt,pmid = self.tfta.Is_miRNA_target2(miRNA_name[0], target_name)
+        is_target,expr,supt,pmid,miRNA_mis = self.tfta.Is_miRNA_target2(miRNA_name, target_name)
         
         #provenance support
-        self.send_background_support_mirna(miRNA_name[0], target_name, expr, supt, pmid)
+        self.send_background_support_mirna(list(miRNA_name.keys())[0], target_name, expr, supt, pmid)
         
         #respond to BA
-        reply = KQMLList('SUCCESS')
-        is_target_str = 'TRUE' if is_target else 'FALSE'
-        reply.set('is-miRNA-target', is_target_str)
+        #check if it's necessary for user clarification
+        if len(miRNA_mis):
+            try:
+                clari_mirna = self.tfta.get_similar_miRNAs(list(miRNA_mis.keys())[0])
+                c_str = _wrap_mirna_clarification(miRNA_mis, clari_mirna)
+                reply = make_failure_clarification('MIRNA_NOT_FOUND', c_str)
+                return reply
+            except miRNANotFoundException:
+                reply = make_failure('NO_SIMILAR_MIRNA')
+                return reply
+        else:
+            reply = KQMLList('SUCCESS')
+            is_target_str = 'TRUE' if is_target else 'FALSE'
+            reply.set('is-miRNA-target', is_target_str)
         return reply
         
     def respond_find_miRNA_target(self, content):
