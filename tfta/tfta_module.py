@@ -1606,7 +1606,7 @@ class TFTA_Module(Bioagent):
         """
         #assume the miRNA is also in EKB XML format
         miRNA_arg = content.gets('miRNA')
-        miRNA_name = list(_get_miRNA_name(miRNA_arg).keys())
+        miRNA_name = _get_miRNA_name(miRNA_arg)
         if not len(miRNA_name):
             reply = make_failure('NO_MIRNA_NAME')
             return reply      
@@ -1622,11 +1622,20 @@ class TFTA_Module(Bioagent):
             return reply
                    
         try:
-            experiments,supportType,pmlink = \
-                self.tfta.find_evidence_miRNA_target(miRNA_name[0], target_name)
+            experiments,supportType,pmlink,miRNA_mis = \
+                self.tfta.find_evidence_miRNA_target(miRNA_name, target_name)
         except Exception as e:
             reply = KQMLList.from_string('(SUCCESS :evidence NIL)')
-            return reply            
+            return reply
+        if miRNA_mis:
+            try:
+                clari_mirna = self.tfta.get_similar_miRNAs(list(miRNA_mis.keys())[0])
+                c_str = _wrap_mirna_clarification(miRNA_mis, clari_mirna)
+                reply = make_failure_clarification('MIRNA_NOT_FOUND', c_str)
+                return reply
+            except miRNANotFoundException:
+                reply = make_failure('NO_SIMILAR_MIRNA')
+                return reply
         if len(experiments):
             evidence_list_str = ''
             for e,s,l in zip(experiments,supportType,pmlink):
