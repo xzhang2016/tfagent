@@ -1276,7 +1276,7 @@ class TFTA:
                  raise TargetNotFoundException       
         return False
         
-    def Is_miRNA_target2(self, miRNA_name, target_name):
+    def Is_miRNA_target2(self, miRNA_name_dict, target_name):
         """
         Return True if the miRNA regulates the target, and False if not;
         also return evidence for provenance support
@@ -1285,17 +1285,25 @@ class TFTA:
         expr = defaultdict(list)
         supt = defaultdict(list)
         pmid = defaultdict(list)
+        miRNA_mis = dict()
+        miRNA_name = list(miRNA_name_dict.keys())[0]
         if self.tfdb is not None:
-             t = (miRNA_name, target_name)
-             res = self.tfdb.execute("SELECT * FROM mirnaInfo WHERE mirna LIKE ? "
+            t = (miRNA_name, target_name)
+            res = self.tfdb.execute("SELECT * FROM mirnaInfo WHERE mirna LIKE ? "
                                      "AND target = ? ", t).fetchall()
-             if res:
-                 for r in res:
-                     expr[target_name].append(r[3])
-                     supt[target_name].append(r[4])
-                     pmid[target_name].append(str(r[5]))
-                 return True, expr, supt, pmid
-        return False, expr, supt, pmid
+            if res:
+                for r in res:
+                    expr[target_name].append(r[3])
+                    supt[target_name].append(r[4])
+                    pmid[target_name].append(str(r[5]))
+                return True, expr, supt, pmid, miRNA_mis
+            else:
+                #check if miRNA_name in the database
+                t = (miRNA_name,)
+                res = self.tfdb.execute("SELECT * FROM mirnaInfo WHERE mirna LIKE ? ", t).fetchall()
+                if not res:
+                    miRNA_mis[miRNA_name] = miRNA_name_dict[miRNA_name]
+        return False, expr, supt, pmid, miRNA_mis
         
     def find_miRNA_target(self, target_names):
         """
