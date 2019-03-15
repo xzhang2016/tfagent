@@ -1829,12 +1829,12 @@ class TFTA:
                 db_names = set()
         return db_names
                 
-    def get_onto_list(self, go_name):
+    def get_onto_set(self, go_name):
         """
         Return the genes which are in the category of go_name
         """
         go_genes = []
-        if go_name == 'tf':
+        if go_name in ['tf', 'transcription factor']:
             if not self.trans_factor:
                 if self.tfdb is not None:
                     res = self.tfdb.execute("SELECT DISTINCT tf FROM transFactor").fetchall()
@@ -1940,10 +1940,9 @@ class TFTA:
         genes = self.find_target_indra(stmts_d[regulators[0]])
         if of_those:
             genes = genes.intersection(of_those)
-        if target_type == 'tf':
-            tf_set = self.get_tf_set()
-            if tf_set:
-                genes = genes.intersection(tf_set)
+        target_type_set = self.get_onto_set(target_type)
+        if target_type_set:
+            genes = genes.intersection(target_type_set)
             
         if len(regulators) > 1:
             for i in range(1, len(regulators)):
