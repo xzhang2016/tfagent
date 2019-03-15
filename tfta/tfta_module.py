@@ -531,6 +531,12 @@ class TFTA_Module(Bioagent):
         #consider an optional parameter for subsequent query
         of_targets_names = get_of_those_list(content)
         
+        #consider an optional parameter to only return given type of genes
+        target_type = _get_keyword_name(content, descr='target-type')
+        tf_set = set()
+        if target_type == 'tf':
+            tf_set = self.tfta.get_tf_set()
+        
         try:
             target_names,dbname = self.tfta.find_targets(tf_names)
         except TFNotFoundException:
@@ -542,6 +548,11 @@ class TFTA_Module(Bioagent):
         #check if it's a subsequent query
         if of_targets_names:
             target_names = list(set(of_targets_names) & set(target_names))
+        
+        #check if it requires returning a type of genes
+        if tf_set:
+            target_names = tf_set & set(target_names)
+        
         if len(target_names):
             gene_list_str = self.wrap_message(':targets', target_names)
             reply = KQMLList.from_string('(SUCCESS ' + gene_list_str + ')')
@@ -569,13 +580,20 @@ class TFTA_Module(Bioagent):
         if not keyword_name:
             reply = make_failure('NO_KEYWORD')
             return reply
+        
+        #consider an optional parameter for sequencing query
+        of_those_names = get_of_those_list(content)
+        
+        #consider an optional parameter to only return given types of genes
+        target_type = _get_keyword_name(content, descr='target-type')
     
         try:
             stmt_types = stmt_type_map[keyword_name]
         except KeyError as e:
             reply = make_failure('INVALID_KEYWORD')
             return reply
-        lit_messages = self.get_target_indra(tf_names, stmt_types, keyword_name)
+        lit_messages = self.get_target_indra(tf_names, stmt_types, keyword_name, 
+                                             of_those=of_those_names, target_type=target_type)
         if len(lit_messages):
             reply = KQMLList.from_string(
                     '(SUCCESS ' + lit_messages + ')')
@@ -593,6 +611,7 @@ class TFTA_Module(Bioagent):
             tf_arg = content.gets('tf')
             reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
             return reply
+            
         #get tissue name
         tissue_name = _get_tissue_name(content)
         if not tissue_name:
@@ -601,17 +620,29 @@ class TFTA_Module(Bioagent):
         if tissue_name not in self.tissue_list:
             reply = make_failure('INVALID_TISSUE')
             return reply
+            
         #consider an optional parameter for sequencing query
         of_targets_names = get_of_those_list(content)
+        
+        #consider an optional parameter to only return given types of genes
+        target_type = _get_keyword_name(content, descr='target-type')
+        tf_set = set()
+        if target_type == 'tf':
+            tf_set = self.tfta.get_tf_set()
         
         try:
             target_names = self.tfta.find_targets_tissue(tf_names, tissue_name)
         except TFNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
             return reply
+            
         #check if it's a sequencing query
         if of_targets_names:
-            target_names = list(set(of_targets_names) & set(target_names))  
+            target_names = list(set(of_targets_names) & set(target_names))
+        #check if it requires returning a type of genes
+        if tf_set:
+            target_names = tf_set & set(target_names)
+            
         if len(target_names):
             gene_list_str = self.wrap_message(':targets', target_names)
             reply = KQMLList.from_string('(SUCCESS ' + gene_list_str + ')')
@@ -2439,7 +2470,7 @@ class TFTA_Module(Bioagent):
         
         return lit_messages
         
-    def get_target_indra(self, regulator_names, stmt_types, keyword_name):
+    def get_target_indra(self, regulator_names, stmt_types, keyword_name, of_those=None, target_type=None):
         """
         wrap message for multiple regulators case
         regulator_names: list
@@ -2462,7 +2493,7 @@ class TFTA_Module(Bioagent):
             else:
                 self.send_background_support([], regulator_str, 'what', keyword_name)
                 return lit_messages
-        genes, stmt_f = self.tfta.find_target_indra_regulators(stmts_d)        
+        genes, stmt_f = self.tfta.find_target_indra_regulators(stmts_d, of_those=of_those, target_type=target_type)        
         
         if len(genes):
             lit_messages += self.wrap_message(':targets', genes)
@@ -2745,7 +2776,14 @@ class TFTA_Module(Bioagent):
                     tf_str = '"' + tf + '"'
                     tf_list_str += '(:name %s) ' % tf_str
         return descr + ' (' + tf_list_str + ') '
+    
+    def get_target_type_list(self, content):
         
+        #consider an optional parameter to only return given types of genes
+        target_type = _get_keyword_name(content, descr='target-type')
+        tf_set = set()
+        if target_type == 'tf':
+            tf_set = self.tfta.get_tf_set()
     
 def _get_target(target_str):
     agent = None
