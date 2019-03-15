@@ -532,10 +532,7 @@ class TFTA_Module(Bioagent):
         of_targets_names = get_of_those_list(content)
         
         #consider an optional parameter to only return given type of genes
-        target_type = _get_keyword_name(content, descr='target-type')
-        tf_set = set()
-        if target_type == 'tf':
-            tf_set = self.tfta.get_tf_set()
+        target_type_set = self.get_target_type_set(content)
         
         try:
             target_names,dbname = self.tfta.find_targets(tf_names)
@@ -550,8 +547,8 @@ class TFTA_Module(Bioagent):
             target_names = list(set(of_targets_names) & set(target_names))
         
         #check if it requires returning a type of genes
-        if tf_set:
-            target_names = tf_set & set(target_names)
+        if target_type_set:
+            target_names = target_type_set & set(target_names)
         
         if len(target_names):
             gene_list_str = self.wrap_message(':targets', target_names)
@@ -625,10 +622,7 @@ class TFTA_Module(Bioagent):
         of_targets_names = get_of_those_list(content)
         
         #consider an optional parameter to only return given types of genes
-        target_type = _get_keyword_name(content, descr='target-type')
-        tf_set = set()
-        if target_type == 'tf':
-            tf_set = self.tfta.get_tf_set()
+        target_type_set = self.get_target_type_set(content)
         
         try:
             target_names = self.tfta.find_targets_tissue(tf_names, tissue_name)
@@ -640,8 +634,8 @@ class TFTA_Module(Bioagent):
         if of_targets_names:
             target_names = list(set(of_targets_names) & set(target_names))
         #check if it requires returning a type of genes
-        if tf_set:
-            target_names = tf_set & set(target_names)
+        if target_type_set:
+            target_names = target_type_set & set(target_names)
             
         if len(target_names):
             gene_list_str = self.wrap_message(':targets', target_names)
@@ -2418,58 +2412,6 @@ class TFTA_Module(Bioagent):
             lit_messages += self.wrap_message(':other-literature', fothers, hgnc_id=False)
         return lit_messages
         
-    def get_target_indra0(self, regulator_names, stmt_types, keyword_name):
-        """
-        wrap message for multiple regulators case
-        regulator_names: list
-        stmt_types: indra statement type
-        keyword_name: str
-        """
-        lit_messages = ''
-        others = defaultdict(set)
-        mirnas = defaultdict(set)
-        genes = defaultdict(set)
-        for regulator in regulator_names:
-            stmts,success = self.tfta.find_statement_indraDB(subj=regulator, stmt_types=stmt_types)
-            #provenance support
-            self.send_background_support(stmts, regulator, 'what', keyword_name)
-            if len(stmts):
-                genes[regulator] = self.tfta.find_target_indra(stmts)
-        #take the intersection
-        fgenes = genes[regulator_names[0]]
-        if len(regulator_names)>1:
-            for i in range(1, len(regulator_names)):
-                fgenes = fgenes.intersection(genes[regulator_names[i]])
-        if len(fgenes):
-            lit_messages += self.wrap_message(':targets', fgenes)
-        return lit_messages
-        
-    def get_target_indra1(self, regulator_names, stmt_types, keyword_name):
-        """
-        wrap message for multiple regulators case
-        regulator_names: list
-        stmt_types: indra statement type
-        keyword_name: str
-        """
-        lit_messages = ''
-        stmts_d = defaultdict(list)
-        regulator_str = ', '.join(regulator_names[:-1]) + ' and ' + regulator_names[-1]
-        for regulator in regulator_names:
-            stmts,success = self.tfta.find_statement_indraDB(subj=regulator, stmt_types=stmt_types)
-            if len(stmts):
-                stmts_d[regulator] = stmts
-            else:
-                self.send_background_support([], regulator_str, 'what', keyword_name)
-                return lit_messages
-        genes, stmt_f = self.tfta.find_target_indra_regulators(stmts_d)        
-        
-        if len(genes):
-            lit_messages += self.wrap_message(':targets', genes)
-        #provenance support
-        self.send_background_support(stmt_f, regulator_str, 'what', keyword_name)
-        
-        return lit_messages
-        
     def get_target_indra(self, regulator_names, stmt_types, keyword_name, of_those=None, target_type=None):
         """
         wrap message for multiple regulators case
@@ -2777,13 +2719,16 @@ class TFTA_Module(Bioagent):
                     tf_list_str += '(:name %s) ' % tf_str
         return descr + ' (' + tf_list_str + ') '
     
-    def get_target_type_list(self, content):
-        
-        #consider an optional parameter to only return given types of genes
+    def get_target_type_set(self, content):
         target_type = _get_keyword_name(content, descr='target-type')
-        tf_set = set()
-        if target_type == 'tf':
-            tf_set = self.tfta.get_tf_set()
+        target_type_set = set()
+        if target_type:
+            try:
+                target_type_set = self.tfta.get_onto_set(target_type)
+            except GONotFoundException:
+                return target_type_set
+        return target_type_set
+    
     
 def _get_target(target_str):
     agent = None
