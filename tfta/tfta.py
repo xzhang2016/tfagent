@@ -87,7 +87,7 @@ hgnc_genes_set = set(hgnc_symbol_id.keys())
 EXP_THR = 1.5
 
 class TFTA:
-    #transcription factor list, will set when it's first 
+    #transcription factor list, will set when it's first used
     trans_factor = set()
     
     def __init__(self):
@@ -1829,7 +1829,43 @@ class TFTA:
                 db_names = set()
         return db_names
                 
-            
+    def get_onto_list(self, go_name):
+        """
+        Return the genes which are in the category of go_name
+        """
+        go_genes = []
+        if go_name == 'tf':
+            if not self.trans_factor:
+                if self.tfdb is not None:
+                    res = self.tfdb.execute("SELECT DISTINCT tf FROM transFactor").fetchall()
+                    self.trans_factor = set([r[0] for r in res])
+            return self.trans_factor
+        else:
+            try:
+                goids = go_map[go_name]
+            except KeyError:
+                raise GONotFoundException
+            if self.tfdb is not None:
+                for go in goids:
+                    t = (go, )
+                    res = self.tfdb.execute("SELECT geneSymbol FROM go2Genes WHERE termId = ? ", t).fetchall()
+                    go_genes += [r[0] for r in res]
+                go_genes = set(go_genes)
+        return go_genes
+        
+    def get_hgnc_mapping(self):
+        return hgnc_symbol_id
+        
+    def get_tf_set(self):
+        tf_set = set()
+        if not self.trans_factor:
+            if self.tfdb is not None:
+                res = self.tfdb.execute("SELECT DISTINCT tf FROM transFactor").fetchall()
+                self.trans_factor = set([r[0] for r in res])
+                tf_set = self.trans_factor
+        else:
+            tf_set = self.trans_factor
+        return tf_set
     
     #---------------------------------------------#
     #--------methods for querying indra database--#
@@ -1892,7 +1928,7 @@ class TFTA:
         genes = objs.intersection(hgnc_genes_set)
         return genes
         
-    def find_target_indra_regulators(self, stmts_d):
+    def find_target_indra_regulators(self, stmts_d, of_those=None, target_type=None):
         """
         stmts: dict
         return the list of genes, as well as the filtered statements
@@ -1902,6 +1938,13 @@ class TFTA:
         for r in regulators:
             stmt_list += stmts_d[r]
         genes = self.find_target_indra(stmts_d[regulators[0]])
+        if of_those:
+            genes = genes.intersection(of_those)
+        if target_type == 'tf':
+            tf_set = self.get_tf_set()
+            if tf_set:
+                genes = genes.intersection(tf_set)
+            
         if len(regulators) > 1:
             for i in range(1, len(regulators)):
                 temp = self.find_target_indra(stmts_d[regulators[i]])
@@ -1976,8 +2019,7 @@ class TFTA:
                 evidences.add((source_api, pmid, text))
         return evidences
             
-    def get_hgnc_mapping(self):
-        return hgnc_symbol_id
+    
         
 #test functions
 #if __name__ == "__main__":
