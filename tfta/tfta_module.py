@@ -260,10 +260,10 @@ class TFTA_Module(Bioagent):
             gene = _get_target(gene_arg)
             gene_name = gene.name
         except Exception as e:
-            reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
+            reply = self.wrap_family_message1(gene_arg, 'NO_GENE_NAME')
             return reply
         if not gene_name:
-            reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
+            reply = self.wrap_family_message1(gene_arg, 'NO_GENE_NAME')
             return reply
         try:
             is_onto = self.tfta.Is_gene_onto(keyword_name, gene_name)
@@ -2728,6 +2728,22 @@ class TFTA_Module(Bioagent):
             except GONotFoundException:
                 return target_type_set
         return target_type_set
+        
+    def wrap_family_message1(self, target_arg, msg):
+        term_id = _get_term_id(target_arg)
+        if len(term_id):
+            members = self.tfta.find_members(term_id)
+        if members:
+            res_str = ''
+            for id in members:
+                for a in members[id]:
+                    res_str += '(:name %s)' % a.name
+                res_str = '(:term %s :as (%s))' % (id, res_str)
+            res_str = '(resolve :members (' + res_str + '))'
+            reply = make_failure_clarification(msg, res_str)
+        else:
+            reply = make_failure(msg)
+        return reply
     
     
 def _get_target(target_str):
@@ -2762,7 +2778,7 @@ def _get_family_name(target_arg):
     return agent
     
 def _get_term_id(target_arg, otype=1):
-    term_id = []
+    term_id = dict()
     if target_arg:
         if otype == 1:
             ont1 = ['ONT::PROTEIN-FAMILY', 'ONT::GENE-FAMILY']
@@ -2771,7 +2787,8 @@ def _get_term_id(target_arg, otype=1):
         tp = TripsProcessor(target_arg)
         for term in tp.tree.findall('TERM'):
             if term.find('type').text in ont1:
-                term_id.append(term.attrib['id'])
+                id = term.attrib['id']
+                term_id[id] = tp._get_agent_by_id(id, None)
     #print('term_id = ' + ','.join(term_id))
     return term_id
 
@@ -2786,6 +2803,10 @@ def _wrap_family_message(target_arg, msg):
     else:
         reply = make_failure(msg)
     return reply
+    
+
+    
+
 
 def _wrap_family_message2(target_arg, msg):
     family = _get_family_name(target_arg)
