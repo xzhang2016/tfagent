@@ -769,7 +769,7 @@ class TFTA_Module(Bioagent):
         For a given gene list and keyword, reply the related pathways information
         """
         keyword_name = _get_keyword_name(content, hyphen=True)
-        if not keyword_name:
+        if not keyword_name or keyword_name in ['pathway', 'signaling pathway']:
             reply = make_failure('NO_KEYWORD')
             return reply
             
@@ -958,7 +958,7 @@ class TFTA_Module(Bioagent):
         For a given keyword, reply the pathways involving the keyword
         """
         keyword_name = _get_keyword_name(content, hyphen=True)
-        if not keyword_name:
+        if not keyword_name or keyword_name in ['pathway', 'signaling pathway']:
             reply = make_failure('NO_PATHWAY_NAME')
             return reply
         else:
@@ -2998,10 +2998,16 @@ def _wrap_mirna_clarification2(miRNA_mis, clari_mirna):
 
 def _wrap_pathway_message(pathwayName, dblink, keyword=None):
     pathway_list_str = ''
+    #limit the number of pathways to return
+    limit = 50
+    num = 0
     if keyword:
         if type(keyword).__name__ == 'str':
             keyword = [keyword]
         for pn, dbl in zip(pathwayName, dblink):
+            num += 1
+            if num > limit:
+                break
             if _filter_subword(pn, keyword):
                 pnslash = '"' + pn +'"'
                 dbl = '"' + dbl +'"'
@@ -3014,6 +3020,9 @@ def _wrap_pathway_message(pathwayName, dblink, keyword=None):
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
     else:
         for pn, dbl in zip(pathwayName, dblink):
+            num += 1
+            if num > limit:
+                break
             pnslash = '"' + pn + '"'
             dbl = '"' + dbl + '"'
             pathway_list_str += '(:name %s :dblink %s) ' % (pnslash, dbl)
