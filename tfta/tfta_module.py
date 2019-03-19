@@ -213,11 +213,11 @@ class TFTA_Module(Bioagent):
         keyword_arg = content.get('keyword')
         db_arg = content.get('database')
         if all([target_arg, keyword_arg]):
-            reply = self.respond_find_common_pathway_genes_keyword2(content)
+            reply = self.respond_find_common_pathway_genes_keyword(content)
         elif all([target_arg, db_arg]):
             reply = self.respond_find_common_pathway_genes_db(content)
         elif target_arg:
-            reply = self.respond_find_common_pathway_genes2(content)
+            reply = self.respond_find_common_pathway_genes(content)
         else:
             reply = make_failure('UNKNOWN_TASK')
         return reply
@@ -833,34 +833,8 @@ class TFTA_Module(Bioagent):
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
-        pathway_list_str = ''
-        keys = list(tflist.keys())
-        #temp_tfs = [] #track all the tfs
-        if keys:
-            for key in keys:
-                if _filter_subword(pathwayName[key], pathway_names):
-                    #temp_tfs += tflist[key]
-                    tf_list_str = ''
-                    if of_gene_names:
-                        tfs = set(of_gene_names) & set(tflist[key])
-                    else:
-                        tfs = tflist[key]
-                    if tfs:
-                        for tf in tfs:
-                            tf_list_str += '(:name %s) ' % tf
-                        tf_list_str = '(' + tf_list_str + ')'
-                        pn = '"' + pathwayName[key] + '"'
-                        dl = '"' + dblink[key] + '"'
-                        pathway_list_str += '(:name %s :dblink %s :tfs %s) ' % (pn, dl, tf_list_str)
-            if pathway_list_str:
-                reply = KQMLList.from_string(
-                        '(SUCCESS :pathways (' + pathway_list_str + '))')
-            else:
-                reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
-        else:
-            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
-            return reply
-        #self.gene_list = list(set(temp_tfs))
+        reply = _wrap_pathway_genelist_message(pathwayName, dblink, tflist, pathway_names=pathway_names,
+                                               gene_descr=':tfs', of_gene_names=of_gene_names)
         return reply
         
     def respond_find_kinase_pathway(self, content):
@@ -884,27 +858,9 @@ class TFTA_Module(Bioagent):
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
-        pathway_list_str = ''
-        keys = kinaselist.keys()
-        for key in keys:
-            if _filter_subword(pathwayName[key], pathway_names):
-                kinase_list_str = ''
-                if of_those_names:
-                    kinases = set(of_those_names) & set(kinaselist[key])
-                else:
-                    kinases = kinaselist[key]
-                if kinases:
-                    for kinase in kinases:
-                        kinase_list_str += '(:name %s) ' % kinase
-                    kinase_list_str = '(' + kinase_list_str + ')'
-                    pn = '"' + pathwayName[key] + '"'
-                    dl = '"' + dblink[key] + '"'
-                    pathway_list_str += '(:name %s :dblink %s :kinase %s) ' % (pn, dl, kinase_list_str)
-        if pathway_list_str:
-            reply = KQMLList.from_string(
-                    '(SUCCESS :pathways (' + pathway_list_str + '))')
-        else:
-            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+        
+        reply = _wrap_pathway_genelist_message(pathwayName, dblink, kinaselist, pathway_names=pathway_names,
+                                               gene_descr=':kinase', of_gene_names=of_those_names)
         return reply
 
     def respond_find_gene_pathway(self, content):
@@ -925,31 +881,10 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
         #consider an optional parameter for subsequent query
-        of_genes_names = get_of_those_list(content)
+        of_gene_names = get_of_those_list(content)
         
-        pathway_list_str = ''
-        #temp_genes = []
-        for pid in pathwayId:
-            if _filter_subword(pathwayName[pid], pathway_names):
-                #temp_genes += genelist[pid]
-                gene_list_str = ''
-                if of_genes_names:
-                    genes = set(of_genes_names) & set(genelist[pid])
-                else:
-                    genes = genelist[pid]
-                if genes:
-                    for gene in genes:
-                        gene_list_str += '(:name %s) ' % gene
-                    gene_list_str = '(' + gene_list_str + ')'
-                    pnslash = '"' + pathwayName[pid] +'"'
-                    pwlink = '"' + plink[pid] + '"'
-                    pathway_list_str += '(:name %s :dblink %s :genes %s) ' % (pnslash, pwlink, gene_list_str)
-        if pathway_list_str:
-            reply = KQMLList.from_string(
-                        '(SUCCESS :pathways (' + pathway_list_str + '))')
-            #self.gene_list = list(set(temp_genes))
-        else:
-            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+        reply = _wrap_pathway_genelist_message(pathwayName, plink, genelist, pathway_names=pathway_names,
+                                       gene_descr=':genes', of_gene_names=of_gene_names)
         return reply
 
     def respond_find_pathway_keyword(self, content):
@@ -985,65 +920,19 @@ class TFTA_Module(Bioagent):
             return reply
         
         try:
-            pathwayId, pathwayName, tflist, dblink = \
-                self.tfta.find_tf_keyword(keyword_name)
+            pathwayName, tflist, dblink = self.tfta.find_tf_keyword(keyword_name)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
-        pathway_list_str = ''
-        temp_tfs = []
-        for pid, pn, dl in zip(pathwayId, pathwayName, dblink):
-            if _filter_subword(pn, [keyword_name]):
-                tf_list_str = ''
-                temp_tfs += tflist[pid]
-                for tf in tflist[pid]:
-                    tf_list_str += '(:name %s) ' % tf
-                tf_list_str = '(' + tf_list_str + ')'
-                pnslash = '"' + pn + '"'
-                dl = '"' + dl + '"'
-                pathway_list_str += '(:name %s :dblink %s :tfs %s) ' % (pnslash, dl, tf_list_str)
-        if pathway_list_str:
-            reply = KQMLList.from_string(
-                '(SUCCESS :pathways (' + pathway_list_str + '))')
-        else:
-            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
-        self.gene_list = list(set(temp_tfs))
+        
+        #consider an optional parameter for subsequent query
+        of_those_names = get_of_those_list(content)
+        
+        reply = _wrap_pathway_genelist_message(pathwayName, dblink, tflist, pathway_names=[keyword_name],
+                                               gene_descr=':tfs', of_gene_names=of_those_names)
         return reply
 
     def respond_find_common_tfs_genes(self, content):
-        """
-        Response content to FIND-COMMON-TF-GENES request
-        For a given target list, reply the tfs regulating these genes
-        and the frequency of each TF
-        """
-        target_names = get_of_those_list(content, descr='target')
-        if not target_names:
-            target_arg = content.gets('target')
-            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
-            return reply
-            
-        try:
-            tf_counts = self.tfta.find_tfs_count(target_names)
-        except TFNotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
-            return reply
-        #cluster the tfs according to the count
-        tf_clustered = cluster_dict_by_value(tf_counts)
-        tf_list_str = ''
-        counts = list(tf_clustered.keys())
-        counts.reverse()
-        for ct in counts:
-            tf_list = ''
-            for tf in tf_clustered[ct]:
-                tf_list += '(:name %s) ' % tf
-            tf_list = ':tf-list (' + tf_list + ')'
-            tf_list += ' :count %d' % ct
-            tf_list_str += '(' + tf_list + ') '
-        reply = KQMLList.from_string(
-            '(SUCCESS :tfs (' + tf_list_str + '))')
-        return reply
-        
-    def respond_find_common_tfs_genes2(self, content):
         """
         Response content to FIND-COMMON-TF-GENES request
         For a given target list, reply the tfs regulating these genes
@@ -1090,107 +979,8 @@ class TFTA_Module(Bioagent):
         else:
             reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
         return reply
-
-    def respond_find_overlap_targets_tf_genes(self, content):
-        """
-        For given tf list, find the targets which are regulated
-        by all of them; then return the overlap between the targets
-        and the given gene list
-        """
-        tf_names = get_of_those_list(content, descr='tf')
-        if not tf_names:
-            tf_arg = content.gets('tf')
-            reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
-            return reply
-        
-        target_names = get_of_those_list(content, descr='target')
-        if not target_names:
-            target_arg = content.gets('target')
-            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
-            return reply
-        
-        try:
-            overlap_targets = \
-                self.tfta.find_overlap_targets_tfs_genes(tf_names, target_names)
-        except TFNotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :targets NIL)')
-            return reply
-        if len(overlap_targets):
-            target_list_str = ''
-            for tg in overlap_targets:
-                target_list_str += '(:name %s ) ' % tg
-            reply = KQMLList.from_string(
-                '(SUCCESS :targets (' + target_list_str + '))')
-        else:
-            reply = KQMLList.from_string('(SUCCESS :targets NIL)')
-        return reply
         
     def respond_find_common_pathway_genes(self, content):
-        """
-        response content to FIND-COMMON-PATHWAY-GENES request
-        """
-        target_arg = content.gets('target')
-        if not target_arg:
-            target_arg = content.gets('gene')
-        target_names = get_of_those_list(content, descr='target')
-        if not target_names:
-            target_names = get_of_those_list(content, descr='gene')
-        if not target_names:
-            reply = _wrap_family_message(target_arg, 'NO_GENE_NAME')
-            return reply
-            
-        try:
-            pathwayName,externalId,source,dblink,counts = self.tfta.find_pathway_count_genes(target_names)
-        except PathwayNotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
-            return reply
-        path_list_str = ''
-        for pn,eid,src,dbl,ct in zip(pathwayName,externalId,source,dblink,counts):
-            pnslash = '"' + pn +'"'
-            #eidslash= '"' + eid +'"'
-            dbl = '"' + dbl +'"'
-            path_list_str += '(:name %s :dblink %s :count %d) ' % (pnslash, dbl, ct)
-        reply = KQMLList.from_string(
-               '(SUCCESS :pathways (' + path_list_str + '))')
-        return reply
-
-    def respond_find_common_pathway_genes_keyword(self, content):
-        """
-        Response content to FIND-COMMON-PATHWAY-GENES-KEYWORD request
-        """
-        keyword_name = _get_keyword_name(content, hyphen=True)
-        if not keyword_name:
-            reply = make_failure('NO_KEYWORD')
-            return reply
-        else:
-            keyword_name = trim_word([keyword_name], 'pathway')
-            
-        target_arg = content.gets('target')
-        if not target_arg:
-            target_arg = content.gets('gene')
-        target_names = get_of_those_list(content, descr='target')
-        if not target_names:
-            target_names = get_of_those_list(content, descr='gene')
-        if not target_names:
-            reply = _wrap_family_message(target_arg, 'NO_GENE_NAME')
-            return reply
-            
-        try:
-            pathwayName,externalId,source,dblink,counts = \
-               self.tfta.find_pathway_count_genes_keyword(target_names, keyword_name[0])
-        except PathwayNotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
-            return reply
-        path_list_str = ''
-        for pn,dbl,ct in zip(pathwayName,dblink,counts):
-            pnslash = '"' + pn +'"'
-            dbl = '"' + dbl +'"'
-            path_list_str += '(:name %s :dblink %s :count %d) ' % (pnslash, dbl, ct)
-        reply = KQMLList.from_string(
-               '(SUCCESS :pathways (' + path_list_str + '))')
-        return reply
-        
-    def respond_find_common_pathway_genes2(self, content):
         """
         response content to FIND-COMMON-PATHWAY-GENES request
         """
@@ -1209,25 +999,16 @@ class TFTA_Module(Bioagent):
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
-        path_list_str = ''
-        for pth in genes.keys():
-            pnslash = '"' + pathwayName[pth] +'"'
-            dbl = '"' + dblink[pth] +'"'
-            gene_list_str = ''
-            for g in genes[pth]:
-                gene_list_str += '(:name %s) ' % g
-            path_list_str += '(:name %s :dblink %s ' % (pnslash, dbl)
-            path_list_str += ':gene-list (' + gene_list_str + ')) '
-        reply = KQMLList.from_string(
-               '(SUCCESS :pathways (' + path_list_str + '))')
+            
+        reply = _wrap_pathway_genelist_message(pathwayName, dblink, genes, gene_descr=':gene-list')
         return reply
 
-    def respond_find_common_pathway_genes_keyword2(self, content):
+    def respond_find_common_pathway_genes_keyword(self, content):
         """
         Response content to FIND-COMMON-PATHWAY-GENES-KEYWORD request
         """
         keyword_name = _get_keyword_name(content, hyphen=True)
-        if not keyword_name:
+        if not keyword_name or keyword_name in ['pathway', 'signaling pathway']:
             reply = make_failure('NO_KEYWORD')
             return reply
         else:
@@ -1249,21 +1030,9 @@ class TFTA_Module(Bioagent):
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
-        path_list_str = ''
-        for pth in genes.keys():
-            if _filter_subword(pathwayName[pth], keyword_name):
-                pnslash = '"' + pathwayName[pth] +'"'
-                dbl = '"' + dblink[pth] +'"'
-                gene_list_str = ''
-                for g in genes[pth]:
-                    gene_list_str += '(:name %s) ' % g
-                path_list_str += '(:name %s :dblink %s ' % (pnslash, dbl)
-                path_list_str += ':gene-list (' + gene_list_str + ')) '
-        if path_list_str:
-            reply = KQMLList.from_string(
-                   '(SUCCESS :pathways (' + path_list_str + '))')
-        else:
-            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+            
+        reply = _wrap_pathway_genelist_message(pathwayName, dblink, genes, pathway_names=keyword_name,
+                                               gene_descr=':gene-list')
         return reply
         
     def respond_find_common_pathway_genes_db(self, content):
@@ -1291,17 +1060,8 @@ class TFTA_Module(Bioagent):
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
-        path_list_str = ''
-        for pth in genes.keys():
-            pnslash = '"' + pathwayName[pth] +'"'
-            dbl = '"' + dblink[pth] +'"'
-            gene_list_str = ''
-            for g in genes[pth]:
-                gene_list_str += '(:name %s) ' % g
-            path_list_str += '(:name %s :dblink %s ' % (pnslash, dbl)
-            path_list_str += ':gene-list (' + gene_list_str + ')) '
-        reply = KQMLList.from_string(
-               '(SUCCESS :pathways (' + path_list_str + '))')
+            
+        reply = _wrap_pathway_genelist_message(pathwayName, dblink, genes, gene_descr=':gene-list')
         return reply
 
     def respond_is_pathway_gene(self, content):
@@ -2319,7 +2079,7 @@ class TFTA_Module(Bioagent):
                  'FIND-MIRNA-COUNT-GENE':respond_find_miRNA_count_target,
                  'FIND-GENE-COUNT-MIRNA':respond_find_target_count_miRNA,
                  'IS-MIRNA-TARGET':respond_is_miRNA_target2,
-                 'FIND-COMMON-TF-GENES':respond_find_common_tfs_genes2,
+                 'FIND-COMMON-TF-GENES':respond_find_common_tfs_genes,
                  'IS-PATHWAY-GENE':respond_is_pathway_gene,
                  'FIND-TARGET-MIRNA':respond_find_target_miRNA,
                  'FIND-MIRNA-TARGET':respond_find_miRNA_target,
@@ -2335,7 +2095,6 @@ class TFTA_Module(Bioagent):
                  'FIND-GENE-PATHWAY':respond_find_gene_pathway,
                  'FIND-PATHWAY-KEYWORD':respond_find_pathway_keyword,
                  'FIND-TF-KEYWORD':respond_find_tf_keyword,
-                 'FIND-OVERLAP-TARGETS-TF-GENES':respond_find_overlap_targets_tf_genes,
                  'FIND-COMMON-PATHWAY-GENES-KEYWORD':respond_find_common_pathway_genes_keyword,
                  'FIND-GENE-GO-TF':respond_find_genes_go_tf2,
                  'IS-TF-TARGET-TISSUE':respond_is_tf_target_tissue,
@@ -2739,7 +2498,7 @@ class TFTA_Module(Bioagent):
                 for a in members[id]:
                     res_str += '(:name %s)' % a.name
                 res_str = '(:term %s :as (%s))' % (id, res_str)
-            res_str = '(resolve :members (' + res_str + '))'
+            res_str = '(resolve :agents (' + res_str + '))'
             reply = make_failure_clarification(msg, res_str)
         else:
             reply = make_failure(msg)
@@ -3029,6 +2788,66 @@ def _wrap_pathway_message(pathwayName, dblink, keyword=None):
         pathway_list_str = '(' + pathway_list_str + ')'
         reply = KQMLList('SUCCESS')
         reply.set('pathways', pathway_list_str)
+    return reply
+    
+def _wrap_pathway_genelist_message(pathwayName, dblink, genelist, pathway_names=None,
+                                   gene_descr=':tfs', of_gene_names=None, keyword=None):
+    """
+    parameters
+    -------------
+    pathwayName: dict[pthid]
+    dblink: dict[pthid]
+    genelist: dict[pthid]
+    keyword: list
+    """
+    limit = 50
+    num = 0
+    pathway_list_str = ''
+    keys = list(genelist.keys())
+    if keys:
+        if pathway_names:
+            for key in keys:
+                if _filter_subword(pathwayName[key], pathway_names):
+                    gene_list_str = ''
+                    if of_gene_names:
+                        genes = set(of_gene_names) & set(genelist[key])
+                    else:
+                        genes = genelist[key]
+                    if genes:
+                    #check the limit
+                        num += 1
+                        if num > limit:
+                            break
+                        for gene in genes:
+                            gene_list_str += '(:name %s) ' % gene
+                        gene_list_str = '(' + gene_list_str + ')'
+                        pn = '"' + pathwayName[key] + '"'
+                        dl = '"' + dblink[key] + '"'
+                        pathway_list_str += '(:name %s :dblink %s %s %s) ' % (pn, dl, gene_descr, gene_list_str)
+        else:
+            for key in keys:
+                gene_list_str = ''
+                if of_gene_names:
+                    genes = set(of_gene_names) & set(genelist[key])
+                else:
+                    genes = genelist[key]
+                if genes:
+                #check the limit
+                    num += 1
+                    if num > limit:
+                        break
+                    for gene in genes:
+                        gene_list_str += '(:name %s) ' % gene
+                    gene_list_str = '(' + gene_list_str + ')'
+                    pn = '"' + pathwayName[key] + '"'
+                    dl = '"' + dblink[key] + '"'
+                    pathway_list_str += '(:name %s :dblink %s %s %s) ' % (pn, dl, gene_descr, gene_list_str)
+        if pathway_list_str:
+            reply = KQMLList.from_string('(SUCCESS :pathways (' + pathway_list_str + '))')
+        else:
+            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+    else:
+        reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
     return reply
     
 def _filter_subword(sentence, pattern_list):
