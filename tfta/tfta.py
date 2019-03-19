@@ -9,6 +9,7 @@ import numpy as np
 from collections import defaultdict
 import math
 from indra import has_config
+from indra.tools import expand_families
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
@@ -17,6 +18,8 @@ logger = logging.getLogger('TFTA')
 if has_config('INDRA_DB_REST_URL') and has_config('INDRA_DB_REST_API_KEY'):
     from indra.sources.indra_db_rest import get_statements
     from indra.tools.assemble_corpus import filter_evidence_source
+    from indra.tools import expand_families
+    from indra.preassembler.hierarchy_manager import hierarchies
     CAN_CHECK_STATEMENTS = True
 else:
     logger.warning("Harvard web api not specified. Cannot get evidence from literature.")
@@ -2017,8 +2020,40 @@ class TFTA:
                 text = ev.text
                 evidences.add((source_api, pmid, text))
         return evidences
+        
+    def find_members(self, term_id):
+        """
+        Find members for a collection
+        
+        Parameters
+        -------------
+        term_id: dict
+        Its key is term id
+        Value is indra.statements.Agent
+        
+        Returns
+        ------------
+        members: dict
+        Its key is term id
+        Value is list[indra.statements.Agent]
+        """
+        members = dict()
+        for id, agent in term_id.items():
+            magents = _get_members(agent)
+            if magents:
+                members[id] = magents
+        return members
             
-    
+def _get_members(agent):
+    dbname, dbid = agent.get_grounding()
+    if dbname not in ['FPLX', 'BE']:
+        return None
+    eh = hierarchies['entity']
+    uri = eh.get_uri(dbname, dbid)
+    children_uris = sorted(eh.get_children(uri))
+    children_agents = [expand_families._agent_from_uri(uri)
+                        for uri in children_uris]
+    return children_agents
         
 #test functions
 #if __name__ == "__main__":
