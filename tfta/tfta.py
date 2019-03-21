@@ -370,85 +370,42 @@ class TFTA:
             dblink = []
         return pathwayId,pathwayName,externalId,source,dblink
 
-    def find_pathways_from_dbsource_geneName1(self, dbsource,gene_name):
-        """
-        return pathway information for given dbsource and gene_name
-        """
-        pathwayId = []
-        pathwayName = []
-        externalId = []
-        psource = []
-        dblink = []
-        if self.tfdb is not None:
-            #regstr='%'+pathway_name+'%'
-            t = (gene_name[0],)
-            res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
-                                    "WHERE genesymbol = ? ", t).fetchall()
-            if res1:
-                pids = [r[0] for r in res1]
-            else:
-                raise PathwayNotFoundException
-            
-            for pid in pids:  
-                t = (pid, dbsource)
-                res = self.tfdb.execute("SELECT * FROM pathwayInfo "
-                                    "WHERE Id = ? AND source LIKE ? ", t).fetchall()
-            
-                if res:
-                    pathwayId = pathwayId + [r[0] for r in res]
-                    pathwayName = pathwayName + [r[1] for r in res]
-                    externalId = externalId + [r[2] for r in res]
-                    psource = psource + [r[3] for r in res]
-                    dblink = dblink + [r[4] for r in res]
-            #sort
-            if len(pathwayName):
-                pathwayName,pathwayId,externalId,psource,dblink = \
-                     list(zip(*sorted(zip(pathwayName,pathwayId,externalId,psource,dblink))))
-        return pathwayId,pathwayName,externalId,psource,dblink
-
     def find_pathways_from_dbsource_geneName(self, dbsource,gene_names):
         """
         return pathway information for given dbsource and gene_names
         """
         #query
-        pathwayId = []
         pathwayName = []
-        externalId = []
-        psource = []
         dblink = []
+        fpname = []
+        fdblink = []
         if self.tfdb is not None:
             pathlist = []
             for gene_name in gene_names:
                 t = (gene_name,dbsource)
                 print(t)
-                res = self.tfdb.execute("SELECT Id FROM pathwayInfo "
+                res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
                                    "WHERE Id in (SELECT DISTINCT pathwayID FROM pathway2Genes "
                                    "WHERE genesymbol = ?) AND source LIKE ? ", t).fetchall()
                 if res:
                     pathlist = pathlist + [r[0] for r in res]
+                    pathwayName += [r[1] for r in res]
+                    dblink += [r[2] for r in res]
                 else:
                     raise PathwayNotFoundException
             #interaction
-            pathIDs = []
-            for pth in set(pathlist):
-                if pathlist.count(pth) == len(gene_names):
-                    pathIDs.append(pth)
-            if len(pathIDs):
-                for pth in pathIDs:
-                    t = (pth,)
-                    res = self.tfdb.execute("SELECT * FROM pathwayInfo "
-                                   "WHERE Id = ? ", t).fetchall()
-                    pathwayId = pathwayId + [r[0] for r in res]
-                    pathwayName = pathwayName + [r[1] for r in res]
-                    externalId = externalId + [r[2] for r in res]
-                    psource = psource + [r[3] for r in res]
-                    dblink = dblink + [r[4] for r in res]
+            pids = set(pathlist)
+            if pids:
+                for pth in pids:
+                    if pathlist.count(pth) == len(gene_names):
+                        ind = pathlist.index(pth)
+                        fpname.append(pathwayName[ind])
+                        fdblink.append(dblink[ind])
             else:
                 raise PathwayNotFoundException    
             #sort
-            pathwayName,pathwayId,externalId,psource,dblink = \
-                    list(zip(*sorted(zip(pathwayName,pathwayId,externalId,psource,dblink))))
-        return pathwayId,pathwayName,externalId,psource,dblink
+            fpname,fdblink = list(zip(*sorted(zip(fpname,fdblink))))
+        return fpname,fdblink
 
     def find_genes_from_pathwayName(self, pathway_names):
         """
@@ -486,7 +443,7 @@ class TFTA:
                     genelist[pthID] = genes
             else:
                 raise PathwayNotFoundException
-        return pathwayId,pathwayName,genelist,pw_link
+        return pathwayName,genelist,pw_link
 
     def find_tf_pathway(self,pathway_names):
         """
@@ -615,7 +572,8 @@ class TFTA:
         """
         pname = dict()
         plink = dict()
-        upid = []
+        fpname = []
+        fdblink = []
         if self.tfdb is not None:
             pids = []
             pn = []
@@ -638,7 +596,6 @@ class TFTA:
                 raise PathwayNotFoundException
                     
             upid = list(set(pids))
-            fpid = []
             for pthID in upid:
                 t = (pthID,)
                 res1 = self.tfdb.execute("SELECT DISTINCT genesymbol FROM pathway2Genes "
@@ -646,10 +603,11 @@ class TFTA:
                 genes = [r[0] for r in res1]
                 overlap_genes = list(set(gene_names) & set(genes))
                 if len(overlap_genes) == len(gene_names):
-                    fpid.append(pthID)
-            if not len(fpid):
+                    fpname.append(pname[pthID])
+                    fdblink.append(plink[pthID])
+            if not len(fpname):
                 raise PathwayNotFoundException
-            return fpid, pname, plink
+        return fpname, fdblink
 
     def find_pathway_gene_keyword(self,gene_names, keyword):
         """
@@ -1594,6 +1552,8 @@ class TFTA:
         """
         pathwayName = dict()
         pw_link = dict()
+        fpname = []
+        fdblink = []
         if self.tfdb is not None:
             pn = []
             pids = []
@@ -1614,7 +1574,9 @@ class TFTA:
                     pw_link[pids[i]] = plink[i]
             else:
                 raise PathwayNotFoundException
-        return pathwayId,pathwayName,pw_link
+            fpname = pathwayName.values()
+            fdblink = pw_link.values()
+        return fpname, fdblink
 
     def gets_similar_miRNAs(self, miRNA_names):
         """
