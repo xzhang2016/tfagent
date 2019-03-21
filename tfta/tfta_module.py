@@ -785,7 +785,7 @@ class TFTA_Module(Bioagent):
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
-        reply = _wrap_pathway_message(pathwayName, dblink, keyword=keyword_name)
+        reply = _wrap_pathway_message(pathwayName, dblink, keyword=[keyword_name])
         return reply
 
     def respond_find_pathway_db_gene(self, content):
@@ -804,8 +804,7 @@ class TFTA_Module(Bioagent):
             return reply
             
         try:
-            pathwayId, pathwayName, externalId, source, dblink = \
-                self.tfta.find_pathways_from_dbsource_geneName(db_name,gene_names)
+            pathwayName,dblink = self.tfta.find_pathways_from_dbsource_geneName(db_name,gene_names)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
@@ -875,8 +874,7 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_PATHWAY_NAME')
             return reply
         try:
-            pathwayId,pathwayName,genelist,plink = \
-                self.tfta.find_genes_from_pathwayName(pathway_names)
+            pathwayName,genelist,plink = self.tfta.find_genes_from_pathwayName(pathway_names)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
@@ -1083,23 +1081,13 @@ class TFTA_Module(Bioagent):
             return reply
             
         try:
-            pids, pathwayName, dblink = \
+            pathwayName, dblink = \
                 self.tfta.Is_pathway_gene(pathway_names, gene_names)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
-            return reply            
-        pathway_list_str = ''
-        for pid in pids:
-            if _filter_subword(pathwayName[pid], pathway_names):
-                pn = '"' + pathwayName[pid] + '"'
-                dbl = '"' + dblink[pid] + '"'
-                pathway_list_str += \
-                    '(:name %s :dblink %s) ' % (pn, dbl)
-        if pathway_list_str:
-            reply = KQMLList.from_string(
-                '(SUCCESS :pathways (' + pathway_list_str + '))')
-        else:
-            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+            return reply
+            
+        reply = _wrap_pathway_message(pathwayName, dblink, keyword=pathway_names)
         return reply
 
     def respond_find_genes_go_tf(self, content):
@@ -1532,23 +1520,13 @@ class TFTA_Module(Bioagent):
             pathway_names = trim_word([pathway_names], 'pathway')
         
         try:
-            pathwayId,pathwayName,dblink = \
+            pathwayName,dblink = \
                     self.tfta.find_pathway_db_keyword(db_name, pathway_names)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
-            return reply        
-        pathway_list_str = ''
-        for id in pathwayId:
-            if _filter_subword(pathwayName[id], pathway_names):
-                pn = '"' + pathwayName[id] + '"'
-                dbl = '"' + dblink[id] + '"'
-                pathway_list_str += \
-                    '(:name %s :dblink %s) ' % (pn, dbl)
-        if pathway_list_str:
-            reply = KQMLList.from_string(
-                '(SUCCESS :pathways (' + pathway_list_str + '))')
-        else:
-            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+            return reply
+            
+        reply = _wrap_pathway_message(pathwayName, dblink, keyword=pathway_names)
         return reply
 
     def respond_find_tissue_gene(self, content):
@@ -2563,10 +2541,6 @@ def _wrap_family_message(target_arg, msg):
         reply = make_failure(msg)
     return reply
     
-
-    
-
-
 def _wrap_family_message2(target_arg, msg):
     family = _get_family_name(target_arg)
     family_name = []
@@ -2756,6 +2730,11 @@ def _wrap_mirna_clarification2(miRNA_mis, clari_mirna):
     return mir_str
 
 def _wrap_pathway_message(pathwayName, dblink, keyword=None):
+    """
+    pathwayName: list
+    dblink: list
+    keyword: list or None
+    """
     pathway_list_str = ''
     #limit the number of pathways to return
     limit = 50
@@ -2791,14 +2770,16 @@ def _wrap_pathway_message(pathwayName, dblink, keyword=None):
     return reply
     
 def _wrap_pathway_genelist_message(pathwayName, dblink, genelist, pathway_names=None,
-                                   gene_descr=':tfs', of_gene_names=None, keyword=None):
+                                   gene_descr=':tfs', of_gene_names=None):
     """
     parameters
     -------------
     pathwayName: dict[pthid]
     dblink: dict[pthid]
     genelist: dict[pthid]
-    keyword: list
+    pathway_names: list or None
+    gene_descr: string
+    of_gene_names: list
     """
     limit = 50
     num = 0
