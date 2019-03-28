@@ -658,6 +658,7 @@ class TFTA_Module(Bioagent):
             
         #consider an optional parameter for subsequent query
         of_tfs_names = get_of_those_list(content)
+        
         try:
             tf_names,dbname = self.tfta.find_tfs(target_names)
         except TargetNotFoundException:
@@ -667,13 +668,13 @@ class TFTA_Module(Bioagent):
             return reply
         #check if it's a subsequent query
         if of_tfs_names:
-            tf_names = list(set(of_tfs_names) & set(tf_names))   
+            tf_names = list(set(of_tfs_names) & set(tf_names))
         if len(tf_names):
             gene_list_str = self.wrap_message(':tfs', tf_names)
             reply = KQMLList.from_string('(SUCCESS ' + gene_list_str + ')')
         else:
             reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
-        self.gene_list = tf_names
+        #self.gene_list = tf_names
         #provenance support
         self.send_background_support_db(tf_names, target_names, dbname, find_tf=True)
         return reply
@@ -724,7 +725,7 @@ class TFTA_Module(Bioagent):
         if tissue_name not in self.tissue_list:
             reply = make_failure('INVALID_TISSUE')
             return reply
-        #consider an optional parameter for sequencing query
+        #consider an optional parameter for subsequent query
         of_tfs_names = get_of_those_list(content)
         
         try:
@@ -1636,34 +1637,41 @@ class TFTA_Module(Bioagent):
             reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         target_names = list(set(target_names))
-        try:
-            keyword_arg = content.get('keyword')
-            keyword_name = keyword_arg.data
-        except Exception as e:
+        
+        keyword_name = _get_keyword_name(content)
+        if not keyword_name:
             reply = make_failure('NO_KEYWORD')
             return reply
-        try:
-            source_arg = content.get('source')
-            source_name = source_arg.data
-        except Exception as e:
+            
+        source_name = _get_keyword_name(content, descr='source')
+        if not source_name:
             reply = make_failure('INVALID_SOURCE')
             return reply
-        if source_name.lower() == 'literature':
+            
+        #consider an optional parameter for subsequent query
+        of_those_names = set(get_of_those_list(content))
+            
+        if source_name == 'literature':
             #literature result
             try:
-                stmt_types = stmt_type_map[keyword_name.lower()]
+                stmt_types = stmt_type_map[keyword_name]
             except KeyError as e:
                 reply = make_failure('INVALID_KEYWORD')
                 return reply
-            lit_messages = self.get_regulator_indra(target_names, stmt_types, keyword_name)
+            if of_those_names:
+                lit_messages = self.get_regulator_indra_those(target_names, stmt_types, keyword_name,
+                                                        of_those=of_those_names)
+            else:
+                lit_messages = self.get_regulator_indra(target_names, stmt_types, keyword_name)
             if len(lit_messages):
                 reply = KQMLList.from_string(
                         '(SUCCESS :regulators (' + lit_messages + '))')
             else:
                 reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
-        elif source_name.lower() == 'geo rnai':
+        elif source_name == 'geo rnai':
             #kinase regualtion
-            kin_messages = self.get_kinase_regulation(target_names, keyword_name.lower())
+            kin_messages = self.get_kinase_regulation(target_names, keyword_name, of_those=of_those_names)
+            
             if len(kin_messages):
                 reply = KQMLList.from_string(
                         '(SUCCESS :regulators (' + kin_messages + '))')
@@ -1685,27 +1693,28 @@ class TFTA_Module(Bioagent):
             return reply
         target_names = list(set(target_names))
         
-        try:
-            keyword_arg = content.get('keyword')
-            keyword_name = keyword_arg.data
-        except Exception as e:
+        keyword_name = _get_keyword_name(content, descr='keyword')
+        if not keyword_name:
             reply = make_failure('NO_KEYWORD')
             return reply
-        try:
-            agent_arg = content.get('regulator')
-            agent_name = agent_arg.data
-        except Exception as e:
+        
+        agent_name = _get_keyword_name(content, descr='regulator')
+        if not agent_name:
             reply = make_failure('NO_REGULATOR_NAME')
             return reply
-        if agent_name.lower() == 'kinase':
+            
+        #consider an optional parameter for subsequent query
+        of_those_names = set(get_of_those_list(content))
+            
+        if agent_name == 'kinase':
             #kinase regualtion
-            kin_messages = self.get_kinase_regulation(target_names, keyword_name.lower())
+            kin_messages = self.get_kinase_regulation(target_names, keyword_name, of_those=of_those_names)
             if len(kin_messages):
                 reply = KQMLList.from_string(
                         '(SUCCESS :regulators (' + kin_messages + '))')
             else:
                 reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
-        elif agent_name.lower() == 'transcription factor':
+        elif agent_name in ['transcription factor', 'tf']:
             temp_reply = self.respond_find_target_tfs(content)
             tf_str = temp_reply.get('tfs')
             if tf_str != 'NIL':
@@ -1729,27 +1738,38 @@ class TFTA_Module(Bioagent):
             return reply
         target_names = list(set(target_names))
         
-        try:
-            keyword_arg = content.get('keyword')
-            keyword_name = keyword_arg.data
-        except Exception as e:
+        keyword_name = _get_keyword_name(content, descr='keyword')
+        if not keyword_name:
             reply = make_failure('NO_KEYWORD')
             return reply
+        
+        #consider an optional parameter for subsequent query
+        of_those_names = set(get_of_those_list(content))
+        
         #literature result
         try:
             stmt_types = stmt_type_map[keyword_name.lower()]
         except KeyError as e:
             reply = make_failure('INVALID_KEYWORD')
             return reply
-        lit_messages = self.get_regulator_indra(target_names, stmt_types, keyword_name)
-        #kinase regualation
-        kin_messages = self.get_kinase_regulation(target_names, keyword_name.lower())
+            
+        if of_those_names:
+            lit_messages = self.get_regulator_indra_those(target_names, stmt_types, keyword_name,
+                                                          of_those=of_those_names)
+        else:
+            lit_messages = self.get_regulator_indra(target_names, stmt_types, keyword_name)
+        
+        #kinase regulation
+        kin_messages = self.get_kinase_regulation(target_names, keyword_name, of_those=of_those_names)
+        
         #db result
         #only considering the regulation case
         target_str = ', '.join(target_names[:-1]) + ' and ' + target_names[-1]
-        if keyword_name.lower() == 'regulate':
+        if keyword_name == 'regulate':
             try:
                 tf_names,dbname = self.tfta.find_tfs(target_names)
+                if of_those_names:
+                    tf_names = list(set(tf_names).intersection(of_those_names))
                 #provenance support
                 self.send_background_support_db(tf_names, target_names, dbname, find_tf=True)
             except TargetNotFoundException:
@@ -2113,6 +2133,38 @@ class TFTA_Module(Bioagent):
             lit_messages += self.wrap_message(':other-literature', fothers, hgnc_id=False)
         return lit_messages
         
+    def get_regulator_indra_those(self, target_names, stmt_types, keyword_name, of_those=None, target_type=None):
+        """
+        wrap message for multiple targets case
+        target_names: list
+        stmt_types: indra statement type
+        of_those: set
+        """
+        lit_messages = ''
+        stmts_d = defaultdict(list)
+        target_str = ', '.join(target_names[:-1]) + ' and ' + target_names[-1]
+        for target in target_names:
+            term_tuple = (target, 'target', keyword_name)
+            if term_tuple not in self.stmts_indra:
+                stmts,success = self.tfta.find_statement_indraDB(obj=target, stmt_types=stmt_types)
+                if success:
+                    self.stmts_indra[term_tuple] = stmts
+            else:
+                stmts = self.stmts_indra[term_tuple]
+            if len(stmts):
+                stmts_d[target] = stmts
+            else:
+                self.send_background_support([], 'what', target_str, keyword_name)
+                return lit_messages
+        genes, stmt_f = self.tfta.find_regulator_indra_targets(stmts_d, of_those=of_those, target_type=target_type)
+        
+        if len(genes):
+            lit_messages += self.wrap_message(':gene-literature', genes)
+        #provenance support
+        self.send_background_support(stmt_f, 'what', target_str, keyword_name)
+        
+        return lit_messages
+        
     def get_target_indra(self, regulator_names, stmt_types, keyword_name, of_those=None, target_type=None):
         """
         wrap message for multiple regulators case
@@ -2136,7 +2188,7 @@ class TFTA_Module(Bioagent):
             else:
                 self.send_background_support([], regulator_str, 'what', keyword_name)
                 return lit_messages
-        genes, stmt_f = self.tfta.find_target_indra_regulators(stmts_d, of_those=of_those, target_type=target_type)        
+        genes, stmt_f = self.tfta.find_target_indra_regulators(stmts_d, of_those=of_those, target_type=target_type)
         
         if len(genes):
             lit_messages += self.wrap_message(':targets', genes)
@@ -2347,7 +2399,7 @@ class TFTA_Module(Bioagent):
             reason_txt = ''
             self.send_null_provenance(stmt=for_what, for_what=cause_txt, reason=reason_txt)
         
-    def get_kinase_regulation(self, target_names, keyword_name):
+    def get_kinase_regulation(self, target_names, keyword_name, of_those=None):
         """
         target_names: list
         keyword_name: string
@@ -2364,6 +2416,9 @@ class TFTA_Module(Bioagent):
                 kinase_names = self.tfta.find_kinase_target_keyword(target_names, keyword_name)
             except KinaseNotFoundException:
                 return kin_messages
+        
+        if of_those:
+            kinase_names = list(set(kinase_names).intersection(set(of_those)))
         if len(kinase_names):
             kin_messages += self.wrap_message(':kinase-db', kinase_names)
         return kin_messages
@@ -2397,6 +2452,8 @@ class TFTA_Module(Bioagent):
             data = list(data)
         if not self.hgnc_info:
             self.hgnc_info = self.tfta.get_hgnc_mapping()
+        if not data:
+            return None
         data.sort()  
         tf_list_str = ''
         #don't consider strings from literature containing double quote
