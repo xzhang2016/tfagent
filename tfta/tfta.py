@@ -1902,6 +1902,57 @@ class TFTA:
         other = others - genes
         return tfs, genes, mirnas, other
         
+    def find_regulator_indra_gene(self, stmts, of_those=None):
+        """
+        stmts: indra statements
+        of_those: set or None
+        return the list of genes from the object of the stmts
+        """
+        subjects = set()
+        for stmt in stmts:
+            subj = stmt.subj
+            if subj is not None:
+                subjects.add(subj.name)
+        #genes = subjects.intersection(hgnc_genes_set)
+        if of_those:
+            genes = subjects.intersection(of_those)
+        else:
+            genes = subjects
+        return genes
+        
+    def find_regulator_indra_targets(self, stmts_d, of_those=None, target_type=None):
+        """
+        stmts_d: dict
+        return the list of genes, as well as the filtered statements
+        """
+        targets = list(stmts_d.keys())
+        stmt_list = []
+        for t in targets:
+            stmt_list += stmts_d[t]
+        genes = self.find_regulator_indra_gene(stmt_list, of_those=of_those)
+        
+        if target_type:
+            try:
+                target_type_set = self.get_onto_set(target_type)
+            except Exception as e:
+                target_type_set = []
+            if target_type_set:
+                genes = genes.intersection(target_type_set)
+        
+        if len(targets) > 1:
+            for i in range(1,len(targets)):
+                temp = self.find_regulator_indra_gene(stmts_d[targets[i]])
+                genes = genes.intersection(temp)
+                
+        #filter statements
+        stmt_f = []
+        for stmt in stmt_list:
+            subj = stmt.subj
+            if subj:
+                if subj.name in genes:
+                    stmt_f.append(stmt)
+        return genes, stmt_f
+        
     def find_target_indra(self, stmts):
         """
         stmts: indra statements
@@ -1917,7 +1968,7 @@ class TFTA:
         
     def find_target_indra_regulators(self, stmts_d, of_those=None, target_type=None):
         """
-        stmts: dict
+        stmts_d: dict
         return the list of genes, as well as the filtered statements
         """
         regulators = list(stmts_d.keys())
@@ -1925,11 +1976,17 @@ class TFTA:
         for r in regulators:
             stmt_list += stmts_d[r]
         genes = self.find_target_indra(stmts_d[regulators[0]])
+        
         if of_those:
             genes = genes.intersection(of_those)
-        target_type_set = self.get_onto_set(target_type)
-        if target_type_set:
-            genes = genes.intersection(target_type_set)
+            
+        if target_type:
+            try:
+                target_type_set = self.get_onto_set(target_type)
+            except Exception as e:
+                target_type_set = []
+            if target_type_set:
+                genes = genes.intersection(target_type_set)
             
         if len(regulators) > 1:
             for i in range(1, len(regulators)):
