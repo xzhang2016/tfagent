@@ -1920,6 +1920,41 @@ class TFTA:
             genes = subjects
         return genes
         
+    def find_regulators_indra(self, stmts_d):
+        """
+        stmts_d: dict
+        """
+        targets = list(stmts_d.keys())
+        stmt_list = []
+        for t in targets:
+            stmt_list += stmts_d[t]
+        genes = self.find_regulator_indra_gene(stmts_d[targets[0]])
+        if len(targets) > 1:
+            for i in range(1,len(targets)):
+                temp = self.find_regulator_indra_gene(stmts_d[targets[i]])
+                genes = genes.intersection(temp)
+        #filter statements
+        stmt_f = []
+        for stmt in stmt_list:
+            subj = stmt.subj
+            if subj:
+                if subj.name in genes:
+                    stmt_f.append(stmt)
+        
+        ##get all the tfs in the db
+        if not self.trans_factor:
+            if self.tfdb is not None:
+                res = self.tfdb.execute("SELECT DISTINCT tf FROM transFactor").fetchall()
+                self.trans_factor = set([r[0] for r in res])
+       
+        tfs = genes.intersection(self.trans_factor)
+        nontfs = genes - tfs
+        mirnas = nontfs.intersection(mirna_indra_set)
+        others = nontfs - mirnas
+        gene = others.intersection(hgnc_genes_set)
+        other = others - gene
+        return tfs, gene, mirnas, other, stmt_f
+        
     def find_regulator_indra_targets(self, stmts_d, of_those=None, target_type=None):
         """
         stmts_d: dict
@@ -1929,7 +1964,7 @@ class TFTA:
         stmt_list = []
         for t in targets:
             stmt_list += stmts_d[t]
-        genes = self.find_regulator_indra_gene(stmt_list, of_those=of_those)
+        genes = self.find_regulator_indra_gene(stmts_d[targets[0]], of_those=of_those)
         
         if target_type:
             try:
