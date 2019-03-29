@@ -2089,7 +2089,7 @@ class TFTA_Module(Bioagent):
         reply_msg.set('content', reply_content)
         self.reply(msg, reply_msg)
         
-    def get_regulator_indra(self, target_names, stmt_types, keyword_name):
+    def get_regulator_indra0(self, target_names, stmt_types, keyword_name):
         """
         wrap message for multiple targets case
         target_names: list
@@ -2131,6 +2131,50 @@ class TFTA_Module(Bioagent):
             lit_messages += self.wrap_message(':miRNA-literature', fmirnas, hgnc_id=False)
         if len(fothers):
             lit_messages += self.wrap_message(':other-literature', fothers, hgnc_id=False)
+        return lit_messages
+        
+    def get_regulator_indra(self, target_names, stmt_types, keyword_name):
+        """
+        wrap message for multiple targets case
+        target_names: list
+        stmt_types: indra statement type
+        """
+        lit_messages = ''
+        tfs = defaultdict(set)
+        others = defaultdict(set)
+        mirnas = defaultdict(set)
+        genes = defaultdict(set)
+        stmts_d = defaultdict(list)
+        target_str = ', '.join(target_names[:-1]) + ' and ' + target_names[-1]
+        for target in target_names:
+            term_tuple = (target, 'target', keyword_name)
+            if term_tuple not in self.stmts_indra:
+                stmts,success = self.tfta.find_statement_indraDB(obj=target, stmt_types=stmt_types)
+                if success:
+                    self.stmts_indra[term_tuple] = stmts
+            else:
+                stmts = self.stmts_indra[term_tuple]
+            #provenance support
+            #self.send_background_support(stmts, 'what', target, keyword_name)
+            if len(stmts):
+                stmts_d[target] = stmts
+            else:
+                self.send_background_support([], 'what', target_str, keyword_name)
+                return lit_messages
+        tfs, genes, mirnas, others, stmt_f = self.tfta.find_regulators_indra(stmts_d)
+        
+        if len(tfs):
+            lit_messages += self.wrap_message(':tf-literature', tfs)
+        if len(genes):
+            lit_messages += self.wrap_message(':gene-literature', genes)
+        if len(mirnas):
+            lit_messages += self.wrap_message(':miRNA-literature', mirnas, hgnc_id=False)
+        if len(others):
+            lit_messages += self.wrap_message(':other-literature', others, hgnc_id=False)
+            
+        #provenance support
+        self.send_background_support(stmt_f, 'what', target_str, keyword_name)
+        
         return lit_messages
         
     def get_regulator_indra_those(self, target_names, stmt_types, keyword_name, of_those=None, target_type=None):
