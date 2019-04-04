@@ -1348,7 +1348,7 @@ class TFTA:
                     if not len(target_names):
                         break
             if len(target_names):
-                target_names.sort()       
+                target_names.sort()
         return target_names,miRNA_mis
         
     def find_target_miRNA_strength(self, miRNA_name_dict, evidence_strength):
@@ -1368,8 +1368,10 @@ class TFTA:
                     target_names = [r[0] for r in res]
                 else:
                     #raise miRNANotFoundException
-                    miRNA_mis[miRNA_names[0]] = miRNA_name_dict[miRNA_names[0]]
-                    return target_names,miRNA_mis
+                    if self.check_mirna_not_in_db(miRNA_names[0]):
+                        miRNA_mis[miRNA_names[0]] = miRNA_name_dict[miRNA_names[0]]
+                    return [],miRNA_mis
+                    
                 if len(miRNA_names)>1:
                     for i in range(1, len(miRNA_names)):
                         t = (miRNA_names[i], '%Weak%')
@@ -1379,8 +1381,9 @@ class TFTA:
                             target_names = list(set(target_names) & set([r[0] for r in res]))
                         else:
                             #raise miRNANotFoundException
-                            miRNA_mis[miRNA_names[i]] = miRNA_name_dict[miRNA_names[i]]
-                            return target_names,miRNA_mis
+                            if self.check_mirna_not_in_db(miRNA_names[i]):
+                                miRNA_mis[miRNA_names[i]] = miRNA_name_dict[miRNA_names[i]]
+                            return [],miRNA_mis
                         if not len(target_names):
                             break
             else:
@@ -1391,8 +1394,9 @@ class TFTA:
                     target_names = [r[0] for r in res]
                 else:
                     #raise miRNANotFoundException
-                    miRNA_mis[miRNA_names[0]] = miRNA_name_dict[miRNA_names[0]]
-                    return target_names,miRNA_mis
+                    if self.check_mirna_not_in_db(miRNA_names[0]):
+                        miRNA_mis[miRNA_names[0]] = miRNA_name_dict[miRNA_names[0]]
+                    return [],miRNA_mis
                 if len(miRNA_names)>1:
                     for i in range(1, len(miRNA_names)):
                         t = (miRNA_names[i], '%Weak%')
@@ -1402,14 +1406,25 @@ class TFTA:
                             target_names = list(set(target_names) & set([r[0] for r in res]))
                         else:
                             #raise miRNANotFoundException
-                            miRNA_mis[miRNA_names[i]] = miRNA_name_dict[miRNA_names[i]]
-                            return target_names,miRNA_mis
+                            if self.check_mirna_not_in_db(miRNA_names[i]):
+                                miRNA_mis[miRNA_names[i]] = miRNA_name_dict[miRNA_names[i]]
+                            return [],miRNA_mis
                         if not len(target_names):
                             break
             if len(target_names):
-                target_names.sort()       
+                target_names.sort()
         return target_names,miRNA_mis
-        
+    
+    def check_mirna_not_in_db(self, miRNA_name):
+        if self.tfdb is not None:
+            t = (miRNA_name,)
+            res = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo "
+                                    "WHERE mirna LIKE ? ", t).fetchall()
+            if res:
+                return False
+            else:
+                return True
+    
     def find_tf_miRNA(self, miRNA_names):
         """
         Return TFs regulated by the given miRNAs
