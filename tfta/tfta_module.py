@@ -1288,18 +1288,20 @@ class TFTA_Module(Bioagent):
         if not len(miRNA_names):
             reply = make_failure('NO_MIRNA_NAME')
             return reply
-        try:
-            strength_arg = content.get('strength')
-            strength_name = strength_arg.data
-        except Exception as e:
+            
+        strength_name = _get_keyword_name(content, descr='strength')
+        if not strength_name:
             reply = make_failure('NO_STRENGTH_NAME')
             return reply
             
         #consider another parameter for subsequent query
         of_those_names = get_of_those_list(content)
         
+        #consider an optional parameter to only return given type of genes
+        target_type_set = self.get_target_type_set(content)
+        
         try:
-            target_names,miRNA_mis = self.tfta.find_target_miRNA_strength(miRNA_names, strength_name.lower())
+            target_names,miRNA_mis = self.tfta.find_target_miRNA_strength(miRNA_names, strength_name)
         except miRNANotFoundException:
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
             return reply
@@ -1309,11 +1311,13 @@ class TFTA_Module(Bioagent):
             return reply
         else:
             if of_those_names:
-                targets = set(of_those_names) & set(target_names)
-            else:
-                targets = target_names
-            if len(targets):
-                gene_list_str = self.wrap_message(':targets', targets)
+                target_names = set(of_those_names) & set(target_names)
+            #check if it requires returning a type of genes
+            if target_type_set:
+                target_names = target_type_set & set(target_names)
+            
+            if len(target_names):
+                gene_list_str = self.wrap_message(':targets', target_names)
                 reply = KQMLList.from_string('(SUCCESS ' + gene_list_str + ')')
             else:
                 reply = KQMLList.from_string('(SUCCESS :targets NIL)')
@@ -1338,6 +1342,9 @@ class TFTA_Module(Bioagent):
         #consider another parameter for subsequent query
         of_those_names = get_of_those_list(content)
         
+        #consider an optional parameter to only return given type of genes
+        target_type_set = self.get_target_type_set(content)
+        
         target_names,miRNA_mis = self.tfta.find_target_miRNA(miRNA_names)
         #check if it's necessary for user clarification
         if len(miRNA_mis):
@@ -1345,11 +1352,14 @@ class TFTA_Module(Bioagent):
             return reply
         else:
             if of_those_names:
-                targets = set(of_those_names) & set(target_names)
-            else:
-                targets = target_names
-            if len(targets):
-                gene_list_str = self.wrap_message(':targets', targets)
+                target_names = set(of_those_names) & set(target_names)
+                
+            #check if it requires returning a type of genes
+            if target_type_set:
+                target_names = target_type_set & set(target_names)
+            
+            if len(target_names):
+                gene_list_str = self.wrap_message(':targets', target_names)
                 reply = KQMLList.from_string('(SUCCESS ' + gene_list_str + ')')
             else:
                 reply = KQMLList.from_string('(SUCCESS :targets NIL)')
@@ -2154,8 +2164,6 @@ class TFTA_Module(Bioagent):
                     self.stmts_indra[term_tuple] = stmts
             else:
                 stmts = self.stmts_indra[term_tuple]
-            #provenance support
-            #self.send_background_support(stmts, 'what', target, keyword_name)
             if len(stmts):
                 stmts_d[target] = stmts
             else:
