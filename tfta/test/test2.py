@@ -263,6 +263,45 @@ class TestFindTargetMirna81(_IntegrationTest):
         print("len(output.get('targets')) = ", len(output.get('targets')))
         assert len(output.get('targets')) == 5, output
         
+#test target-type
+#What kinases does miR-20b-5p target? (subtask: find-target-mirna)
+class TestFindTargetMirna9(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTargetMirna9, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = ekb_kstring_from_text('miR-20b-5p')
+        target_type = 'kinase'
+        content = KQMLList('FIND-TARGET-MIRNA')
+        content.set('miRNA', mirna)
+        content.set('target-type', target_type)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets'))=", len(output.get('targets')))
+        assert len(output.get('targets')) == 40, output
+        
+#What transcription facotrs does miR-20b-5p target? (subtask: find-target-mirna)
+class TestFindTargetMirna91(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTargetMirna91, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = ekb_kstring_from_text('miR-20b-5p')
+        target_type = 'transcription factor'
+        content = KQMLList('FIND-TARGET-MIRNA')
+        content.set('miRNA', mirna)
+        content.set('target-type', target_type)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets'))=", len(output.get('targets')))
+        assert len(output.get('targets')) == 130, output
+        
 #####################################################################################
 #What genes are most frequently regulated by miR-335-5p, miR-155-5p, miR-145-5p, and miR-20a-5p?
 #(subtask: FIND-GENE-COUNT-MIRNA)
