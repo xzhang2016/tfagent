@@ -265,11 +265,19 @@ class TFTA_Module(Bioagent):
         if not gene_name:
             reply = self.wrap_family_message1(gene_arg, 'NO_GENE_NAME')
             return reply
-        try:
-            is_onto = self.tfta.Is_gene_onto(keyword_name, gene_name)
-        except GONotFoundException:
-            reply = make_failure('GO_NOT_FOUND')
-            return reply
+            
+        #check if keyword is protein or gene
+        if keyword_name in ['gene', 'protein']:
+            is_onto,is_ekb = self.is_protein_gene(gene_arg, keyword_name)
+            if not is_ekb:
+                reply = make_failure('ONLY_SUPPORT_EKB')
+                return reply
+        else:
+            try:
+                is_onto = self.tfta.Is_gene_onto(keyword_name, gene_name)
+            except GONotFoundException:
+                reply = make_failure('GO_NOT_FOUND')
+                return reply
         reply = KQMLList('SUCCESS')
         is_onto_str = 'TRUE' if is_onto else 'FALSE'
         reply.set('result', is_onto_str)
@@ -2565,6 +2573,21 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_SIMILAR_MIRNA')
             return reply
     
+    def is_protein_gene(self, gene_arg, keyword):
+        gene_map = {'gene':['ONT::GENE-PROTEIN', 'ONT:GENE'], 'protein': ['ONT::GENE-PROTEIN', 'ONT:PROTEIN']}
+        #gene_arg = content.gets('gene')
+        is_onto = False
+        is_ekb = True
+        if '<ekb' in gene_arg or '<EKB' in gene_arg:
+            tp = TripsProcessor(gene_arg)
+            for term in tp.tree.findall('TERM'):
+                if term.find('type').text in gene_map[keyword]:
+                    is_onto = True
+                    break
+        else:
+            is_ekb = False
+        return is_onto, is_ekb
+         
 #------------------------------------------------------------------------#######
 def _get_target(target_str):
     agent = None
