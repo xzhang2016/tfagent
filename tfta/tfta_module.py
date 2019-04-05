@@ -78,15 +78,12 @@ class TFTA_Module(Bioagent):
         tf_arg = content.gets('tf')
         target_arg = content.gets('target')
         tissue_arg = content.get('tissue')
-        try:
-            keyword_arg = content.get('keyword')
-            keyword_name = keyword_arg.data
-        except Exception as e:
-            keyword_arg = None
+        keyword_name = _get_keyword_name(content, descr='keyword')
+        
         if all([tf_arg,target_arg,tissue_arg]):
             reply = self.respond_is_tf_target_tissue(content)
-        elif all([tf_arg,target_arg, keyword_arg]):
-            if keyword_name.lower() in ['increase', 'decrease']:
+        elif all([tf_arg,target_arg, keyword_name]):
+            if keyword_name in ['increase', 'decrease']:
                 reply = self.respond_is_tf_target_literature(content)
             else:
                 reply = self.respond_is_tf_target(content)
@@ -103,15 +100,12 @@ class TFTA_Module(Bioagent):
         """
         target_arg = content.gets('target')
         tissue_arg = content.get('tissue')
-        try:
-            keyword_arg = content.get('keyword')
-            keyword_name = keyword_arg.data
-        except Exception as e:
-            keyword_arg = None
+        keyword_name = _get_keyword_name(content, descr='keyword')
+        
         if all([target_arg,tissue_arg]):
             reply = self.respond_find_target_tfs_tissue(content)
-        elif all([target_arg, keyword_arg]):
-            if keyword_name.lower() in ['increase', 'decrease']:
+        elif all([target_arg, keyword_name]):
+            if keyword_name in ['increase', 'decrease']:
                 reply = self.respond_find_tf_literature(content)
             else:
                 reply = self.respond_find_target_tfs(content)
@@ -151,15 +145,12 @@ class TFTA_Module(Bioagent):
         """
         tf_arg = content.gets('tf')
         tissue_arg = content.get('tissue')
-        try:
-            keyword_arg = content.get('keyword')
-            keyword_name = keyword_arg.data
-        except Exception as e:
-            keyword_arg = None 
+        keyword_name = _get_keyword_name(content, descr='keyword')
+        
         if all([tf_arg,tissue_arg]):
             reply = self.respond_find_tf_targets_tissue(content)
-        elif all([tf_arg, keyword_arg]):
-            if keyword_name.lower() in ['increase', 'decrease']:
+        elif all([tf_arg, keyword_name]):
+            if keyword_name in ['increase', 'decrease']:
                 reply = self.respond_find_target_literature(content)
             else:
                 reply = self.respond_find_tf_targets(content)
@@ -175,9 +166,7 @@ class TFTA_Module(Bioagent):
         find-gene-pathway, find-tf-pathway, find-kinase-pathway
         """
         #pathway_arg = content.gets('pathway')
-        subtype_arg = content.get('subtype')
-        subtype_name = subtype_arg.data
-        subtype_name = subtype_name.lower()
+        subtype_name = _get_keyword_name(content, descr='subtype')
         if subtype_name == 'tf':
             reply = self.respond_find_tf_pathway(content)
         elif subtype_name == 'gene':
@@ -254,14 +243,9 @@ class TFTA_Module(Bioagent):
         if not keyword_name:
             reply = make_failure('NO_KEYWORD')
             return reply
-            
-        try:
-            gene_arg = content.gets('gene')
-            gene = _get_target(gene_arg)
-            gene_name = gene.name
-        except Exception as e:
-            reply = self.wrap_family_message1(gene_arg, 'NO_GENE_NAME')
-            return reply
+        
+        gene_name = get_gene(content, descr='gene')
+        gene_arg = content.gets('gene')
         if not gene_name:
             reply = self.wrap_family_message1(gene_arg, 'NO_GENE_NAME')
             return reply
@@ -365,26 +349,18 @@ class TFTA_Module(Bioagent):
         Response content to is-tf-target request.
         """
         literature = False
-        tf_arg = content.gets('tf')
-        try:
-            tf = _get_target(tf_arg)
-            tf_name = tf.name
-        except Exception as e:
-            reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
-            return reply
+        tf_name = get_gene(content, descr='tf')
         if not tf_name:
+            tf_arg = content.gets('tf')
             reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
             return reply
-        target_arg = content.gets('target')
-        try:
-            target = _get_target(target_arg)
-            target_name = target.name
-        except Exception as e:
-            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
-            return reply
+        
+        target_name = get_gene(content, descr='target')
         if not target_name:
+            target_arg = content.gets('target')
             reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
+        
         #check if it exists in literature
         term_tuple = (tf_name, target_name, 'REGULATE')
         if term_tuple not in self.stmts_indra:
@@ -422,37 +398,28 @@ class TFTA_Module(Bioagent):
         Response content to is-tf-target request with regulating direction
         """
         literature = False
-        tf_arg = content.gets('tf')
-        try:
-            tf = _get_target(tf_arg)
-            tf_name = tf.name
-        except Exception as e:
-            reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
-            return reply
+        tf_name = get_gene(content, descr='tf')
         if not tf_name:
+            tf_arg = content.gets('tf')
             reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
             return reply
-        target_arg = content.gets('target')
-        try:
-            target = _get_target(target_arg)
-            target_name = target.name
-        except Exception as e:
-            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
-            return reply
+            
+        target_name = get_gene(content, descr='target')
         if not target_name:
+            target_arg = content.gets('target')
             reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
-        try:
-            keyword_arg = content.get('keyword')
-            keyword_name = keyword_arg.data
-        except Exception as e:
+            
+        keyword_name = _get_keyword_name(content, descr='keyword')
+        if not keyword_name:
             reply = make_failure('NO_KEYWORD')
             return reply
         try:
-            stmt_types = stmt_type_map[keyword_name.lower()]
+            stmt_types = stmt_type_map[keyword_name]
         except KeyError as e:
             reply = make_failure('INVALID_KEYWORD')
             return reply
+            
         term_tuple = (tf_name, target_name, keyword_name)
         if term_tuple not in self.stmts_indra:
             stmts,success = self.tfta.find_statement_indraDB(subj=tf_name, obj=target_name, stmt_types=stmt_types)
@@ -485,24 +452,15 @@ class TFTA_Module(Bioagent):
         """
         Response content to is-tf-target-tissue request.
         """
-        tf_arg = content.gets('tf')
-        try:
-            tf = _get_target(tf_arg)
-            tf_name = tf.name
-        except Exception as e:
-            reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
-            return reply
+        tf_name = get_gene(content, descr='tf')
         if not tf_name:
+            tf_arg = content.gets('tf')
             reply = _wrap_family_message(tf_arg, 'NO_TF_NAME')
             return reply
-        target_arg = content.gets('target')
-        try:
-            target = _get_target(target_arg)
-            target_name = target.name
-        except Exception as e:
-            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
-            return reply
+            
+        target_name = get_gene(content, descr='target')
         if not target_name:
+            target_arg = content.gets('target')
             reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         #get tissue name
@@ -1185,15 +1143,10 @@ class TFTA_Module(Bioagent):
         if not len(miRNA_name):
             reply = make_failure('NO_MIRNA_NAME')
             return reply
-            
-        target_arg = content.gets('target')
-        try:
-            target = _get_target(target_arg)
-            target_name = target.name
-        except Exception as e:
-            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
-            return reply
+        
+        target_name = get_gene(content, descr='target')
         if not len(target_name):
+            target_arg = content.gets('target')
             reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
             
@@ -1219,15 +1172,10 @@ class TFTA_Module(Bioagent):
         if not len(miRNA_name):
             reply = make_failure('NO_MIRNA_NAME')
             return reply
-            
-        target_arg = content.gets('target')
-        try:
-            target = _get_target(target_arg)
-            target_name = target.name
-        except Exception as e:
-            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
-            return reply
+        
+        target_name = get_gene(content, descr='target')
         if not len(target_name):
+            target_arg = content.gets('target')
             reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
         
@@ -1383,15 +1331,11 @@ class TFTA_Module(Bioagent):
         miRNA_name = _get_miRNA_name(miRNA_arg)
         if not len(miRNA_name):
             reply = make_failure('NO_MIRNA_NAME')
-            return reply      
-        target_arg = content.gets('target')
-        try:
-            target = _get_target(target_arg)
-            target_name = target.name
-        except Exception as e:
-            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
+        
+        target_name = get_gene(content, descr='target')
         if not len(target_name):
+            target_arg = content.gets('target')
             reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
                    
@@ -1531,12 +1475,7 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string(
                     '(SUCCESS :tissue (' + tissue_str + '))')
             return reply
-        try:
-            gene = _get_target(gene_arg)
-            gene_name = gene.name
-        except Exception as e:
-            reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
-            return reply
+        gene_name = get_gene(content, descr='gene')
         if not len(gene_name):
             reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
             return reply
@@ -1581,13 +1520,12 @@ class TFTA_Module(Bioagent):
             target_arg = content.gets('target')
             reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
-            
-        try:
-            keyword_arg = content.get('keyword')
-            keyword_name = keyword_arg.data
-        except Exception as e:
+        
+        keyword_name = _get_keyword_name(content, descr='keyword')
+        if not keyword_name:
             reply = make_failure('NO_KEYWORD')
             return reply
+        
         try:
             kinases = self.tfta.find_kinase_target_keyword(target_names, keyword_name)
         except KinaseNotFoundException:
@@ -1822,13 +1760,12 @@ class TFTA_Module(Bioagent):
         """
         response to find-evidence request
         """
-        try:
-            keyword_arg = content.get('keyword')
-            keyword_name = keyword_arg.data
-        except Exception as e:
+        keyword_name = _get_keyword_name(content, descr='keyword')
+        if not keyword_name:
             reply = make_failure('NO_KEYWORD')
             return reply
-        if keyword_name.lower() == 'bind':
+        
+        if keyword_name == 'bind':
             reply = self.respond_find_evidence_tfdb(content)
         else:
             reply = self.respond_find_evidence_literature(content)
@@ -1840,39 +1777,28 @@ class TFTA_Module(Bioagent):
         for example: show me evidence that IL6 increases the amount of SOCS1.
         Only consider one-one case
         """
-        try:
-            regulator_arg = content.gets('regulator')
-            regulator = _get_target(regulator_arg)
-            regulator_name = regulator.name
-        except Exception as e:
-            reply = _wrap_family_message(regulator_arg, 'NO_REGULATOR_NAME')
-            return reply
+        regulator_name = get_gene(content, descr='regulator')
         if not regulator_name:
+            regulator_arg = content.gets('regulator')
             reply = _wrap_family_message(regulator_arg, 'NO_REGULATOR_NAME')
             return reply
-            
-        try:
-            target_arg = content.gets('target')
-            target = _get_target(target_arg)
-            target_name = target.name
-        except Exception as e:
-            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
-            return reply
+        
+        target_name = get_gene(content, descr='target')
         if not target_name:
+            target_arg = content.gets('target')
             reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
-            
-        try:
-            keyword_arg = content.get('keyword')
-            keyword_name = keyword_arg.data
-        except Exception as e:
+        
+        keyword_name = _get_keyword_name(content, descr='keyword')
+        if not keyword_name:
             reply = make_failure('NO_KEYWORD')
             return reply
         try:
-            stmt_types = stmt_type_map[keyword_name.lower()]
+            stmt_types = stmt_type_map[keyword_name]
         except KeyError as e:
             reply = make_failure('INVALID_KEYWORD')
             return reply
+        
         evi_message = ''
         db_message = ''
         term_tuple = (regulator_name, target_name, keyword_name)
@@ -1887,7 +1813,7 @@ class TFTA_Module(Bioagent):
             evidences = self.tfta.find_evidence_indra(stmts)
             if len(evidences):
                 evi_message = _wrap_evidence_message(':literature', evidences)
-        if keyword_name.lower() == 'regulate':
+        if keyword_name == 'regulate':
             db_names = self.tfta.find_evidence_dbname(regulator_name, target_name)
             if len(db_names):
                 for db in db_names:
@@ -1909,25 +1835,15 @@ class TFTA_Module(Bioagent):
         """
         Respond to find-evidence request from tfdb
         """
-        try:
-            regulator_arg = content.gets('regulator')
-            regulator = _get_target(regulator_arg)
-            regulator_name = regulator.name
-        except Exception as e:
-            reply = _wrap_family_message(regulator_arg, 'NO_REGULATOR_NAME')
-            return reply
+        regulator_name = get_gene(content, descr='regulator')
         if not regulator_name:
+            regulator_arg = content.gets('regulator')
             reply = _wrap_family_message(regulator_arg, 'NO_REGULATOR_NAME')
             return reply
-            
-        try:
-            target_arg = content.gets('target')
-            target = _get_target(target_arg)
-            target_name = target.name
-        except Exception as e:
-            reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
-            return reply
+        
+        target_name = get_gene(content, descr='target')
         if not target_name:
+            target_arg = content.gets('target')
             reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
             
@@ -1960,12 +1876,9 @@ class TFTA_Module(Bioagent):
         if tissue_name not in self.tissue_list:
             reply = make_failure('INVALID_TISSUE')
             return reply
+            
         #optional keyword
-        try:
-            keyword_arg = content.get('keyword')
-            keyword_name = keyword_arg.data
-        except Exception as e:
-            keyword_name = ''
+        keyword_name = _get_keyword_name(content, descr='keyword')
         if len(keyword_name):
             try:
                 gene_list = self.tfta.find_gene_tissue_exclusive(tissue_name)
@@ -1978,6 +1891,7 @@ class TFTA_Module(Bioagent):
             except TissueNotFoundException:
                 reply = KQMLList.from_string('(SUCCESS :genes NIL)')
                 return reply
+        
         #check if it's a subsequent query with optional parameter
         ogenes = get_of_those_list(content, descr='gene')
         if len(ogenes):
@@ -2005,23 +1919,16 @@ class TFTA_Module(Bioagent):
         if tissue_name not in self.tissue_list:
             reply = make_failure('INVALID_TISSUE')
             return reply
-        try:
-            gene_arg = content.gets('gene')
-            gene = _get_target(gene_arg)
-            gene_name = gene.name
-        except Exception as e:
-            reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
-            return reply
+            
+        gene_name = get_gene(content, descr='gene')
         if not gene_name:
+            gene_arg = content.gets('gene')
             reply = _wrap_family_message(gene_arg, 'NO_GENE_NAME')
             return reply
+            
         #optional keyword
-        try:
-            keyword_arg = content.get('keyword')
-            keyword_name = keyword_arg.data
-        except Exception as e:
-            keyword_name = ''
-        if len(keyword_name):
+        keyword_name = _get_keyword_name(content, descr='keyword')
+        if keyword_name == 'exclusive':
             try:
                 is_express = self.tfta.is_tissue_gene_exclusive(tissue_name, gene_name)
             except Exception as e:
@@ -2622,7 +2529,7 @@ def _get_family_name(target_arg):
     
 def _get_term_id(target_arg, otype=1):
     term_id = dict()
-    if target_arg:
+    if '<ekb' in target_arg or '<EKB' in target_arg:
         if otype == 1:
             ont1 = ['ONT::PROTEIN-FAMILY', 'ONT::GENE-FAMILY']
         else:
@@ -2974,6 +2881,22 @@ def get_of_those_list(content, descr='of-those'):
             gene_arg_str = gene_arg_str.upper()
             gene_names = gene_arg_str.split(',')
     return gene_names
+    
+def get_gene(content, descr='gene'):
+    gene_name = ''
+    gene_arg = content.gets(descr)
+    if gene_arg:
+        if '<ekb' in gene_arg or '<EKB' in gene_arg:
+            gene = _get_target(gene_arg)
+            if gene:
+                gene_name = gene.name
+        else:
+            gene_arg = content.get(descr)
+            gene_arg_str = gene_arg.data
+            gene_arg_str = gene_arg_str.replace(' ', '')
+            gene_arg_str = gene_arg_str.upper()
+            gene_name = gene_arg_str.split(',')[0]
+    return gene_name
     
 def _get_tissue_name(content):
     tissue_name = ''
