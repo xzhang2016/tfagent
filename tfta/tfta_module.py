@@ -1204,12 +1204,19 @@ class TFTA_Module(Bioagent):
             target_arg = content.gets('target')
             reply = _wrap_family_message(target_arg, 'NO_TARGET_NAME')
             return reply
-            
+        
+        ##consider another parameter for subsequent query
+        of_those_names = get_of_those_mirna(content, descr='of-those')
+        
         try:
             miRNA_names = self.tfta.find_miRNA_target(target_names)
         except TargetNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :miRNAs NIL)') 
-            return reply            
+            return reply
+            
+        if of_those_names:
+            miRNA_names = set(miRNA_names) & of_those_names
+            
         if len(miRNA_names):
             miRNA_list_str = ''
             for m in miRNA_names:
@@ -1217,7 +1224,7 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string(
                 '(SUCCESS :miRNAs (' + miRNA_list_str + '))')
         else:
-            reply = KQMLList.from_string('(SUCCESS :miRNAs NIL)')            
+            reply = KQMLList.from_string('(SUCCESS :miRNAs NIL)')
         return reply
         
     def respond_find_target_miRNA(self, content):
@@ -2881,6 +2888,19 @@ def get_of_those_list(content, descr='of-those'):
             gene_arg_str = gene_arg_str.upper()
             gene_names = gene_arg_str.split(',')
     return gene_names
+    
+def get_of_those_mirna(content, descr='of-those'):
+    mirna_names = set()
+    mirna_arg = content.gets(descr)
+    if mirna_arg:
+        if '<ekb' in mirna_arg or '<EKB' in mirna_arg:
+            mirna_names = set(_get_miRNA_name(mirna_arg).keys())
+        else:
+            mirna_arg = content.get(descr)
+            mirna_str = mirna_arg.data
+            mirna_str = mirna_str.replace(' ', '')
+            mirna_names = set(mirna_str.split(','))
+    return mirna_names
     
 def get_gene(content, descr='gene'):
     gene_name = ''
