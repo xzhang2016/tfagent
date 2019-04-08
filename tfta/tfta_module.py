@@ -1727,7 +1727,6 @@ class TFTA_Module(Bioagent):
         
         #db result
         #only considering the regulation case
-        target_str = ', '.join(target_names[:-1]) + ' and ' + target_names[-1]
         if keyword_name == 'regulate':
             try:
                 tf_names,dbname = self.tfta.find_tfs(target_names)
@@ -2077,7 +2076,10 @@ class TFTA_Module(Bioagent):
         mirnas = defaultdict(set)
         genes = defaultdict(set)
         stmts_d = defaultdict(list)
-        target_str = ', '.join(target_names[:-1]) + ' and ' + target_names[-1]
+        if len(target_names) > 1:
+            target_str = ', '.join(target_names[:-1]) + ' and ' + target_names[-1]
+        else:
+            target_str = target_names[0]
         for target in target_names:
             term_tuple = (target, 'target', keyword_name)
             if term_tuple not in self.stmts_indra:
@@ -2116,7 +2118,10 @@ class TFTA_Module(Bioagent):
         """
         lit_messages = ''
         stmts_d = defaultdict(list)
-        target_str = ', '.join(target_names[:-1]) + ' and ' + target_names[-1]
+        if len(target_names) > 1:
+            target_str = ', '.join(target_names[:-1]) + ' and ' + target_names[-1]
+        else:
+            target_str = target_names[0]
         for target in target_names:
             term_tuple = (target, 'target', keyword_name)
             if term_tuple not in self.stmts_indra:
@@ -2148,7 +2153,10 @@ class TFTA_Module(Bioagent):
         """
         lit_messages = ''
         stmts_d = defaultdict(list)
-        regulator_str = ', '.join(regulator_names[:-1]) + ' and ' + regulator_names[-1]
+        if len(regulator_names) > 1:
+            regulator_str = ', '.join(regulator_names[:-1]) + ' and ' + regulator_names[-1]
+        else:
+            regulator_str = regulator_names[0]
         for regulator in regulator_names:
             term_tuple = (regulator,'regulator',keyword_name)
             if term_tuple not in self.stmts_indra:
