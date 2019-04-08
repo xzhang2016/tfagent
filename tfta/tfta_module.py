@@ -1215,7 +1215,9 @@ class TFTA_Module(Bioagent):
             return reply
             
         if of_those_names:
-            miRNA_names = set(miRNA_names) & of_those_names
+            res_db = set(','.join(miRNA_names).upper().split(','))
+            res_of = set(','.join(of_those_names).upper().split(','))
+            miRNA_names = res_db & res_of
             
         if len(miRNA_names):
             miRNA_list_str = ''
@@ -2898,7 +2900,7 @@ def get_of_those_list(content, descr='of-those'):
     return gene_names
     
 def get_of_those_mirna(content, descr='of-those'):
-    mirna_names = set()
+    mirna_names = []
     mirna_arg = content.gets(descr)
     if mirna_arg:
         if '<ekb' in mirna_arg or '<EKB' in mirna_arg:
@@ -2907,7 +2909,7 @@ def get_of_those_mirna(content, descr='of-those'):
             mirna_arg = content.get(descr)
             mirna_str = mirna_arg.data
             mirna_str = mirna_str.replace(' ', '')
-            mirna_names = set(mirna_str.split(','))
+            mirna_names = mirna_str.split(',')
     return mirna_names
     
 def get_gene(content, descr='gene'):
