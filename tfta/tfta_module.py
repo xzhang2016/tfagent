@@ -725,7 +725,9 @@ class TFTA_Module(Bioagent):
             pathwayName, dblink = \
                 self.tfta.find_pathways_from_genelist(gene_names)
         except PathwayNotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+            #reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+            gene_arg = content.gets('gene')
+            reply = self.wrap_family_message_pathway(gene_arg, descr='pathways', msg="PATHWAY_NOT_FOUND")
             return reply
         reply = _wrap_pathway_message(pathwayName, dblink)
         return reply
@@ -750,7 +752,9 @@ class TFTA_Module(Bioagent):
             pathwayName, dblink = \
                 self.tfta.find_pathway_gene_keyword(gene_names, keyword_name)
         except PathwayNotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+            #reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+            gene_arg = content.gets('gene')
+            reply = self.wrap_family_message_pathway(gene_arg, descr='pathways', msg="PATHWAY_NOT_FOUND")
             return reply
         reply = _wrap_pathway_message(pathwayName, dblink, keyword=[keyword_name])
         return reply
@@ -773,7 +777,9 @@ class TFTA_Module(Bioagent):
         try:
             pathwayName,dblink = self.tfta.find_pathways_from_dbsource_geneName(db_name,gene_names)
         except PathwayNotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+            #reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+            gene_arg = content.gets('gene')
+            reply = self.wrap_family_message_pathway(gene_arg, descr='pathways', msg="PATHWAY_NOT_FOUND")
             return reply
         reply = _wrap_pathway_message(pathwayName, dblink)
         return reply
@@ -2473,6 +2479,7 @@ class TFTA_Module(Bioagent):
         
     def wrap_family_message1(self, target_arg, msg):
         term_id = _get_term_id(target_arg)
+        members = dict()
         if len(term_id):
             members = self.tfta.find_members(term_id)
         if members:
@@ -2485,6 +2492,27 @@ class TFTA_Module(Bioagent):
             reply = make_failure_clarification(msg, res_str)
         else:
             reply = make_failure(msg)
+        return reply
+        
+    def wrap_family_message_pathway(self, target_arg, descr='pathways', msg="PATHWAY_NOT_FOUND"):
+        term_id = _get_term_id(target_arg)
+        if len(term_id):
+            members = self.tfta.find_members(term_id)
+            res_str = ''
+            if members:
+                for id in members:
+                    for a in members[id]:
+                        res_str += '(:name %s)' % a.name
+                    res_str = '(:term %s :as (%s))' % (id, res_str)
+                res_str = '(resolve :agents (' + res_str + '))'
+            if res_str:
+                reply = make_failure_clarification(msg, res_str)
+            else:
+                reply = KQMLList('SUCCESS')
+                reply.set(descr, 'NIL')
+        else:
+            reply = KQMLList('SUCCESS')
+            reply.set(descr, 'NIL')
         return reply
     
     def get_reply_mirna_clarification(self, miRNA_mis):
@@ -2570,7 +2598,7 @@ def _wrap_family_message(target_arg, msg):
     else:
         reply = make_failure(msg)
     return reply
-    
+
 def _wrap_family_message2(target_arg, msg):
     family = _get_family_name(target_arg)
     family_name = []
