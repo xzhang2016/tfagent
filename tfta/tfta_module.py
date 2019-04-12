@@ -247,7 +247,7 @@ class TFTA_Module(Bioagent):
         gene_name,term_id = get_gene(content, descr='gene')
         gene_arg = content.gets('gene')
         if not gene_name:
-            reply = self.wrap_family_message1(term_id, 'NO_GENE_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
             return reply
             
         #check if keyword is protein or gene
@@ -293,7 +293,7 @@ class TFTA_Module(Bioagent):
         gene_names,term_id = get_of_those_list(content, descr='gene')
         if not gene_names:
             #gene_arg = content.gets('gene')
-            reply = _wrap_family_message(term_id, 'NO_GENE_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
             return reply
             
         try:
@@ -321,10 +321,10 @@ class TFTA_Module(Bioagent):
         regulator_names,term_id = get_of_those_list(content, descr='regulator')
         if not regulator_names:
             #regulator_arg = content.gets('regulator')
-            reply = _wrap_family_message(term_id, 'NO_REGULATOR_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_REGULATOR_NAME')
             return reply
         if term_id:
-            reply = _wrap_family_message(term_id, 'FAMILY_NAME')
+            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
             return reply
         #get genes regulated by regulators in regulator_names
         try:
@@ -355,13 +355,13 @@ class TFTA_Module(Bioagent):
         tf_name,term_id = get_gene(content, descr='tf')
         if not tf_name:
             #tf_arg = content.gets('tf')
-            reply = _wrap_family_message(term_id, 'NO_TF_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_TF_NAME')
             return reply
         
         target_name,term_id = get_gene(content, descr='target')
         if not target_name:
             #target_arg = content.gets('target')
-            reply = _wrap_family_message(term_id, 'NO_TARGET_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         
         #check if it exists in literature
@@ -404,13 +404,13 @@ class TFTA_Module(Bioagent):
         tf_name,term_id = get_gene(content, descr='tf')
         if not tf_name:
             #tf_arg = content.gets('tf')
-            reply = _wrap_family_message(term_id, 'NO_TF_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_TF_NAME')
             return reply
             
         target_name,term_id = get_gene(content, descr='target')
         if not target_name:
             #target_arg = content.gets('target')
-            reply = _wrap_family_message(term_id, 'NO_TARGET_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
             
         keyword_name = _get_keyword_name(content, descr='keyword')
@@ -458,13 +458,13 @@ class TFTA_Module(Bioagent):
         tf_name,term_id = get_gene(content, descr='tf')
         if not tf_name:
             #tf_arg = content.gets('tf')
-            reply = _wrap_family_message(term_id, 'NO_TF_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_TF_NAME')
             return reply
             
         target_name,term_id = get_gene(content, descr='target')
         if not target_name:
             #target_arg = content.gets('target')
-            reply = _wrap_family_message(term_id, 'NO_TARGET_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         #get tissue name
         tissue_name = _get_tissue_name(content)
@@ -493,10 +493,10 @@ class TFTA_Module(Bioagent):
         tf_names,term_id = get_of_those_list(content, descr='tf')
         if not len(tf_names):
             #tf_arg = content.gets('tf')
-            reply = _wrap_family_message(term_id, 'NO_TF_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_TF_NAME')
             return reply
         if term_id:
-            reply = _wrap_family_message(term_id, 'FAMILY_NAME')
+            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
             return reply
 
         #tf_str = ', '.join(tf_names[:-1]) + ' and ' + tf_names[-1]
@@ -542,11 +542,11 @@ class TFTA_Module(Bioagent):
         tf_names,term_id = get_of_those_list(content, descr='tf')
         if not len(tf_names):
             #tf_arg = content.gets('tf')
-            reply = _wrap_family_message(term_id, 'NO_TF_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_TF_NAME')
             return reply
             
         if term_id:
-            reply = _wrap_family_message(term_id, 'FAMILY_NAME')
+            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
             return reply
         
         keyword_name = _get_keyword_name(content, descr='keyword')
@@ -582,10 +582,10 @@ class TFTA_Module(Bioagent):
         tf_names,term_id = get_of_those_list(content, descr='tf')
         if not len(tf_names):
             #tf_arg = content.gets('tf')
-            reply = _wrap_family_message(term_id, 'NO_TF_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_TF_NAME')
             return reply
         if term_id:
-            reply = _wrap_family_message(term_id, 'FAMILY_NAME')
+            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
             return reply
             
         #get tissue name
@@ -632,10 +632,10 @@ class TFTA_Module(Bioagent):
         target_names,term_id = get_of_those_list(content, descr='target')
         if not len(target_names):
             #target_arg = content.gets('target')
-            reply = _wrap_family_message(term_id, 'NO_TARGET_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         if term_id:
-            reply = _wrap_family_message(term_id, 'FAMILY_NAME')
+            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
             return reply
             
         #consider an optional parameter for subsequent query
@@ -668,10 +668,10 @@ class TFTA_Module(Bioagent):
         target_names,term_id = get_of_those_list(content, descr='target')
         if not len(target_names):
             #target_arg = content.gets('target')
-            reply = _wrap_family_message(term_id, 'NO_TARGET_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         if term_id:
-            reply = _wrap_family_message(term_id, 'FAMILY_NAME')
+            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
             return reply
         
         keyword_name = _get_keyword_name(content, descr='keyword')
@@ -700,10 +700,10 @@ class TFTA_Module(Bioagent):
         target_names,term_id = get_of_those_list(content, descr='target')
         if not len(target_names):
             #target_arg = content.gets('target')
-            reply = _wrap_family_message(term_id, 'NO_TARGET_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         if term_id:
-            reply = _wrap_family_message(term_id, 'FAMILY_NAME')
+            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
             return reply
         
         #get tissue name
@@ -741,10 +741,10 @@ class TFTA_Module(Bioagent):
         gene_names,term_id = get_of_those_list(content, descr='gene')
         if not len(gene_names):
             #gene_arg = content.gets('gene')
-            reply = _wrap_family_message(term_id, 'NO_GENE_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
             return reply
         if term_id:
-            reply = _wrap_family_message(term_id, 'FAMILY_NAME')
+            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
             return reply
             
         try:
@@ -771,10 +771,10 @@ class TFTA_Module(Bioagent):
         gene_names,term_id = get_of_those_list(content, descr='gene')
         if not len(gene_names):
             #gene_arg = content.gets('gene')
-            reply = _wrap_family_message(term_id, 'NO_GENE_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
             return reply
         if term_id:
-            reply = _wrap_family_message(term_id, 'FAMILY_NAME')
+            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
             return reply
             
         try:
@@ -800,10 +800,10 @@ class TFTA_Module(Bioagent):
         gene_names,term_id = get_of_those_list(content, descr='gene')
         if not gene_names:
             #gene_arg = content.gets('gene')
-            reply = _wrap_family_message(term_id, 'NO_GENE_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
             return reply
         if term_id:
-            reply = _wrap_family_message(term_id, 'FAMILY_NAME')
+            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
             return reply
             
         try:
@@ -942,9 +942,9 @@ class TFTA_Module(Bioagent):
         and the regulated targets by each TF
         """
         target_names,term_id = get_of_those_list(content, descr='target')
-        if not target_names:
+        if len(target_names) < 2:
             #target_arg = content.gets('target')
-            reply = _wrap_family_message(term_id, 'NO_TARGET_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         
         #consider another parameter for subsequent query
@@ -993,8 +993,8 @@ class TFTA_Module(Bioagent):
         gene_names,term_id = get_of_those_list(content, descr='target')
         if not gene_names and not term_id:
             gene_names,term_id = get_of_those_list(content, descr='gene')
-        if not len(gene_names):
-            reply = _wrap_family_message(term_id, 'NO_GENE_NAME')
+        if len(gene_names) < 2:
+            reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
             return reply
             
         try:
@@ -1023,8 +1023,8 @@ class TFTA_Module(Bioagent):
         gene_names,term_id = get_of_those_list(content, descr='target')
         if not gene_names and not term_id:
             gene_names,term_id = get_of_those_list(content, descr='gene')
-        if not len(gene_names):
-            reply = _wrap_family_message(term_id, 'NO_GENE_NAME')
+        if len(gene_names) <  2:
+            reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
             return reply
             
         try:
@@ -1053,8 +1053,8 @@ class TFTA_Module(Bioagent):
         gene_names,term_id = get_of_those_list(content, descr='target')
         if not gene_names and not term_id:
             gene_names,term_id = get_of_those_list(content, descr='gene')
-        if not len(gene_names):
-            reply = _wrap_family_message(term_id, 'NO_GENE_NAME')
+        if len(gene_names) < 2:
+            reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
             return reply
             
         try:
@@ -1082,10 +1082,10 @@ class TFTA_Module(Bioagent):
         gene_names,term_id = get_of_those_list(content, descr='gene')
         if not len(gene_names):
             #gene_arg = content.gets('gene')
-            reply = _wrap_family_message(term_id, 'NO_GENE_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
             return reply
         if term_id:
-            reply = _wrap_family_message(term_id, 'FAMILY_NAME')
+            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
             return reply
             
         try:
@@ -1111,7 +1111,7 @@ class TFTA_Module(Bioagent):
         tf_names,term_id = get_of_those_list(content, descr='tf')
         if not tf_names:
             #tf_arg = content.gets('tf')
-            reply = _wrap_family_message(term_id, 'NO_TF_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_TF_NAME')
             return reply
             
         try:
@@ -1149,7 +1149,7 @@ class TFTA_Module(Bioagent):
         tf_names,term_id = get_of_those_list(content, descr='tf')
         if not tf_names:
             #tf_arg = content.gets('tf')
-            reply = _wrap_family_message(term_id, 'NO_TF_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_TF_NAME')
             return reply
         
         try:
@@ -1188,7 +1188,7 @@ class TFTA_Module(Bioagent):
         target_name,term_id = get_gene(content, descr='target')
         if not len(target_name):
             #target_arg = content.gets('target')
-            reply = _wrap_family_message(term_id, 'NO_TARGET_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
             
         try:
@@ -1217,7 +1217,7 @@ class TFTA_Module(Bioagent):
         target_name,term_id = get_gene(content, descr='target')
         if not len(target_name):
             #target_arg = content.gets('target')
-            reply = _wrap_family_message(term_id, 'NO_TARGET_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         
         is_target,expr,supt,pmid,miRNA_mis = self.tfta.Is_miRNA_target2(miRNA_name, target_name)
@@ -1243,10 +1243,10 @@ class TFTA_Module(Bioagent):
         target_names,term_id = get_of_those_list(content, descr='target')
         if not len(target_names) or term_id:
             #target_arg = content.gets('target')
-            reply = _wrap_family_message(term_id, 'NO_TARGET_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         if term_id:
-            reply = _wrap_family_message(term_id, 'FAMILY_NAME')
+            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
             return reply
         
         ##consider another parameter for subsequent query
@@ -1389,7 +1389,7 @@ class TFTA_Module(Bioagent):
         target_name,term_id = get_gene(content, descr='target')
         if not len(target_name):
             #target_arg = content.gets('target')
-            reply = _wrap_family_message(term_id, 'NO_TARGET_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
                    
         try:
@@ -1464,9 +1464,9 @@ class TFTA_Module(Bioagent):
         Respond to FIND-MIRNA-COUNT-GENE request
         """
         target_names,term_id = get_of_those_list(content, descr='target')
-        if not len(target_names):
+        if len(target_names) < 2:
             #target_arg = content.gets('target')
-            reply = _wrap_family_message(term_id, 'NO_TARGET_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
             
         try:
@@ -1530,7 +1530,7 @@ class TFTA_Module(Bioagent):
             return reply
         gene_name,term_id = get_gene(content, descr='gene')
         if not len(gene_name):
-            reply = _wrap_family_message(term_id, 'NO_GENE_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
             return reply
             
         try:
@@ -1552,10 +1552,10 @@ class TFTA_Module(Bioagent):
         target_names,term_id = get_of_those_list(content, descr='target')
         if not len(target_names):
             #target_arg = content.gets('target')
-            reply = _wrap_family_message(term_id, 'NO_TARGET_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         if term_id:
-            reply = _wrap_family_message(term_id, 'FAMILY_NAME')
+            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
             return reply
             
         try:
@@ -1574,10 +1574,10 @@ class TFTA_Module(Bioagent):
         target_names,term_id = get_of_those_list(content, descr='target')
         if not len(target_names):
             #target_arg = content.gets('target')
-            reply = _wrap_family_message(term_id, 'NO_TARGET_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         if term_id:
-            reply = _wrap_family_message(term_id, 'FAMILY_NAME')
+            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
             return reply
         
         keyword_name = _get_keyword_name(content, descr='keyword')
@@ -1649,10 +1649,10 @@ class TFTA_Module(Bioagent):
         target_names,term_id = get_of_those_list(content, descr='target')
         if not len(target_names):
             #target_arg = content.gets('target')
-            reply = _wrap_family_message(term_id, 'NO_TARGET_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         if term_id:
-            reply = _wrap_family_message(term_id, 'FAMILY_NAME')
+            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
             return reply
         target_names = list(set(target_names))
         
@@ -1707,10 +1707,10 @@ class TFTA_Module(Bioagent):
         target_names,term_id = get_of_those_list(content, descr='target')
         if not len(target_names):
             #target_arg = content.gets('target')
-            reply = _wrap_family_message(term_id, 'NO_TARGET_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         if term_id:
-            reply = _wrap_family_message(term_id, 'FAMILY_NAME')
+            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
             return reply
         target_names = list(set(target_names))
         
@@ -1755,10 +1755,10 @@ class TFTA_Module(Bioagent):
         target_names,term_id = get_of_those_list(content, descr='target')
         if not len(target_names):
             #target_arg = content.gets('target')
-            reply = _wrap_family_message(term_id, 'NO_TARGET_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         if term_id:
-            reply = _wrap_family_message(term_id, 'FAMILY_NAME')
+            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
             return reply
         target_names = list(set(target_names))
         
@@ -1847,13 +1847,13 @@ class TFTA_Module(Bioagent):
         regulator_name,term_id = get_gene(content, descr='regulator')
         if not regulator_name:
             #regulator_arg = content.gets('regulator')
-            reply = _wrap_family_message(term_id, 'NO_REGULATOR_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_REGULATOR_NAME')
             return reply
         
         target_name,term_id = get_gene(content, descr='target')
         if not target_name:
             #target_arg = content.gets('target')
-            reply = _wrap_family_message(term_id, 'NO_TARGET_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         
         keyword_name = _get_keyword_name(content, descr='keyword')
@@ -1905,13 +1905,13 @@ class TFTA_Module(Bioagent):
         regulator_name,term_id = get_gene(content, descr='regulator')
         if not regulator_name:
             #regulator_arg = content.gets('regulator')
-            reply = _wrap_family_message(term_id, 'NO_REGULATOR_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_REGULATOR_NAME')
             return reply
         
         target_name,term_id = get_gene(content, descr='target')
         if not target_name:
             #target_arg = content.gets('target')
-            reply = _wrap_family_message(term_id, 'NO_TARGET_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
             
         db_names = self.tfta.find_evidence_dbname(regulator_name, target_name)
@@ -1990,7 +1990,7 @@ class TFTA_Module(Bioagent):
         gene_name,term_id = get_gene(content, descr='gene')
         if not gene_name:
             #gene_arg = content.gets('gene')
-            reply = _wrap_family_message(term_id, 'NO_GENE_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
             return reply
             
         #optional keyword
@@ -2530,7 +2530,7 @@ class TFTA_Module(Bioagent):
                 return target_type_set
         return target_type_set
         
-    def wrap_family_message1(self, term_id, msg):
+    def wrap_family_message(self, term_id, msg):
         #term_id = _get_term_id(target_arg)
         #-,term_id = _get_targets(target_arg)
         members = dict()
@@ -2543,7 +2543,7 @@ class TFTA_Module(Bioagent):
                     res_str += '(:name %s)' % a.name
                 res_str = '(:term %s :as (%s))' % (id, res_str)
             res_str = '(resolve :agents (' + res_str + '))'
-            reply = make_failure_clarification(msg, res_str)
+            reply = make_failure_clarification('FAMILY_NAME', res_str)
         else:
             reply = make_failure(msg)
         return reply
