@@ -2539,10 +2539,11 @@ class TFTA_Module(Bioagent):
         if members:
             res_str = ''
             for id in members:
+                n_str = ''
                 for a in members[id]:
-                    res_str += '(:name %s)' % a.name
-                res_str = '(:term %s :as (%s))' % (id, res_str)
-            res_str = '(resolve :agents (' + res_str + '))'
+                    n_str += '(:name %s)' % a.name
+                res_str += '(resolve :term %s :as (%s))' % (id, n_str)
+            res_str = '(' + res_str + ')'
             reply = make_failure_clarification('FAMILY_NAME', res_str)
         else:
             reply = make_failure(msg)
