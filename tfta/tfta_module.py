@@ -2538,12 +2538,19 @@ class TFTA_Module(Bioagent):
             members = self.tfta.find_members(term_id)
         if members:
             res_str = ''
-            for id in members:
+            if len(members) == 1:
                 n_str = ''
+                id = list(members.keys())[0]
                 for a in members[id]:
                     n_str += '(:name %s)' % a.name
                 res_str += '(resolve :term %s :as (%s))' % (id, n_str)
-            res_str = '(' + res_str + ')'
+            else:
+                for id in members:
+                    n_str = ''
+                    for a in members[id]:
+                        n_str += '(:name %s)' % a.name
+                    res_str += '(resolve :term %s :as (%s))' % (id, n_str)
+                res_str = '(' + res_str + ')'
             reply = make_failure_clarification('FAMILY_NAME', res_str)
         else:
             reply = make_failure(msg)
