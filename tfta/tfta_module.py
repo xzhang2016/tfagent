@@ -2618,9 +2618,10 @@ def _get_targets(target_arg):
    tp = TripsProcessor(target_arg)
    #agents: dict with term id as key, agent as value
    agents = tp.get_term_agents()
-   proteins = [a for k,a in agents.items() if a is not None and ('UP' in a.db_refs or 'HGNC' in a.db_refs)]
-   families = {k:a for k,a in agents.items() if a is not None and 'FPLX' in a.db_refs}
-   return proteins, families
+   protein_agents = [a for k,a in agents.items() if a is not None and ('UP' in a.db_refs or 'HGNC' in a.db_refs)]
+   proteins = [a.name for k,a in agents.items() if a is not None and ('UP' in a.db_refs or 'HGNC' in a.db_refs)]
+   families = {k:a for k,a in agents.items() if a is not None and 'FPLX' in a.db_refs and a.name not in proteins}
+   return protein_agents, families
 
 def _get_targets2(target_arg):
     agent = []
