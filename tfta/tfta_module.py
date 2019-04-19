@@ -2621,7 +2621,14 @@ def _get_targets(target_arg):
    protein_agents = [a for k,a in agents.items() if a is not None and ('UP' in a.db_refs or 'HGNC' in a.db_refs)]
    proteins = [a.name for k,a in agents.items() if a is not None and ('UP' in a.db_refs or 'HGNC' in a.db_refs)]
    families = {k:a for k,a in agents.items() if a is not None and 'FPLX' in a.db_refs and a.name not in proteins}
-   return protein_agents, families
+   #filter out the repeat family agents
+   f_family = dict()
+   temp = []
+   for k,a in families.items():
+       if a.name not in temp:
+           temp.append(a.name)
+           f_family[k] = a
+   return protein_agents, f_family
 
 def _get_targets2(target_arg):
     agent = []
