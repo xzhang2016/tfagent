@@ -122,7 +122,7 @@ class TFTA_Module(Bioagent):
         find-pathway-keyword.
         """
         gene_arg = content.gets('gene')
-        #pathway_arg = content.gets('pathway')
+        regulator_arg = content.gets('regulator')
         db_arg = content.get('database')
         keyword_arg = content.get('keyword')
         #count_arg = content.get('count')
@@ -130,8 +130,14 @@ class TFTA_Module(Bioagent):
             reply = self.respond_find_pathway_gene_keyword(content)
         elif all([gene_arg,db_arg]):
             reply = self.respond_find_pathway_db_gene(content)
+        elif all([keyword_arg,regulator_arg]):
+            reply = self.respond_find_pathway_keyword_regulator(content)
+        elif all([regulator_arg,db_arg]):
+            reply = self.respond_find_pathway_db_regulator(content)
         elif gene_arg:
             reply = self.respond_find_pathway_gene(content)
+        elif regulator_arg:
+            reply = self.respond_find_pathway_regulator(content)
         elif keyword_arg:
             reply = self.respond_find_pathway_keyword(content)
         else:
@@ -757,6 +763,47 @@ class TFTA_Module(Bioagent):
             return reply
         reply = _wrap_pathway_message(pathwayName, dblink)
         return reply
+        
+    def respond_find_pathway_regulator(self,content):
+        """
+        Response content to find_pathway_gene request
+        For a given gene list, reply the related pathways information
+        """
+        regulator_names,term_id = get_of_those_list(content, descr='regulator')
+        if not len(regulator_names):
+            reply = self.wrap_family_message(term_id, 'NO_REGULATOR_NAME')
+            return reply
+        if term_id:
+            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
+            return reply
+        
+        #get genes regulated by regulators in regulator_names
+        try:
+            gene_names,dbname = self.tfta.find_targets(regulator_names)
+        except TFNotFoundException:
+            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+            return reply
+        
+        if len(gene_names) < 3:
+            try:
+                pathwayName, dblink = \
+                    self.tfta.find_pathways_from_genelist(gene_names)
+            except PathwayNotFoundException:
+                reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+                #gene_arg = content.gets('gene')
+                #reply = self.wrap_family_message_pathway(term_id, descr='pathways', msg="PATHWAY_NOT_FOUND")
+                return reply
+            reply = _wrap_pathway_message(pathwayName, dblink)
+            return reply
+        else:
+            try:
+                pathwayName, dblink, genes = self.tfta.find_common_pathway_genes(gene_names)
+            except PathwayNotFoundException:
+                reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+                return reply
+            
+            reply = _wrap_pathway_genelist_message(pathwayName, dblink, genes, gene_descr=':gene-list')
+            return reply
 
     def respond_find_pathway_gene_keyword(self,content):
         """
@@ -787,6 +834,54 @@ class TFTA_Module(Bioagent):
             return reply
         reply = _wrap_pathway_message(pathwayName, dblink, keyword=[keyword_name])
         return reply
+        
+    def respond_find_pathway_keyword_regulator(self,content):
+        """
+        Response content to find_pathway_gene_name request
+        For a given gene list and keyword, reply the related pathways information
+        """
+        keyword_name = _get_keyword_name(content, hyphen=True)
+        if not keyword_name or keyword_name in ['pathway', 'signaling pathway']:
+            reply = make_failure('NO_KEYWORD')
+            return reply
+            
+        regulator_names,term_id = get_of_those_list(content, descr='regulator')
+        if not len(regulator_names):
+            #gene_arg = content.gets('gene')
+            reply = self.wrap_family_message(term_id, 'NO_REGULATOR_NAME')
+            return reply
+        if term_id:
+            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
+            return reply
+            
+        #get genes regulated by regulators in regulator_names
+        try:
+            gene_names,dbname = self.tfta.find_targets(regulator_names)
+        except TFNotFoundException:
+            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+            return reply
+        
+        if len(gene_names) < 3:
+            try:
+                pathwayName, dblink = \
+                    self.tfta.find_pathway_gene_keyword(gene_names, keyword_name)
+            except PathwayNotFoundException:
+                reply = self.wrap_family_message_pathway(term_id, descr='pathways', msg="PATHWAY_NOT_FOUND")
+                return reply
+            reply = _wrap_pathway_message(pathwayName, dblink, keyword=[keyword_name])
+            return reply
+        else:
+            #go to find-common-pathway-genes
+            try:
+                pathwayName,dblink,genes = \
+                   self.tfta.find_common_pathway_genes_keyword(gene_names, keyword_name)
+            except PathwayNotFoundException:
+                reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+                return reply
+            
+            reply = _wrap_pathway_genelist_message(pathwayName, dblink, genes, pathway_names=[keyword_name],
+                                               gene_descr=':gene-list')
+            return reply
 
     def respond_find_pathway_db_gene(self, content):
         """Response content to FIND-PATHWAY-DB-GENE request
@@ -815,6 +910,52 @@ class TFTA_Module(Bioagent):
             return reply
         reply = _wrap_pathway_message(pathwayName, dblink)
         return reply
+        
+    def respond_find_pathway_db_regulator(self, content):
+        """Response content to FIND-PATHWAY-DB-GENE request
+        For a given gene list and certain db source, reply the related
+        pathways information"""
+        db_name = _get_keyword_name(content, descr='database', low_case=False)
+        if not db_name:
+            reply = make_failure('NO_DB_NAME')
+            return reply
+            
+        regulator_names,term_id = get_of_those_list(content, descr='regulator')
+        if not regulator_names:
+            #gene_arg = content.gets('gene')
+            reply = self.wrap_family_message(term_id, 'NO_REGULATOR_NAME')
+            return reply
+        if term_id:
+            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
+            return reply
+        
+        #get genes regulated by regulators in regulator_names
+        try:
+            gene_names,dbname = self.tfta.find_targets(regulator_names)
+        except TFNotFoundException:
+            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+            return reply
+            
+        if len(gene_names) < 3:
+            try:
+                pathwayName,dblink = self.tfta.find_pathways_from_dbsource_geneName(db_name,gene_names)
+            except PathwayNotFoundException:
+                reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+                #gene_arg = content.gets('gene')
+                #reply = self.wrap_family_message_pathway(term_id, descr='pathways', msg="PATHWAY_NOT_FOUND")
+                return reply
+            reply = _wrap_pathway_message(pathwayName, dblink)
+            return reply
+        else:
+            try:
+                pathwayName,dblink,genes = \
+                   self.tfta.find_common_pathway_genes_db(gene_names, db_name)
+            except PathwayNotFoundException:
+                reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+                return reply
+            
+            reply = _wrap_pathway_genelist_message(pathwayName, dblink, genes, gene_descr=':gene-list')
+            return reply
 
     def respond_find_tf_pathway(self, content):
         """
