@@ -75,8 +75,8 @@ class TFTA_Module(Bioagent):
         is-tf-target
         is-tf-target-tissue
         """
-        tf_arg = content.gets('tf')
-        target_arg = content.gets('target')
+        tf_arg = content.get('tf')
+        target_arg = content.get('target')
         tissue_arg = content.get('tissue')
         keyword_name = _get_keyword_name(content, descr='keyword')
         
@@ -98,7 +98,7 @@ class TFTA_Module(Bioagent):
         Response content to find-tf request which includes:
         find-target-tf, find-target-tf-tissue
         """
-        target_arg = content.gets('target')
+        target_arg = content.get('target')
         tissue_arg = content.get('tissue')
         keyword_name = _get_keyword_name(content, descr='keyword')
         
@@ -121,8 +121,8 @@ class TFTA_Module(Bioagent):
         find-pathway-gene, find-pathway-db-gene, find-pathway-gene-keyword,
         find-pathway-keyword.
         """
-        gene_arg = content.gets('gene')
-        regulator_arg = content.gets('regulator')
+        gene_arg = content.get('gene')
+        regulator_arg = content.get('regulator')
         db_arg = content.get('database')
         keyword_arg = content.get('keyword')
         #count_arg = content.get('count')
@@ -149,7 +149,7 @@ class TFTA_Module(Bioagent):
         Response content to find-target request, which includes these cases:
         find-tf-target, find-tf-target-tissue. 
         """
-        tf_arg = content.gets('tf')
+        tf_arg = content.get('tf')
         tissue_arg = content.get('tissue')
         keyword_name = _get_keyword_name(content, descr='keyword')
         
@@ -188,7 +188,7 @@ class TFTA_Module(Bioagent):
         Response content to find-mirna request, which includes:
         find-mirna-target, find-mirna-count-gene
         """
-        target_arg = content.gets('target')
+        target_arg = content.get('target')
         count_arg = content.get('count')
         if all([target_arg,count_arg]):
             reply = self.respond_find_miRNA_count_target(content)
@@ -204,7 +204,7 @@ class TFTA_Module(Bioagent):
         find-common-pathway-genes, find-common-pathway-genes-keyword,
         find-common-pathway-genes-database
         """
-        target_arg = content.gets('target')
+        target_arg = content.get('target')
         keyword_arg = content.get('keyword')
         db_arg = content.get('database')
         if all([target_arg, keyword_arg]):
@@ -251,7 +251,7 @@ class TFTA_Module(Bioagent):
             return reply
         
         gene_name,term_id = get_gene(content, descr='gene')
-        gene_arg = content.gets('gene')
+        gene_arg = content.get('gene')
         if not gene_name:
             reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
             return reply
@@ -277,8 +277,8 @@ class TFTA_Module(Bioagent):
         """
         Respond to find-gene-onto
         """
-        regulator_arg = content.gets('regulator')
-        gene_arg = content.gets('gene')
+        regulator_arg = content.get('regulator')
+        gene_arg = content.get('gene')
         if regulator_arg:
             reply = self.respond_find_gene_onto_regulator(content)
         elif gene_arg:
