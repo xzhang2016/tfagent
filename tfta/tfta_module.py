@@ -16,6 +16,7 @@ from .tfta import KinaseNotFoundException
 from indra.sources.trips.processor import TripsProcessor
 from collections import defaultdict
 from bioagents import Bioagent
+from indra.statements import Agent
 
 stmt_provenance_map = {'increase':'upregulates', 'decrease':'downregulates',
                  'regulate':'regulates'}
@@ -75,8 +76,8 @@ class TFTA_Module(Bioagent):
         is-tf-target
         is-tf-target-tissue
         """
-        tf_arg = content.gets('tf')
-        target_arg = content.gets('target')
+        tf_arg = content.get('tf')
+        target_arg = content.get('target')
         tissue_arg = content.get('tissue')
         keyword_name = _get_keyword_name(content, descr='keyword')
         
@@ -358,40 +359,43 @@ class TFTA_Module(Bioagent):
         Response content to is-tf-target request.
         """
         literature = False
-        tf_name,term_id = get_gene(content, descr='tf')
+        tf_name,term_id = self._get_targets(content, descr='tf')
         if not tf_name:
             #tf_arg = content.gets('tf')
             reply = self.wrap_family_message(term_id, 'NO_TF_NAME')
             return reply
         
-        target_name,term_id = get_gene(content, descr='target')
+        target_name,term_id = self._get_targets(content, descr='target')
         if not target_name:
             #target_arg = content.gets('target')
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         
         #check if it exists in literature
-        term_tuple = (tf_name, target_name, 'REGULATE')
+        term_tuple = (tf_name[0], target_name[0], 'REGULATE')
         if term_tuple not in self.stmts_indra:
-            stmts,success = self.tfta.find_statement_indraDB(subj=tf_name, obj=target_name, stmt_types=['RegulateAmount'])
+            stmts,success = self.tfta.find_statement_indraDB(subj=tf_name[0], obj=target_name[0], stmt_types=['RegulateAmount'])
             if success:
                 self.stmts_indra[term_tuple] = stmts
         else:
             stmts = self.stmts_indra[term_tuple]
         #provenance support
-        self.send_background_support(stmts, tf_name, target_name, 'regulate')
+        self.send_background_support(stmts, tf_name[0], target_name[0], 'regulate')
         if len(stmts):
             literature = True
         #check the db
         try:
-            is_target,dbname = self.tfta.Is_tf_target(tf_name, target_name)
+            is_target,dbname = self.tfta.Is_tf_target(tf_name[0], target_name[0])
             #provenance support
-            self.send_background_support_db(tf_name, target_name, dbname)
-        except Exception as e:
+            self.send_background_support_db(tf_name[0], target_name[0], dbname)
+        except Exception:
             #provenance support
-            self.send_background_support_db(tf_name, target_name, '')
+            self.send_background_support_db(tf_name[0], target_name[0], '')
             if not literature:
-                reply = KQMLList.from_string('(SUCCESS :result FALSE :db FALSE :literature FALSE)')
+                reply = KQMLList('SUCCESS')
+                reply.set('result', 'FALSE')
+                reply.set('db', 'FALSE')
+                reply.set('literature', 'FALSE')
                 return reply
         
         result = is_target or literature
@@ -407,13 +411,13 @@ class TFTA_Module(Bioagent):
         Response content to is-tf-target request with regulating direction
         """
         literature = False
-        tf_name,term_id = get_gene(content, descr='tf')
+        tf_name,term_id = self._get_targets(content, descr='tf')
         if not tf_name:
             #tf_arg = content.gets('tf')
             reply = self.wrap_family_message(term_id, 'NO_TF_NAME')
             return reply
             
-        target_name,term_id = get_gene(content, descr='target')
+        target_name,term_id = self._get_targets(content, descr='target')
         if not target_name:
             #target_arg = content.gets('target')
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
@@ -429,15 +433,15 @@ class TFTA_Module(Bioagent):
             reply = make_failure('INVALID_KEYWORD')
             return reply
             
-        term_tuple = (tf_name, target_name, keyword_name)
+        term_tuple = (tf_name[0], target_name[0], keyword_name)
         if term_tuple not in self.stmts_indra:
-            stmts,success = self.tfta.find_statement_indraDB(subj=tf_name, obj=target_name, stmt_types=stmt_types)
+            stmts,success = self.tfta.find_statement_indraDB(subj=tf_name[0], obj=target_name[0], stmt_types=stmt_types)
             if success:
                 self.stmts_indra[term_tuple] = stmts
         else:
             stmts = self.stmts_indra[term_tuple]
         #provenance support
-        self.send_background_support(stmts, tf_name, target_name, keyword_name)
+        self.send_background_support(stmts, tf_name[0], target_name[0], keyword_name)
         if len(stmts):
             literature = True
         #set is_target to False since it doesn't support 'increase' or 'decrease' query
@@ -461,13 +465,13 @@ class TFTA_Module(Bioagent):
         """
         Response content to is-tf-target-tissue request.
         """
-        tf_name,term_id = get_gene(content, descr='tf')
+        tf_name,term_id = self._get_targets(content, descr='tf')
         if not tf_name:
             #tf_arg = content.gets('tf')
             reply = self.wrap_family_message(term_id, 'NO_TF_NAME')
             return reply
             
-        target_name,term_id = get_gene(content, descr='target')
+        target_name,term_id = self._get_targets(content, descr='target')
         if not target_name:
             #target_arg = content.gets('target')
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
@@ -481,9 +485,10 @@ class TFTA_Module(Bioagent):
             reply = make_failure('INVALID_TISSUE')
             return reply
         try:
-            is_target = self.tfta.Is_tf_target_tissue(tf_name, target_name, tissue_name)
+            is_target = self.tfta.Is_tf_target_tissue(tf_name[0], target_name[0], tissue_name)
         except Exception as e:
-            reply = KQMLList.from_string('(SUCCESS :result FALSE)')
+            reply = KQMLList('SUCCESS')
+            reply.set('result', 'FALSE')
             return reply
         reply = KQMLList('SUCCESS')
         is_target_str = 'TRUE' if is_target else 'FALSE'
@@ -2222,50 +2227,6 @@ class TFTA_Module(Bioagent):
         reply_msg.set('content', reply_content)
         self.reply(msg, reply_msg)
         
-    def get_regulator_indra0(self, target_names, stmt_types, keyword_name):
-        """
-        wrap message for multiple targets case
-        target_names: list
-        stmt_types: indra statement type
-        """
-        lit_messages = ''
-        tfs = defaultdict(set)
-        others = defaultdict(set)
-        mirnas = defaultdict(set)
-        genes = defaultdict(set)
-        for target in target_names:
-            term_tuple = (target, 'target', keyword_name)
-            if term_tuple not in self.stmts_indra:
-                stmts,success = self.tfta.find_statement_indraDB(obj=target, stmt_types=stmt_types)
-                if success:
-                    self.stmts_indra[term_tuple] = stmts
-            else:
-                stmts = self.stmts_indra[term_tuple]
-            #provenance support
-            self.send_background_support(stmts, 'what', target, keyword_name)
-            if len(stmts):
-                tfs[target], genes[target], mirnas[target], others[target] = self.tfta.find_regulator_indra(stmts)
-        #take the intersection
-        ftfs = tfs[target_names[0]]
-        fmirnas = mirnas[target_names[0]]
-        fothers = others[target_names[0]]
-        fgenes = genes[target_names[0]]
-        if len(target_names)>1:
-            for i in range(1, len(target_names)):
-                ftfs = ftfs.intersection(tfs[target_names[i]])
-                fmirnas = fmirnas.intersection(mirnas[target_names[i]])
-                fothers = fothers.intersection(others[target_names[i]])
-                fgenes = fgenes.intersection(genes[target_names[i]])
-        if len(ftfs):
-            lit_messages += self.wrap_message(':tf-literature', ftfs)
-        if len(fgenes):
-            lit_messages += self.wrap_message(':gene-literature', fgenes)
-        if len(fmirnas):
-            lit_messages += self.wrap_message(':miRNA-literature', fmirnas, hgnc_id=False)
-        if len(fothers):
-            lit_messages += self.wrap_message(':other-literature', fothers, hgnc_id=False)
-        return lit_messages
-        
     def get_regulator_indra(self, target_names, stmt_types, keyword_name):
         """
         wrap message for multiple targets case
@@ -2671,7 +2632,7 @@ class TFTA_Module(Bioagent):
                 return target_type_set
         return target_type_set
         
-    def wrap_family_message(self, term_id, msg):
+    def wrap_family_message1(self, term_id, msg):
         #term_id = _get_term_id(target_arg)
         #-,term_id = _get_targets(target_arg)
         members = dict()
@@ -2696,7 +2657,36 @@ class TFTA_Module(Bioagent):
         else:
             reply = make_failure(msg)
         return reply
-        
+    
+    def wrap_family_message(self, term_id, msg):
+        #term_id = _get_term_id(target_arg)
+        #-,term_id = _get_targets(target_arg)
+        members = dict()
+        if len(term_id):
+            members = self.tfta.find_members(term_id)
+        if members:
+            #res_str = ''
+            #if len(members) == 1:
+            id = list(members.keys())[0]
+            mbj = self.make_cljson(members[id])
+            res_str = KQMLList('resolve')
+            res_str.set('term', id)
+            res_str.set('as', mbj)
+            reply = make_failure_clarification('FAMILY_NAME', res_str)
+            '''
+            else:
+                for id in members:
+                    n_str = ''
+                    for a in members[id]:
+                        n_str += '(:name %s)' % a.name
+                    res_str += '(resolve :term %s :as (%s))' % (id, n_str)
+                res_str = '(' + res_str + ')'
+            reply = make_failure_clarification('FAMILY_NAME', res_str)
+            '''
+        else:
+            reply = make_failure(msg)
+        return reply
+    
     def wrap_family_message_pathway(self, term_id, descr='pathways', msg="PATHWAY_NOT_FOUND"):
         #term_id = _get_term_id(target_arg)
         if len(term_id):
@@ -2742,7 +2732,29 @@ class TFTA_Module(Bioagent):
         else:
             is_ekb = False
         return is_onto, is_ekb
-         
+    
+    def _get_targets(self, content, descr='target'):
+        proteins = None
+        family = None
+        try:
+            target_arg = content.get(descr)
+        except Exception:
+            return None,None
+        try:
+            agents = self.get_agent(target_arg)
+        except Exception:
+            return None,None
+        if isinstance(agents, list):
+            proteins = [a.name for a in agents if a is not None and ('UP' in a.db_refs or 'HGNC' in a.db_refs)]
+            family = {a.db_refs['TRIPS']:a.name for a in agents if a is not None and 'FPLX' in a.db_refs and a.name not in proteins}
+        elif isinstance(agents, Agent):
+            if 'UP' in agents.db_refs or 'HGNC' in agents.db_refs:
+                proteins = [agents.name]
+            if not proteins and 'FPLX' in agents.db_refs:
+                family = {agents.db_refs['TRIPS']:agents.name}
+        return proteins,family
+                
+            
 #------------------------------------------------------------------------#######
 def _get_target(target_str):
     agent = None
