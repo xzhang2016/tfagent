@@ -2112,20 +2112,20 @@ class TFTA:
                 evidences.add((source_api, pmid, text))
         return evidences
         
-    def find_members(self, term_id):
+    def find_members0(self, term_id):
         """
         Find members for a collection
         
         Parameters
         -------------
         term_id: dict
-        Its key is term id
+        Its key is TRIPS term_id
         Value is indra.statements.Agent
         
         Returns
         ------------
         members: dict
-        Its key is term id
+        Its key is TRIPS term_id
         Value is list[indra.statements.Agent]
         """
         members = dict()
@@ -2133,6 +2133,28 @@ class TFTA:
             magents = _get_members(agent)
             if magents:
                 members[id] = magents
+        return members
+        
+    def find_members(self, agents):
+        """
+        Find members for a collection
+        
+        Parameters
+        -------------
+        agents: list of Agent
+        Value is indra.statements.Agent
+        
+        Returns
+        ------------
+        members: dict
+        Its key is family name
+        Value is list[indra.statements.Agent]
+        """
+        members = dict()
+        for agent in agents:
+            magents = _get_members(agent)
+            if magents:
+                members[agent.name] = magents
         return members
             
 def _get_members(agent):
