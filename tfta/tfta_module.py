@@ -99,7 +99,7 @@ class TFTA_Module(Bioagent):
         Response content to find-tf request which includes:
         find-target-tf, find-target-tf-tissue
         """
-        target_arg = content.gets('target')
+        target_arg = content.get('target')
         tissue_arg = content.get('tissue')
         keyword_name = _get_keyword_name(content, descr='keyword')
         
@@ -640,7 +640,7 @@ class TFTA_Module(Bioagent):
         Response content to find-target-tf request
         For a target list, reply the tfs found
         """
-        target_names,term_id = get_of_those_list(content, descr='target')
+        target_names,term_id = self._get_targets(content, descr='target')
         if not len(target_names):
             #target_arg = content.gets('target')
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
@@ -2670,7 +2670,7 @@ class TFTA_Module(Bioagent):
             id = list(members.keys())[0]
             mbj = self.make_cljson(members[id])
             res_str = KQMLList('resolve')
-            res_str.set('term', id)
+            res_str.set('family', id)
             res_str.set('as', mbj)
             reply = make_failure_clarification('FAMILY_NAME', res_str)
             '''
@@ -2746,12 +2746,14 @@ class TFTA_Module(Bioagent):
             return None,None
         if isinstance(agents, list):
             proteins = [a.name for a in agents if a is not None and ('UP' in a.db_refs or 'HGNC' in a.db_refs)]
-            family = {a.db_refs['TRIPS']:a.name for a in agents if a is not None and 'FPLX' in a.db_refs and a.name not in proteins}
+            #family = {a.db_refs['TRIPS']:a.name for a in agents if a is not None and 'FPLX' in a.db_refs and a.name not in proteins}
+            family = [a for a in agents if a is not None and 'FPLX' in a.db_refs and a.name not in proteins]
         elif isinstance(agents, Agent):
             if 'UP' in agents.db_refs or 'HGNC' in agents.db_refs:
                 proteins = [agents.name]
             if not proteins and 'FPLX' in agents.db_refs:
-                family = {agents.db_refs['TRIPS']:agents.name}
+                #family = {agents.db_refs['TRIPS']:agents.name}
+                family = [agents]
         return proteins,family
                 
             
