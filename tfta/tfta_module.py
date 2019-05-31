@@ -150,7 +150,7 @@ class TFTA_Module(Bioagent):
         Response content to find-target request, which includes these cases:
         find-tf-target, find-tf-target-tissue. 
         """
-        tf_arg = content.gets('tf')
+        tf_arg = content.get('tf')
         tissue_arg = content.get('tissue')
         keyword_name = _get_keyword_name(content, descr='keyword')
         
@@ -574,8 +574,8 @@ class TFTA_Module(Bioagent):
         lit_messages = self.get_target_indra(tf_names, stmt_types, keyword_name, 
                                              of_those=of_those_names, target_type=target_type)
         if len(lit_messages):
-            reply = KQMLList.from_string(
-                    '(SUCCESS ' + lit_messages + ')')
+            reply = KQMLList('SUCCESS')
+            reply.set('targets', lit_messages)
         else:
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
         return reply
@@ -585,9 +585,8 @@ class TFTA_Module(Bioagent):
         Response content to find-tf-target-tissue request
         For tf list, reply with the targets found within given tissue
         """
-        tf_names,term_id = get_of_those_list(content, descr='tf')
-        if not len(tf_names):
-            #tf_arg = content.gets('tf')
+        tf_names,term_id = self._get_targets(content, descr='tf')
+        if not tf_names:
             reply = self.wrap_family_message(term_id, 'NO_TF_NAME')
             return reply
         if term_id:
@@ -604,30 +603,27 @@ class TFTA_Module(Bioagent):
             return reply
             
         #consider an optional parameter for sequencing query
-        of_targets_names,nouse = get_of_those_list(content)
+        of_targets_names,nouse = self._get_targets(content, descr='of-those')
         
         #consider an optional parameter to only return given types of genes
         target_type_set = self.get_target_type_set(content)
         
-        try:
-            target_names = self.tfta.find_targets_tissue(tf_names, tissue_name)
-        except TFNotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :targets NIL)')
-            return reply
+        target_names = self.tfta.find_targets_tissue(tf_names, tissue_name)
             
         #check if it's a sequencing query
-        if of_targets_names:
+        if of_targets_names and target_names:
             target_names = list(set(of_targets_names) & set(target_names))
         #check if it requires returning a type of genes
-        if target_type_set:
+        if target_type_set and target_names:
             target_names = target_type_set & set(target_names)
             
         if len(target_names):
-            gene_list_str = self.wrap_message(':targets', target_names)
-            reply = KQMLList.from_string('(SUCCESS ' + gene_list_str + ')')
+            target_list = [Agent(target) for target in target_names]
+            targets = self.make_cljson(target_list)
+            reply = KQMLList('SUCCESS')
+            reply.set('targets', targets)
         else:
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
-        self.gene_list = target_names
         return reply
 
     def respond_find_target_tfs(self, content):
@@ -2329,7 +2325,9 @@ class TFTA_Module(Bioagent):
         genes, stmt_f = self.tfta.find_target_indra_regulators(stmts_d, of_those=of_those, target_type=target_type)
         
         if len(genes):
-            lit_messages += self.wrap_message(':targets', genes)
+            target_list = [Agent(target) for target in genes]
+            lit_messages = self.make_cljson(target_list)
+             
         #provenance support
         self.send_background_support(stmt_f, regulator_str, 'what', keyword_name)
         
@@ -2362,7 +2360,7 @@ class TFTA_Module(Bioagent):
             else:
                 self.send_background_support([], target_str, 'what', keyword_name)
                 return lit_messages
-        tfs, stmt_f = self.tfta.find_tfs_indra(stmts_d)        
+        tfs, stmt_f = self.tfta.find_tfs_indra(stmts_d)
         
         if len(tfs):
             tf_list = [Agent(tf) for tf in tfs]
