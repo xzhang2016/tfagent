@@ -315,14 +315,7 @@ class TFTA:
             if res:
                 tf_names = [r[0] for r in res]
             else:
-                #check if the target is in the database
-                t = (target_names[0],)
-                res = self.tfdb.execute("SELECT DISTINCT TF FROM Target2TF2Tissue "
-                                        "WHERE Target = ? ", t).fetchall()
-                if res:
-                    return tf_names
-                else:
-                    raise TargetNotFoundException	
+                return []
             if len(target_names) > 1:
                 for i in range(1,len(target_names)):
                     t = (target_names[i],regstr)
@@ -331,16 +324,7 @@ class TFTA:
                     if res:
                         tf_names = list(set(tf_names) & set([r[0] for r in res]))
                     else:
-                        #check if the target is in the database
-                        t = (target_names[i],)
-                        res = self.tfdb.execute("SELECT DISTINCT TF FROM Target2TF2Tissue "
-                                                "WHERE Target = ? ", t).fetchall()
-                        if res:
-                            return tf_names
-                        else:
-                            raise TargetNotFoundException
-            if len(tf_names):
-                tf_names.sort()
+                        return []
         return tf_names
 
     def find_pathways_from_name(self, pathway_name):
