@@ -501,18 +501,15 @@ class TFTA_Module(Bioagent):
         Covered by find-target
         For a tf list, reply with the targets found
         """
-        tf_names,term_id = get_of_those_list(content, descr='tf')
-        if not len(tf_names):
-            #tf_arg = content.gets('tf')
+        tf_names,term_id = self._get_targets(content, descr='tf')
+        if not tf_names:
             reply = self.wrap_family_message(term_id, 'NO_TF_NAME')
             return reply
         if term_id:
             reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
             return reply
 
-        #tf_str = ', '.join(tf_names[:-1]) + ' and ' + tf_names[-1]
-        #consider an optional parameter for subsequent query
-        of_targets_names,nouse = get_of_those_list(content)
+        of_targets_names,nouse = self._get_targets(content, descr='of-those')
         
         #consider an optional parameter to only return given type of genes
         target_type_set = self.get_target_type_set(content)
@@ -533,13 +530,13 @@ class TFTA_Module(Bioagent):
         if target_type_set:
             target_names = target_type_set & set(target_names)
         
-        if len(target_names):
-            gene_list_str = self.wrap_message(':targets', target_names)
-            reply = KQMLList.from_string('(SUCCESS ' + gene_list_str + ')')
+        if target_names:
+            target_list = [Agent(target) for target in target_names]
+            targets = self.make_cljson(target_list)
+            reply = KQMLList('SUCCESS')
+            reply.set('targets', targets)
         else:
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
-            
-        self.gene_list = target_names
         
         #provenance support
         self.send_background_support_db(tf_names, target_names, dbname, find_target=True)
@@ -550,12 +547,10 @@ class TFTA_Module(Bioagent):
         """
         Respond to find-target request with information in literatures
         """
-        tf_names,term_id = get_of_those_list(content, descr='tf')
-        if not len(tf_names):
-            #tf_arg = content.gets('tf')
+        tf_names,term_id = self._get_targets(content, descr='tf')
+        if not tf_names:
             reply = self.wrap_family_message(term_id, 'NO_TF_NAME')
             return reply
-            
         if term_id:
             reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
             return reply
@@ -566,14 +561,14 @@ class TFTA_Module(Bioagent):
             return reply
         
         #consider an optional parameter for sequencing query
-        of_those_names,nouse = get_of_those_list(content)
+        of_those_names,nouse = self._get_targets(content, descr='of-those')
         
         #consider an optional parameter to only return given types of genes
         target_type = _get_keyword_name(content, descr='target-type')
     
         try:
             stmt_types = stmt_type_map[keyword_name]
-        except KeyError as e:
+        except KeyError:
             reply = make_failure('INVALID_KEYWORD')
             return reply
         lit_messages = self.get_target_indra(tf_names, stmt_types, keyword_name, 
@@ -641,8 +636,7 @@ class TFTA_Module(Bioagent):
         For a target list, reply the tfs found
         """
         target_names,term_id = self._get_targets(content, descr='target')
-        if not len(target_names):
-            #target_arg = content.gets('target')
+        if not target_names:
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         if term_id:
@@ -650,7 +644,7 @@ class TFTA_Module(Bioagent):
             return reply
             
         #consider an optional parameter for subsequent query
-        of_tfs_names,nouse = get_of_those_list(content)
+        of_tfs_names,nouse = self._get_targets(content, descr='of-those')
         
         try:
             tf_names,dbname = self.tfta.find_tfs(target_names)
@@ -661,10 +655,12 @@ class TFTA_Module(Bioagent):
             return reply
         #check if it's a subsequent query
         if of_tfs_names:
-            tf_names = list(set(of_tfs_names) & set(tf_names))
+            tf_names = sorted(list(set(of_tfs_names) & set(tf_names)))
         if len(tf_names):
-            gene_list_str = self.wrap_message(':tfs', tf_names)
-            reply = KQMLList.from_string('(SUCCESS ' + gene_list_str + ')')
+            tf_list = [Agent(tf) for tf in tf_names]
+            tfs = self.make_cljson(tf_list)
+            reply = KQMLList('SUCCESS')
+            reply.set('tfs', tfs)
         else:
             reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
         #self.gene_list = tf_names
@@ -676,9 +672,8 @@ class TFTA_Module(Bioagent):
         """
         Respond to find-tf request with information in literatures
         """
-        target_names,term_id = get_of_those_list(content, descr='target')
-        if not len(target_names):
-            #target_arg = content.gets('target')
+        target_names,term_id = self._get_targets(content, descr='target')
+        if not target_names:
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         if term_id:
@@ -697,8 +692,8 @@ class TFTA_Module(Bioagent):
             return reply
         lit_messages = self.get_tf_indra(target_names, stmt_types, keyword_name)
         if len(lit_messages):
-            reply = KQMLList.from_string(
-                    '(SUCCESS ' + lit_messages + ')')
+            reply = KQMLList('SUCCESS')
+            reply.set('tfs', lit_messages)
         else:
             reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
         return reply
@@ -708,9 +703,8 @@ class TFTA_Module(Bioagent):
         Response content to find-target-tf-tissue request
         For a target list, reply the tfs found within a given tissue
         """
-        target_names,term_id = get_of_those_list(content, descr='target')
-        if not len(target_names):
-            #target_arg = content.gets('target')
+        target_names,term_id = self._get_targets(content, descr='target')
+        if not target_names:
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         if term_id:
@@ -725,23 +719,22 @@ class TFTA_Module(Bioagent):
         if tissue_name not in self.tissue_list:
             reply = make_failure('INVALID_TISSUE')
             return reply
+            
         #consider an optional parameter for subsequent query
-        of_tfs_names,nouse = get_of_those_list(content)
+        of_tfs_names,nouse = self._get_targets(content, descr='of-those')
         
-        try:
-            tf_names = self.tfta.find_tfs_tissue(target_names, tissue_name)
-        except TargetNotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
-            return reply
+        tf_names = self.tfta.find_tfs_tissue(target_names, tissue_name)
+            
         #check if it's a sequencing query
-        if of_tfs_names:
-            tf_names = list(set(of_tfs_names) & set(tf_names))         
-        if len(tf_names):
-            gene_list_str = self.wrap_message(':tfs', tf_names)
-            reply = KQMLList.from_string('(SUCCESS ' + gene_list_str + ')')
+        if of_tfs_names and tf_names:
+            tf_names = sorted(list(set(of_tfs_names) & set(tf_names)))
+        if tf_names:
+            tf_list = [Agent(tf) for tf in tf_names]
+            tfs = self.make_cljson(tf_list)
+            reply = KQMLList('SUCCESS')
+            reply.set('tfs', tfs)
         else:
             reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
-        self.gene_list = tf_names
         return reply
 
     def respond_find_pathway_gene(self,content):
@@ -2355,6 +2348,7 @@ class TFTA_Module(Bioagent):
             target_str = ', '.join(target_names[:-1]) + ' and ' + target_names[-1]
         else:
             target_str = target_names[0]
+        
         for target in target_names:
             term_tuple = (target, 'target', keyword_name)
             if term_tuple not in self.stmts_indra:
@@ -2371,7 +2365,9 @@ class TFTA_Module(Bioagent):
         tfs, stmt_f = self.tfta.find_tfs_indra(stmts_d)        
         
         if len(tfs):
-            lit_messages += self.wrap_message(':tfs', tfs)
+            tf_list = [Agent(tf) for tf in tfs]
+            lit_messages = self.make_cljson(tf_list)
+            
         #provenance support
         self.send_background_support(stmt_f, target_str, 'what', keyword_name)
         
