@@ -641,5 +641,355 @@ class TestFindTf14(_IntegrationTest):
         
 #####################################################################################
 #TEST FIND-TARGET
+#what genes are regulated by smad2? (subtask: find-tf-target)
+class TestFindTarget1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTarget1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = agent_clj_from_text('smad2')
+        _get_targets(tf)
+        print('tf=', str(tf))
+        
+        content = KQMLList('FIND-TARGET')
+        content.set('tf', tf)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets'))=", str(len(output.get('targets'))))
+        assert len(output.get('targets')) == 117, output
+
+#what genes are regulated by elk1 and smad2? (subtask: find-tf-target)
+class TestFindTarget2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTarget2, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = agents_clj_from_text('ELK1, SMAD2')
+        _get_targets(tf)
+        print('tf=', str(tf))
+        
+        content = KQMLList('FIND-TARGET')
+        content.set('tf', tf)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('targets')) == 28
+
+#what genes are regulated by MEK (subtask: find-tf-target)
+class TestFindTarget3(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTarget3, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = agent_clj_from_text('MEK')
+        _get_targets(tf)
+        print('tf=', str(tf))
+        
+        content = KQMLList('FIND-TARGET')
+        content.set('tf', tf)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason') == 'FAMILY_NAME', output
+        print("len(output.get('clarification')=", len(output.get('clarification')))
+        assert len(output.get('clarification')) == 5, output
+
+#What genes does stat3 regulate in lung? (subtask: find-tf-target-tissue)
+class TestFindTarget4(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTarget4, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = agent_clj_from_text('STAT3')
+        _get_targets(tf)
+        print('tf=', str(tf))
+        
+        tissue = 'lung'
+        content = KQMLList('FIND-TARGET')
+        content.set('tf', tf)
+        content.set('tissue', tissue)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets'))=", len(output.get('targets')))
+        assert len(output.get('targets')) == 57, output
+
+#what genes does stat3 regulate in liver? (subtask: find-tf-target-tissue)
+class TestFindTarget5(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTarget5, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = agent_clj_from_text('STAT3')
+        _get_targets(tf)
+        print('tf=', str(tf))
+        
+        tissue = 'liver'
+        content = KQMLList('FIND-TARGET')
+        content.set('tf', tf)
+        content.set('tissue', tissue)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.get('targets') == 'NIL', output
+        
+##what genes does MEK regulate in liver? (subtask: find-tf-target-tissue)
+class TestFindTarget6(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTarget6, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = agent_clj_from_text('MEK')
+        _get_targets(tf)
+        print('tf=', str(tf))
+        
+        tissue = 'liver'
+        content = KQMLList('FIND-TARGET')
+        content.set('tf', tf)
+        content.set('tissue', tissue)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason') == 'FAMILY_NAME', output
+        print("len(output.get('clarification'))=", len(output.get('clarification')))
+        assert len(output.get('clarification')) == 5, output
+
+#What genes does smad2 upregulate?
+class TestFindTarget7(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTarget7, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = agent_clj_from_text('smad2')
+        _get_targets(tf)
+        print('tf=', str(tf))
+        
+        keyword = 'increase'
+        content = KQMLList('FIND-TARGET')
+        content.set('tf', tf)
+        content.set('keyword', keyword)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets'))=", str(len(output.get('targets'))))
+        assert len(output.get('targets')) == 77, output
+
+#What genes does MEK downregulate?
+class TestFindTarget8(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTarget8, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = agent_clj_from_text('MEK')
+        _get_targets(tf)
+        print('tf=', str(tf))
+        
+        keyword = 'decrease'
+        content = KQMLList('FIND-TARGET')
+        content.set('tf', tf)
+        content.set('keyword', keyword)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason') == 'FAMILY_NAME', output
+        print("len(output.get('clarification'))=", len(output.get('clarification')))
+        assert len(output.get('clarification')) == 5, output
+
+#test sequencing query
+#Which of these genes are regulated by STAT3? (subtask: find-tf-target)
+#A2M is wrongly interpreted by trips, so its json format is problematic
+class TestFindTarget9(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTarget9, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = agent_clj_from_text('STAT3')
+        _get_targets(tf)
+        print('tf=', str(tf))
+        
+        of_those = agents_clj_from_text("A2M, ABCA2, AKAP12, AKT1, PBRM1, SMAD2,CEBPA")
+        _get_targets(of_those)
+        print('of_those=', str(of_those))
+        
+        #just for testing A2M purpose
+        tt = agent_clj_from_text('A2M')
+        _get_targets(tt)
+        print('tt=', str(tt))
+        
+        content = KQMLList('FIND-TARGET')
+        content.set('tf', tf)
+        content.set('of-those', of_those)
+        print("content=", content)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets'))=", str(len(output.get('targets'))))
+        assert len(output.get('targets')) == 4, output
+
+#target-type test
+#What transcription factors are regulated by stat3?
+class TestFindTarget10(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTarget10, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = agent_clj_from_text('STAT3')
+        _get_targets(tf)
+        print('tf=', str(tf))
+        
+        target_type = 'tf'
+        content = KQMLList('FIND-TARGET')
+        content.set('tf', tf)
+        content.set('target-type', target_type)
+        #print("content=", content)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets'))=", len(output.get('targets')))
+        assert len(output.get('targets')) == 135, output
+
+#What TFs does stat3 regulate in lung? (subtask: find-tf-target-tissue)
+class TestFindTarget11(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTarget11, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = agent_clj_from_text('STAT3')
+        _get_targets(tf)
+        print('tf=', str(tf))
+        
+        tissue = 'lung'
+        target_type = 'tf'
+        content = KQMLList('FIND-TARGET')
+        content.set('tf', tf)
+        content.set('tissue', tissue)
+        content.set('target-type', 'tf')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets'))=", len(output.get('targets')))
+        assert len(output.get('targets')) == 55, output
+
+#What TFs does smad2 upregulate?
+class TestFindTarget12(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTarget12, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = agent_clj_from_text('smad2')
+        _get_targets(tf)
+        print('tf=', str(tf))
+        
+        keyword = 'increase'
+        target_type = 'tf'
+        content = KQMLList('FIND-TARGET')
+        content.set('tf', tf)
+        content.set('keyword', keyword)
+        content.set('target-type', 'tf')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets'))=", str(len(output.get('targets'))))
+        assert len(output.get('targets')) == 22, output
+
+#What kinases are regulated by stat3?
+class TestFindTarget13(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTarget13, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = agent_clj_from_text('STAT3')
+        _get_targets(tf)
+        print('tf=', str(tf))
+        
+        target_type = 'kinase'
+        content = KQMLList('FIND-TARGET')
+        content.set('tf', tf)
+        content.set('target-type', target_type)
+        #print("content=", content)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets'))=", len(output.get('targets')))
+        assert len(output.get('targets')) == 12, output
+
+#What kinases does stat3 regulate in lung? (subtask: find-tf-target-tissue)
+class TestFindTarget14(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTarget14, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = agent_clj_from_text('STAT3')
+        _get_targets(tf)
+        print('tf=', str(tf))
+        
+        tissue = 'lung'
+        target_type = 'kinase'
+        content = KQMLList('FIND-TARGET')
+        content.set('tf', tf)
+        content.set('tissue', tissue)
+        content.set('target-type', target_type)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets'))=", len(output.get('targets')))
+        assert output.get('targets') == 'NIL', output
+
+##What kinases does smad2 upregulate?
+class TestFindTarget15(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTarget15, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tf = agent_clj_from_text('smad2')
+        _get_targets(tf)
+        print('tf=', str(tf))
+        
+        keyword = 'increase'
+        target_type = 'kinase'
+        content = KQMLList('FIND-TARGET')
+        content.set('tf', tf)
+        content.set('keyword', keyword)
+        content.set('target-type', target_type)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets'))=", str(len(output.get('targets'))))
+        assert len(output.get('targets')) == 6, output
+
+##########################################################################
+# TEST FIND-REGULATION
+
 
 
