@@ -17,6 +17,7 @@ from indra.sources.trips.processor import TripsProcessor
 from collections import defaultdict
 from bioagents import Bioagent
 from indra.statements import Agent
+from indra.databases import hgnc_client
 
 stmt_provenance_map = {'increase':'upregulates', 'decrease':'downregulates',
                  'regulate':'regulates'}
@@ -50,7 +51,7 @@ class TFTA_Module(Bioagent):
              'FIND-TF', 'FIND-PATHWAY', 'FIND-TARGET', 'FIND-GENE', 'FIND-MIRNA',
              'IS-GENE-ONTO', 'FIND-GENE-ONTO', 'FIND-KINASE-REGULATION',
              'FIND-TF-MIRNA', 'FIND-REGULATION', 'FIND-EVIDENCE', 'FIND-GENE-TISSUE',
-             'IS-GENE-TISSUE', 'FIND-KINASE-PATHWAY','TEST-FUNCTION']
+             'IS-GENE-TISSUE', 'FIND-KINASE-PATHWAY']
     #keep the genes from the most recent previous call, which are used to input 
     #find-gene-onto if there's no gene input 
     #gene_list = ['STAT3', 'JAK1', 'JAK2', 'ELK1', 'FOS', 'SMAD2', 'KDM4B']
@@ -531,10 +532,7 @@ class TFTA_Module(Bioagent):
             target_names = target_type_set & set(target_names)
         
         if target_names:
-            target_list = [Agent(target) for target in target_names]
-            targets = self.make_cljson(target_list)
-            reply = KQMLList('SUCCESS')
-            reply.set('targets', targets)
+            reply = self.wrap_message('targets', target_names)
         else:
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
         
@@ -618,10 +616,7 @@ class TFTA_Module(Bioagent):
             target_names = target_type_set & set(target_names)
             
         if len(target_names):
-            target_list = [Agent(target) for target in target_names]
-            targets = self.make_cljson(target_list)
-            reply = KQMLList('SUCCESS')
-            reply.set('targets', targets)
+            reply = self.wrap_message('targets', target_names)
         else:
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
         return reply
@@ -653,10 +648,7 @@ class TFTA_Module(Bioagent):
         if of_tfs_names:
             tf_names = sorted(list(set(of_tfs_names) & set(tf_names)))
         if len(tf_names):
-            tf_list = [Agent(tf) for tf in tf_names]
-            tfs = self.make_cljson(tf_list)
-            reply = KQMLList('SUCCESS')
-            reply.set('tfs', tfs)
+            reply = self.wrap_message('tfs', tf_names)
         else:
             reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
         #self.gene_list = tf_names
@@ -725,10 +717,7 @@ class TFTA_Module(Bioagent):
         if of_tfs_names and tf_names:
             tf_names = sorted(list(set(of_tfs_names) & set(tf_names)))
         if tf_names:
-            tf_list = [Agent(tf) for tf in tf_names]
-            tfs = self.make_cljson(tf_list)
-            reply = KQMLList('SUCCESS')
-            reply.set('tfs', tfs)
+            reply = self.wrap_message('tfs', tf_names)
         else:
             reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
         return reply
@@ -2198,8 +2187,7 @@ class TFTA_Module(Bioagent):
                  'FIND-EVIDENCE':respond_find_evidence,
                  'FIND-GENE-TISSUE':respond_find_gene_tissue,
                  'IS-GENE-TISSUE':respond_is_gene_tissue,
-                 'FIND-KINASE-PATHWAY':respond_find_kinase_pathway,
-                 'TEST-FUNCTION':respond_get_family_name}
+                 'FIND-KINASE-PATHWAY':respond_find_kinase_pathway}
     
     def receive_request(self, msg, content):
         """If a "request" message is received, decode the task and
@@ -2586,35 +2574,19 @@ class TFTA_Module(Bioagent):
                                                 cause=for_what, reason=reason))
         return self.tell(content)
         
-    def wrap_message(self, descr, data, hgnc_id=True):
-        if type(data) is set:
-            data = list(data)
-        if not self.hgnc_info:
-            self.hgnc_info = self.tfta.get_hgnc_mapping()
-        if not data:
-            return None
-        data.sort()  
-        tf_list_str = ''
-        #don't consider strings from literature containing double quote
-        dquote = '"'
-        if hgnc_id:
-            for tf in data:
-                if dquote not in tf:
-                    tf_str = '"' + tf + '"'
-                    try:
-                        id = self.hgnc_info[tf]
-                    except KeyError:
-                        id = None
-                    if id:
-                        tf_list_str += '(:name %s :hgnc %s) ' % (tf_str, str(id))
-                    else:
-                        tf_list_str += '(:name %s) ' % tf_str
-        else:
-            for tf in data:
-                if dquote not in tf:
-                    tf_str = '"' + tf + '"'
-                    tf_list_str += '(:name %s) ' % tf_str
-        return descr + ' (' + tf_list_str + ') '
+    def wrap_message(self, descr, gene_names):
+        #use json format
+        gene_list = []
+        for gene in gene_names:
+            hgnc_id = hgnc_client.get_hgnc_id(gene)
+            if hgnc_id:
+                gene_list.append(Agent(gene, db_refs={'HGNC': hgnc_id}))
+            else:
+                gene_list.append(Agent(gene))
+        gene_json = self.make_cljson(gene_list)
+        reply = KQMLList('SUCCESS')
+        reply.set(descr, gene_json)
+        return reply
     
     def get_target_type_set(self, content):
         target_type = _get_keyword_name(content, descr='target-type')
@@ -2625,58 +2597,19 @@ class TFTA_Module(Bioagent):
             except GONotFoundException:
                 return target_type_set
         return target_type_set
-        
-    def wrap_family_message1(self, term_id, msg):
-        #term_id = _get_term_id(target_arg)
-        #-,term_id = _get_targets(target_arg)
-        members = dict()
-        if len(term_id):
-            members = self.tfta.find_members(term_id)
-        if members:
-            res_str = ''
-            if len(members) == 1:
-                n_str = ''
-                id = list(members.keys())[0]
-                for a in members[id]:
-                    n_str += '(:name %s)' % a.name
-                res_str += '(resolve :term %s :as (%s))' % (id, n_str)
-            else:
-                for id in members:
-                    n_str = ''
-                    for a in members[id]:
-                        n_str += '(:name %s)' % a.name
-                    res_str += '(resolve :term %s :as (%s))' % (id, n_str)
-                res_str = '(' + res_str + ')'
-            reply = make_failure_clarification('FAMILY_NAME', res_str)
-        else:
-            reply = make_failure(msg)
-        return reply
     
     def wrap_family_message(self, term_id, msg):
-        #term_id = _get_term_id(target_arg)
-        #-,term_id = _get_targets(target_arg)
+        #use json format
         members = dict()
         if len(term_id):
             members = self.tfta.find_members(term_id)
         if members:
-            #res_str = ''
-            #if len(members) == 1:
             id = list(members.keys())[0]
             mbj = self.make_cljson(members[id])
             res_str = KQMLList('resolve')
             res_str.set('family', id)
             res_str.set('as', mbj)
             reply = make_failure_clarification('FAMILY_NAME', res_str)
-            '''
-            else:
-                for id in members:
-                    n_str = ''
-                    for a in members[id]:
-                        n_str += '(:name %s)' % a.name
-                    res_str += '(resolve :term %s :as (%s))' % (id, n_str)
-                res_str = '(' + res_str + ')'
-            reply = make_failure_clarification('FAMILY_NAME', res_str)
-            '''
         else:
             reply = make_failure(msg)
         return reply
@@ -2728,6 +2661,7 @@ class TFTA_Module(Bioagent):
         return is_onto, is_ekb
     
     def _get_targets(self, content, descr='target'):
+        #parse json message format
         proteins = None
         family = None
         try:
@@ -2778,16 +2712,6 @@ def _get_targets(target_arg):
            temp.append(a.name)
            f_family[k] = a
    return protein_agents, f_family
-
-def _get_targets2(target_arg):
-    agent = []
-    ont1 = ['ONT::PROTEIN', 'ONT::GENE-PROTEIN', 'ONT::GENE']
-    tp = TripsProcessor(target_arg)
-    for term in tp.tree.findall('TERM'):
-        if term.find('type').text in ont1:
-            term_id = term.attrib['id']
-            agent.append(tp._get_agent_by_id(term_id, None))
-    return agent
     
 def _get_family_name(target_arg):
     agent = []
@@ -2798,49 +2722,6 @@ def _get_family_name(target_arg):
             term_id = term.attrib['id']
             agent.append(tp._get_agent_by_id(term_id, None))
     return agent
-    
-def _get_term_id(target_arg, otype=1):
-    term_id = dict()
-    if '<ekb' in target_arg or '<EKB' in target_arg:
-        if otype == 1:
-            ont1 = ['ONT::PROTEIN-FAMILY', 'ONT::GENE-FAMILY']
-        else:
-            ont1 = ['ONT::RNA', 'ONT::GENE']
-        tp = TripsProcessor(target_arg)
-        for term in tp.tree.findall('TERM'):
-            if term.find('type').text in ont1:
-                id = term.attrib['id']
-                term_id[id] = tp._get_agent_by_id(id, None)
-    #print('term_id = ' + ','.join(term_id))
-    return term_id
-
-def _wrap_family_message(term_id, msg):
-    #term_id = _get_term_id(target_arg)
-    #-,term_id = _get_targets(target_arg)
-    if len(term_id):
-        res_str = ''
-        for t in term_id:
-            res_str += '(:for ' + t + ' :error FAMILY_NAME_NOT_ALLOWED) '
-        res_str = '(' + res_str + ')'
-        reply = make_failure(res_str)
-    else:
-        reply = make_failure(msg)
-    return reply
-
-def _wrap_family_message2(target_arg, msg):
-    family = _get_family_name(target_arg)
-    family_name = []
-    for f in family:
-        family_name.append(f.name)
-    if family_name:
-        res_str = ''
-        for f in family_name:
-            res_str += '(:for ' + f + ' :error FAMILY_NAME_NOT_ALLOWED) '
-        res_str = '(' + res_str + ')'
-        reply = make_failure(res_str)
-    else:
-        reply = make_failure(msg)
-    return reply
 
 def _get_pathway_name(target_str):
     #print('In _get_pathway_name')
