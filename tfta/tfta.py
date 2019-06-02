@@ -991,6 +991,7 @@ class TFTA:
         Return Targets regulated by the tf or tf list
         """
         dbname = dict()
+        target_names = []
         if self.tfdb is not None:
             t = (tf_names[0],)
             res = self.tfdb.execute("SELECT DISTINCT Target,dbnames FROM CombinedDB "
@@ -1013,10 +1014,6 @@ class TFTA:
                             dbname[(tf_names[i],r[0])] = r[1]
                     else:
                         raise TFNotFoundException
-            if len(target_names):
-                target_names.sort()
-        else:
-            target_names = []
         return target_names,dbname
 
     def find_overlap_targets_tfs_genes(self,tf_names,target_names):
@@ -1060,14 +1057,7 @@ class TFTA:
             if res:
                 target_names = [r[0] for r in res]
             else:
-                #check if the TF is in the database
-                t = (tf_names[0],)
-                res = self.tfdb.execute("SELECT DISTINCT Target FROM Target2TF2Tissue "
-                                    "WHERE TF = ? ", t).fetchall()
-                if res:
-                    return target_names
-                else:
-                    raise TFNotFoundException
+                return []
                 
             if len(tf_names) > 1:
                 for i in range(1,len(tf_names)):
@@ -1077,45 +1067,8 @@ class TFTA:
                     if res:
                         target_names = list(set(target_names) & set([r[0] for r in res]))
                     else:
-                        #check if the TF is in the database
-                        t = (tf_names[i],)
-                        res = self.tfdb.execute("SELECT DISTINCT Target FROM Target2TF2Tissue "
-                                                "WHERE TF = ? ", t).fetchall()
-                        if res:
-                            return target_names
-                        else:
-                            raise TFNotFoundException	
-            if len(target_names):
-                target_names.sort()
+                        return []
         return target_names
- 
-    def find_targets_1(self,tf_name):
-        """
-        Return Targets regulated by the tf
-        Accept only one tf name
-        """
-        if self.tfdb is not None:
-            t = (tf_name,)
-            res = self.tfdb.execute("SELECT DISTINCT Target FROM CombinedDB "
-                                    "WHERE TF = ? ORDER BY Target", t).fetchall()
-            target_names = [r[0] for r in res]
-        else:
-            target_names = []
-        return target_names
-
-    def find_tfs_1(self,target_name):
-        """
-        Return TFs regulating the target in a given tissue
-        Accept only one target
-        """
-        if self.tfdb is not None:
-            t = (target_name,)
-            res = self.tfdb.execute("SELECT DISTINCT TF FROM CombinedDB "
-                                    "WHERE Target = ? ORDER BY TF", t).fetchall()
-            tf_names = [r[0] for r in res]
-        else:
-            tf_names = []
-        return tf_names
 
     def find_genes_GO_tf(self, go_name, tf_names):
         """
