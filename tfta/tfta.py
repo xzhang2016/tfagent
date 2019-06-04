@@ -1664,9 +1664,6 @@ class TFTA:
                 gene_names = [r[0] for r in res]
             else:
                 raise TissueNotFoundException
-        #gene_names = list(set(gene_names) & hgnc_genes_set)
-        if len(gene_names):
-            gene_names.sort()
         return gene_names
         
     def find_gene_tissue_exclusive(self, tissue_name):
@@ -1678,9 +1675,6 @@ class TFTA:
             self.tissue_gene_exclusive = self.map_exclusive_tissue_gene()
         if tissue_name in self.tissue_gene_exclusive:
             gene_names = list(self.tissue_gene_exclusive[tissue_name])
-        #gene_names = list(set(gene_names) & hgnc_genes_set)
-        if len(gene_names):
-            gene_names.sort()
         return gene_names
         
     def is_tissue_gene(self, tissue_name, gene_name):
@@ -1725,8 +1719,6 @@ class TFTA:
             res = self.tfdb.execute("SELECT DISTINCT tissue FROM geneTissue "
                                     "WHERE enrichment > ? ", t).fetchall()
             tissues = [r[0] for r in res]
-            #print('tissues: ', ','.join(tissues))
-            #print('number of tissues: ', len(tissues))
             for tiss in tissues:
                 t = (tiss, EXP_THR)
                 res = self.tfdb.execute("SELECT DISTINCT genesymbol FROM geneTissue "
