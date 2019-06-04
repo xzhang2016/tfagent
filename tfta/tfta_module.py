@@ -1770,9 +1770,8 @@ class TFTA_Module(Bioagent):
         """
         Respond to find-regulation
         """
-        target_names,term_id = get_of_those_list(content, descr='target')
-        if not len(target_names):
-            #target_arg = content.gets('target')
+        target_names,term_id = self._get_targets(content, descr='target')
+        if not target_names:
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         if term_id:
@@ -1791,7 +1790,7 @@ class TFTA_Module(Bioagent):
             return reply
             
         #consider an optional parameter for subsequent query
-        of_those_names,nouse = get_of_those_list(content)
+        of_those_names,nouse = self._get_targets(content, 'of-those')
             
         if source_name == 'literature':
             #literature result
@@ -1800,23 +1799,31 @@ class TFTA_Module(Bioagent):
             except KeyError as e:
                 reply = make_failure('INVALID_KEYWORD')
                 return reply
+            
+            tf_json, gene_json, mirna_json, oth_json = [],[],[],[]
             if of_those_names:
-                lit_messages = self.get_regulator_indra_those(target_names, stmt_types, keyword_name,
-                                                        of_those=set(of_those_names))
+                gene_json = self.get_regulator_indra_those(target_names, stmt_types, keyword_name,
+                                                        of_those=of_those_names)
             else:
-                lit_messages = self.get_regulator_indra(target_names, stmt_types, keyword_name)
-            if len(lit_messages):
-                reply = KQMLList.from_string(
-                        '(SUCCESS :regulators (' + lit_messages + '))')
+                tf_json, gene_json, mirna_json, oth_json = self.get_regulator_indra(target_names, stmt_types, keyword_name)
+            
+            descr_list = ['gene-literature','tf-literature','mirna-literature','other-literature']
+            json_list = [gene_json, tf_json, mirna_json, oth_json]
+            res = self._combine_json_list(descr_list, json_list)
+            if res:
+                reply = KQMLList('SUCCESS')
+                reply.set('regulators', res)
             else:
                 reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
         elif source_name == 'geo rnai':
             #kinase regualtion
-            kin_messages = self.get_kinase_regulation(target_names, keyword_name, of_those=set(of_those_names))
+            kin_json = self.get_kinase_regulation(target_names, keyword_name, of_those=of_those_names)
             
-            if len(kin_messages):
-                reply = KQMLList.from_string(
-                        '(SUCCESS :regulators (' + kin_messages + '))')
+            if len(kin_json):
+                mes = KQMLList()
+                mes.set('kinase-db', kin_json)
+                reply = KQMLList('SUCCESS')
+                reply.set('regulators', mes)
             else:
                 reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
         else:
@@ -1828,9 +1835,8 @@ class TFTA_Module(Bioagent):
         Response to find-regulation request
         For example: Which kinases regulate the cfos gene?
         """
-        target_names,term_id = get_of_those_list(content, descr='target')
-        if not len(target_names):
-            #target_arg = content.gets('target')
+        target_names,term_id = self._get_targets(content, descr='target')
+        if not target_names:
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         if term_id:
@@ -1849,22 +1855,26 @@ class TFTA_Module(Bioagent):
             return reply
             
         #consider an optional parameter for subsequent query
-        of_those_names,nouse = get_of_those_list(content)
+        of_those_names,nouse = self._get_targets(content, descr='of-those')
             
         if agent_name == 'kinase':
             #kinase regualtion
-            kin_messages = self.get_kinase_regulation(target_names, keyword_name, of_those=set(of_those_names))
-            if len(kin_messages):
-                reply = KQMLList.from_string(
-                        '(SUCCESS :regulators (' + kin_messages + '))')
+            kin_json = self.get_kinase_regulation(target_names, keyword_name, of_those=of_those_names)
+            if len(kin_json):
+                mes = KQMLList()
+                mes.set('kinase-db', kin_json)
+                reply = KQMLList('SUCCESS')
+                reply.set('regulators', mes)
             else:
                 reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
         elif agent_name in ['transcription factor', 'tf']:
             temp_reply = self.respond_find_target_tfs(content)
             tf_str = temp_reply.get('tfs')
             if tf_str != 'NIL':
-                reply = KQMLList.from_string(
-                    '(SUCCESS :regulators (:tf-db ' + tf_str.to_string() + '))')
+                mes = KQMLList()
+                mes.set('tf-db', tf_str)
+                reply = KQMLList('SUCCESS')
+                reply.set('regulators', mes)
             else:
                 reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
         else:
@@ -1876,9 +1886,8 @@ class TFTA_Module(Bioagent):
         Response to find-regulation request
         For example: what regulate MYC?
         """
-        target_names,term_id = get_of_those_list(content, descr='target')
-        if not len(target_names):
-            #target_arg = content.gets('target')
+        target_names,term_id = self._get_targets(content, descr='target')
+        if not target_names:
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         if term_id:
@@ -1892,7 +1901,7 @@ class TFTA_Module(Bioagent):
             return reply
         
         #consider an optional parameter for subsequent query
-        of_those_names,nouse = get_of_those_list(content)
+        of_those_names,nouse = self._get_targets(content, 'of-those')
         
         #literature result
         try:
@@ -1900,15 +1909,16 @@ class TFTA_Module(Bioagent):
         except KeyError as e:
             reply = make_failure('INVALID_KEYWORD')
             return reply
-            
+        
+        tf_json, gene_json, mirna_json, oth_json = [],[],[],[]
         if of_those_names:
-            lit_messages = self.get_regulator_indra_those(target_names, stmt_types, keyword_name,
+            gene_json = self.get_regulator_indra_those(target_names, stmt_types, keyword_name,
                                                           of_those=set(of_those_names))
         else:
-            lit_messages = self.get_regulator_indra(target_names, stmt_types, keyword_name)
+            tf_json, gene_json, mirna_json, oth_json = self.get_regulator_indra(target_names, stmt_types, keyword_name)
         
         #kinase regulation
-        kin_messages = self.get_kinase_regulation(target_names, keyword_name, of_those=set(of_those_names))
+        kin_json = self.get_kinase_regulation(target_names, keyword_name, of_those=of_those_names)
         
         #db result
         #only considering the regulation case
@@ -1923,28 +1933,33 @@ class TFTA_Module(Bioagent):
                 #provenance support
                 self.send_background_support_db([], target_names, '')
                 
-                messages = _combine_messages([kin_messages, lit_messages])
-                if len(messages):
-                    reply = KQMLList.from_string(
-                        '(SUCCESS :regulators (' + messages + '))')
+                descr_list = ['kinase-db','gene-literature','tf-literature','mirna-literature','other-literature']
+                json_list = [kin_json, gene_json, tf_json, mirna_json, oth_json]
+                res = self._combine_json_list(descr_list, json_list)
+                if res:
+                    reply = KQMLList('SUCCESS')
+                    reply.set('regulators', res)
                 else:
                     reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
                 return reply
         else:
             tf_names = []
         if len(tf_names):
-            tf_messages = self.wrap_message(':tf-db', tf_names)
-            messages = _combine_messages([tf_messages, kin_messages, lit_messages])
-            reply = KQMLList.from_string(
-                '(SUCCESS :regulators (' + messages + '))')
+            tf_db_json = self._get_genes_json(tf_names)
+            descr_list = ['tf-db','kinase-db','gene-literature','tf-literature','mirna-literature','other-literature']
+            json_list = [tf_db_json, kin_json, gene_json, tf_json, mirna_json, oth_json]
+            res = self._combine_json_list(descr_list, json_list)
+            reply = KQMLList('SUCCESS')
+            reply.set('regulators', res)
         else:
-            messages = _combine_messages([kin_messages, lit_messages])
-            if len(messages):
-                reply = KQMLList.from_string(
-                        '(SUCCESS :regulators (' + messages + '))')
+            descr_list = ['kinase-db','gene-literature','tf-literature','mirna-literature','other-literature']
+            json_list = [kin_json, gene_json, tf_json, mirna_json, oth_json]
+            res = self._combine_json_list(descr_list, json_list)
+            if res:
+                reply = KQMLList('SUCCESS')
+                reply.set('regulators', res)
             else:
                 reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
-        #self.gene_list = tf_names
         return reply
         
     def respond_find_evidence(self, content):
@@ -2210,7 +2225,7 @@ class TFTA_Module(Bioagent):
         target_names: list
         stmt_types: indra statement type
         """
-        lit_messages = ''
+        #lit_messages = ''
         tfs = defaultdict(set)
         others = defaultdict(set)
         mirnas = defaultdict(set)
@@ -2232,31 +2247,37 @@ class TFTA_Module(Bioagent):
                 stmts_d[target] = stmts
             else:
                 self.send_background_support([], 'what', target_str, keyword_name)
-                return lit_messages
+                return None,None,None,None
         tfs, genes, mirnas, others, stmt_f = self.tfta.find_regulators_indra(stmts_d)
-        
+        tf_json, gene_json, mirna_json, oth_json = [],[],[],[]
         if len(tfs):
-            lit_messages += self.wrap_message(':tf-literature', tfs)
+            tf_json = self._get_genes_json(tfs)
+            #lit_messages.set('tf-literature', tf_json)
         if len(genes):
-            lit_messages += self.wrap_message(':gene-literature', genes)
+            gene_json = self._get_genes_json(genes)
+            #lit_messages.set('gene-literature', gene_json)
         if len(mirnas):
-            lit_messages += self.wrap_message(':miRNA-literature', mirnas, hgnc_id=False)
+            mirna_agent = [Agent(mir) for mir in mirnas]
+            mirna_json = self.make_cljson(mirna_agent)
+            #lit_messages.set('miRNA-literature', mirna_json)
         if len(others):
-            lit_messages += self.wrap_message(':other-literature', others, hgnc_id=False)
+            oth_agent = [Agent(oth) for oth in others]
+            oth_json = self.make_cljson(oth_agent)
+            #lit_messages.set('other-literature', oth_json)
             
         #provenance support
         self.send_background_support(stmt_f, 'what', target_str, keyword_name)
         
-        return lit_messages
+        return tf_json, gene_json, mirna_json, oth_json
         
     def get_regulator_indra_those(self, target_names, stmt_types, keyword_name, of_those=None, target_type=None):
         """
-        wrap message for multiple targets case
+        wrap message for multiple targets case, use json format
         target_names: list
         stmt_types: indra statement type
         of_those: set
         """
-        lit_messages = ''
+        lit_json = ''
         stmts_d = defaultdict(list)
         if len(target_names) > 1:
             target_str = ', '.join(target_names[:-1]) + ' and ' + target_names[-1]
@@ -2274,15 +2295,17 @@ class TFTA_Module(Bioagent):
                 stmts_d[target] = stmts
             else:
                 self.send_background_support([], 'what', target_str, keyword_name)
-                return lit_messages
+                return lit_json
         genes, stmt_f = self.tfta.find_regulator_indra_targets(stmts_d, of_those=of_those, target_type=target_type)
         
         if len(genes):
-            lit_messages += self.wrap_message(':gene-literature', genes)
+            lit_json = self._get_genes_json(genes)
+            #lit_messages = KQMLList()
+            #lit_messages.set('gene-literature', gene_json)
         #provenance support
         self.send_background_support(stmt_f, 'what', target_str, keyword_name)
         
-        return lit_messages
+        return lit_json
         
     def get_target_indra(self, regulator_names, stmt_types, keyword_name, of_those=None, target_type=None):
         """
@@ -2531,24 +2554,26 @@ class TFTA_Module(Bioagent):
         target_names: list
         keyword_name: string
         """
-        kin_messages = ''
+        kin_json = ''
         kinase_names = []
         if keyword_name == 'regulate':
             try:
                 kinase_names = self.tfta.find_kinase_target(target_names)
             except KinaseNotFoundException:
-                return kin_messages
+                return kin_json
         else:
             try:
                 kinase_names = self.tfta.find_kinase_target_keyword(target_names, keyword_name)
             except KinaseNotFoundException:
-                return kin_messages
+                return kin_json
         
         if of_those:
             kinase_names = list(set(kinase_names).intersection(set(of_those)))
         if len(kinase_names):
-            kin_messages += self.wrap_message(':kinase-db', kinase_names)
-        return kin_messages
+            kin_json = self._get_genes_json(kinase_names)
+            #kin_messages = KQMLList()
+            #kin_messages.set('kinase-db', kin_json)
+        return kin_json
         
     def send_background_support(self, stmts, regulator_name, target_name, keyword_name):
         logger.info('Sending support for %d statements' % len(stmts))
@@ -2587,6 +2612,18 @@ class TFTA_Module(Bioagent):
         reply = KQMLList('SUCCESS')
         reply.set(descr, gene_json)
         return reply
+        
+    def _get_genes_json(self, gene_names):
+        #use json format
+        gene_list = []
+        for gene in gene_names:
+            hgnc_id = hgnc_client.get_hgnc_id(gene)
+            if hgnc_id:
+                gene_list.append(Agent(gene, db_refs={'HGNC': hgnc_id}))
+            else:
+                gene_list.append(Agent(gene))
+        gene_json = self.make_cljson(gene_list)
+        return gene_json
     
     def get_target_type_set(self, content):
         target_type = _get_keyword_name(content, descr='target-type')
@@ -2684,7 +2721,16 @@ class TFTA_Module(Bioagent):
                 family = [agents]
         return proteins,family
                 
-            
+    def _combine_json_list(self, descr_list, json_list):
+        if any(json_list):
+            res = KQMLList()
+            for i in range(len(descr_list)):
+                if json_list[i]:
+                    res.set(descr_list[i], json_list[i])
+            return res
+        else:
+            return None
+                
 #------------------------------------------------------------------------#######
 def _get_target(target_str):
     agent = None
@@ -2867,7 +2913,7 @@ def _combine_messages(mess_list):
     messages = ''
     for mess in mess_list:
         if len(mess):
-            messages += mess
+            messages += mess.to_string()
     return messages
     
 def _wrap_mirna_clarification(miRNA_mis, clari_mirna):
