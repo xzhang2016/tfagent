@@ -2131,9 +2131,8 @@ class TFTA_Module(Bioagent):
             reply = make_failure('INVALID_TISSUE')
             return reply
             
-        gene_name,term_id = get_gene(content, descr='gene')
+        gene_name,term_id = self._get_targets(content, descr='gene')
         if not gene_name:
-            #gene_arg = content.gets('gene')
             reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
             return reply
             
@@ -2141,14 +2140,14 @@ class TFTA_Module(Bioagent):
         keyword_name = _get_keyword_name(content, descr='keyword')
         if keyword_name == 'exclusive':
             try:
-                is_express = self.tfta.is_tissue_gene_exclusive(tissue_name, gene_name)
-            except Exception as e:
+                is_express = self.tfta.is_tissue_gene_exclusive(tissue_name, gene_name[0])
+            except Exception:
                 reply = KQMLList.from_string('(SUCCESS :result FALSE)')
                 return reply
         else:
             try:
-                is_express = self.tfta.is_tissue_gene(tissue_name, gene_name)
-            except Exception as e:
+                is_express = self.tfta.is_tissue_gene(tissue_name, gene_name[0])
+            except Exception:
                 reply = KQMLList.from_string('(SUCCESS :result FALSE)')
                 return reply
         reply = KQMLList('SUCCESS')
