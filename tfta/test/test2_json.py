@@ -15,7 +15,7 @@ from indra.sources import trips
 # IS-GENE-ONTO
 # FIND-GENE-ONTO
 # FIND-KINASE-REGULATION
-# 
+# IS-TISSUE-GENE
 #
 #
 ######################################
@@ -363,5 +363,118 @@ class TestFindGeneOnto5(_IntegrationTest):
 
 ###############################################################################
 # FIND-KINASE-REGULATION
+#Which kinases regulate the cfos gene?
+class TestFindKinaseReg1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindKinaseReg1, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agent_clj_from_text('cfos')
+        _get_targets(target)
+        print('target=', str(target))
+        
+        content = KQMLList('FIND-KINASE-REGULATION')
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('kinase')) == 5, output
+
+#test gene family
+#Which kinases regulate the MEK gene?
+class TestFindKinaseReg2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindKinaseReg2, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agent_clj_from_text('MEK')
+        _get_targets(target)
+        print('target=', str(target))
+        
+        content = KQMLList('FIND-KINASE-REGULATION')
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason') == 'FAMILY_NAME', output
+        print("len(output.get('clarification'))=", len(output.get('clarification')))
+        assert len(output.get('clarification')) == 5, output
+
+#Which kinases negatively regulate the cfos gene?
+class TestFindKinaseReg3(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindKinaseReg3, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agent_clj_from_text('cfos')
+        _get_targets(target)
+        print('target=', str(target))
+        
+        keyword = 'decrease'
+        content = KQMLList('FIND-KINASE-REGULATION')
+        content.set('target', target)
+        content.set('keyword', keyword)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('kinase')) == 3, output
+        
+#Which kinases positively regulate the cfos gene?
+class TestFindKinaseReg4(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindKinaseReg4, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agent_clj_from_text('cfos')
+        _get_targets(target)
+        print('target=', str(target))
+        
+        keyword = 'increase'
+        content = KQMLList('FIND-KINASE-REGULATION')
+        content.set('target', target)
+        content.set('keyword', keyword)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('kinase')) == 2, output
+
+#Which kinases positively regulate the AKT gene?
+class TestFindKinaseReg5(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindKinaseReg5, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agent_clj_from_text('AKT')
+        _get_targets(target)
+        print('target=', str(target))
+        
+        keyword = 'increase'
+        content = KQMLList('FIND-KINASE-REGULATION')
+        content.set('target', target)
+        content.set('keyword', keyword)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason') == 'FAMILY_NAME', output
+        print("len(output.get('clarification'))=", len(output.get('clarification')))
+        assert len(output.get('clarification')) == 5, output
+
+#######################################################################################
+#IS-TISSUE-GENE
+
 
 
