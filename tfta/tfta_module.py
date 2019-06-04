@@ -1641,30 +1641,33 @@ class TFTA_Module(Bioagent):
         """
         Response to FIND-TISSUE-GENE task
         """
-        gene_arg = content.gets('gene')
+        gene_arg = content.get('gene')
         #without gene parameter, then return all the tissues
         if not gene_arg:
-            tissue_str = ''
-            for ts in self.tissue_list:
-                tissue_str += '(:name %s) ' % ts
-            reply = KQMLList.from_string(
-                    '(SUCCESS :tissue (' + tissue_str + '))')
+            tissue_agent = [Agent(ts) for ts in self.tissue_list]
+            tissue_json = self.make_cljson(tissue_agent)
+            reply = KQMLList('SUCCESS')
+            reply.set('tissue', tissue_json)
             return reply
-        gene_name,term_id = get_gene(content, descr='gene')
-        if not len(gene_name):
+            
+        gene_name,term_id = self._get_targets(content, descr='gene')
+        if not gene_name:
             reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
             return reply
             
         try:
-            tissues = self.tfta.find_tissue_gene(gene_name)
+            tissues = self.tfta.find_tissue_gene(gene_name[0])
         except TissueNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :tissue NIL)')
-            return reply    
-        tissue_str = ''
-        for ts in tissues:
-            tissue_str += '(:name %s) ' % ts
-        reply = KQMLList.from_string(
-            '(SUCCESS :tissue (' + tissue_str + '))')
+            return reply
+            
+        if tissues:
+            tissue_agent = [Agent(ts) for ts in tissues]
+            tissue_json = self.make_cljson(tissue_agent)
+            reply = KQMLList('SUCCESS')
+            reply.set('tissue', tissue_json)
+        else:
+            reply = KQMLList.from_string('(SUCCESS :tissue NIL)')
         return reply
         
     def respond_find_kinase_target(self, content):
