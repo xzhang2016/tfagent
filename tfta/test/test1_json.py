@@ -15,7 +15,7 @@ from indra.sources import trips
 # IS-REGULATION
 # FIND-TF
 # FIND-TARGET
-#
+# FIND-REGULATION
 #
 #
 ######################################
@@ -990,6 +990,330 @@ class TestFindTarget15(_IntegrationTest):
 
 ##########################################################################
 # TEST FIND-REGULATION
+###what regulate myc? 
+class TestFindRegulation1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindRegulation1, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agent_clj_from_text('myc')
+        _get_targets(target)
+        print('target=', str(target))
+        
+        content = KQMLList('FIND-REGULATION')
+        content.set('target', target)
+        content.set('keyword', 'regulate')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('regulators'))=", str(len(output.get('regulators'))))
+        if output.get('regulators').get('tf-db') is not None:
+            print("len(output.get('regulators').get('tf-db'))=", str(len(output.get('regulators').get('tf-db'))))
+        print("len(output.get('regulators').get('gene-literature'))=", len(output.get('regulators').get('gene-literature')))
+        print("len(output.get('regulators').get('tf-literature'))=", len(output.get('regulators').get('tf-literature')))
+        assert len(output.get('regulators')) == 12, output.get('regulators')
+        assert len(output.get('regulators').get('tf-db')) == 301, output.get('regulators').get('tf-db')
+        assert len(output.get('regulators').get('gene-literature')) == 761, output.get('regulators').get('gene-literature')
+        assert len(output.get('regulators').get('tf-literature')) == 221, output.get('regulators').get('tf-literature')
+
+###what increase the amount of GFAP? 
+class TestFindRegulation2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindRegulation2, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agent_clj_from_text('GFAP')
+        _get_targets(target)
+        print('target=', str(target))
+        
+        content = KQMLList('FIND-REGULATION')
+        content.set('target', target)
+        content.set('keyword', 'increase')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('regulators'))=", str(len(output.get('regulators'))))
+        if output.get('regulators').get('tf-db') is not None:
+            print("len(output.get('regulators').get('tf-db'))=", str(len(output.get('regulators').get('tf-db'))))
+        if output.get('regulators').get('tf-literature') is not None:
+            print("len(output.get('regulators').get('tf-literature'))=", str(len(output.get('regulators').get('tf-literature'))))
+        print("len(output.get('regulators').get('gene-literature'))=", len(output.get('regulators').get('gene-literature')))
+        assert len(output.get('regulators')) == 8, output
+        assert len(output.get('regulators').get('gene-literature')) == 193, output.get('regulators').get('gene-literature')
+        assert len(output.get('regulators').get('tf-literature')) == 31, output.get('regulators').get('tf-literature')
+        
+#What regulate cfos from literature?
+class TestFindRegulation3(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindRegulation3, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agent_clj_from_text('cFOS')
+        _get_targets(target)
+        print('target=', str(target))
+        
+        content = KQMLList('FIND-REGULATION')
+        content.set('target', target)
+        content.set('keyword', 'regulate')
+        content.set('source', 'literature')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('regulators'))=", str(len(output.get('regulators'))))
+        if output.get('regulators').get('tf-literature') is not None:
+            print("len(output.get('regulators').get('tf-literature'))=", str(len(output.get('regulators').get('tf-literature'))))
+        print("len(output.get('regulators').get('gene-literature'))=", len(output.get('regulators').get('gene-literature')))
+        assert len(output.get('regulators')) == 8, output
+        assert len(output.get('regulators').get('gene-literature')) == 464, output.get('regulators').get('gene-literature')
+        assert len(output.get('regulators').get('tf-literature')) == 54, output.get('regulators').get('tf-literature')
+
+###What regulates FOS from the GEO RNAi database?
+class TestFindRegulation4(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindRegulation4, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agent_clj_from_text('cFOS')
+        _get_targets(target)
+        print('target=', str(target))
+        
+        content = KQMLList('FIND-REGULATION')
+        content.set('target', target)
+        content.set('keyword', 'regulate')
+        content.set('source', 'geo rnai')
+        return get_request(content), content
+
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('regulators'))=", str(len(output.get('regulators'))))
+        if output.get('regulators').get('kinase-db') is not None:
+            print("len(output.get('regulators').get('kinase-db'))=", str(len(output.get('regulators').get('kinase-db'))))
+        assert len(output.get('regulators')) == 2, output
+        assert len(output.get('regulators').get('kinase-db')) == 5, output.get('regulators').get('kinase-db')
+
+#Which kinases regulate the cfos gene?
+class TestFindRegulation5(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindRegulation5, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agent_clj_from_text('cFOS')
+        _get_targets(target)
+        print('target=', str(target))
+        
+        content = KQMLList('FIND-REGULATION')
+        content.set('target', target)
+        content.set('keyword', 'regulate')
+        content.set('regulator', 'kinase')
+        print("content=", str(content))
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('regulators'))=", str(len(output.get('regulators'))))
+        print("len(output.get('regulators').get('kinase-db'))=", str(len(output.get('regulators').get('kinase-db'))))
+        assert len(output.get('regulators')) == 2, output
+        assert len(output.get('regulators').get('kinase-db')) == 5, output.get('regulators').get('kinase-db')
+
+#Which transcription factors regulate frizzled8?
+class TestFindRegulation6(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindRegulation6, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agent_clj_from_text('frizzled8')
+        _get_targets(target)
+        print('target=', str(target))
+        
+        content = KQMLList('FIND-REGULATION')
+        content.set('target', target)
+        content.set('keyword', 'regulate')
+        content.set('regulator', 'transcription factor')
+        print("content=", str(content))
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('regulators'))=", str(len(output.get('regulators'))))
+        if output.get('regulators').get('tf-db') is not None:
+            print("len(output.get('regulators').get('tf-db'))=", str(len(output.get('regulators').get('tf-db'))))
+        assert len(output.get('regulators')) == 2, output
+        assert len(output.get('regulators').get('tf-db')) == 2, output
+
+#Which transcription factors regulate frizzled8 in liver? (subtask: find-target-tf-tissue)
+class TestFindRegulation7(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindRegulation7, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agent_clj_from_text('frizzled8')
+        _get_targets(target)
+        print('target=', str(target))
+        
+        tissue = 'liver'
+        content = KQMLList('FIND-REGULATION')
+        content.set('target', target)
+        content.set('tissue', tissue)
+        content.set('regulator', 'transcription factor')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.get('regulators') == 'NIL', output
+
+###What are the regulators of MAPK14 in bladder?
+class TestFindRegulation8(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindRegulation8, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agent_clj_from_text('MAPK14')
+        _get_targets(target)
+        print('target=', str(target))
+        
+        content = KQMLList('FIND-REGULATION')
+        content.set('target', target)
+        content.set('tissue', 'bladder')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('regulators').get('tf-db'))=",len(output.get('regulators').get('tf-db')))
+        print("len(output.get('regulators'))=", len(output.get('regulators')))
+        assert len(output.get('regulators')) == 2, output
+        assert len(output.get('regulators').get('tf-db')) == 4, output
+        
+#what decrease the amount of fzd8? 
+class TestFindRegulation9(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindRegulation9, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agent_clj_from_text('fzd8')
+        _get_targets(target)
+        print('target=', str(target))
+        
+        content = KQMLList('FIND-REGULATION')
+        content.set('target', target)
+        content.set('keyword', 'decrease')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        print("len(output.get('regulators')) = ", len(output.get('regulators')))
+        if output.get('regulators').get('tf-literature'):
+            print("len(output.get('regulators').get('tf-literature'))=", len(output.get('regulators').get('tf-literature')))
+        if output.get('regulators').get('gene-literature'):
+            print("len(output.get('regulators').get('gene-literature'))=", len(output.get('regulators').get('gene-literature')))
+        if output.get('regulators').get('kinase-db'):
+            print("len(output.get('regulators').get('kinase-db'))=", len(output.get('regulators').get('kinase-db')))
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('regulators')) == 10, output
+        assert len(output.get('regulators').get('tf-literature')) == 1, output
+        assert len(output.get('regulators').get('gene-literature')) == 8, output
+        assert len(output.get('regulators').get('kinase-db')) == 1, output
+        
+#test of-those
+#Which of those regulate myc? 
+class TestFindRegulation10(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindRegulation10, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agent_clj_from_text('myc')
+        _get_targets(target)
+        print('target=', str(target))
+        
+        of_those = agents_clj_from_text('AATF,ATF5,E2F4,MXD1,HIF1A,STAT3, SRF,EGFR,TRIM28')
+        content = KQMLList('FIND-REGULATION')
+        content.set('target', target)
+        content.set('keyword', 'regulate')
+        content.set('of-those', of_those)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('regulators'))=", len(output.get('regulators')))
+        if output.get('regulators').get('gene-literature'):
+            print("len(output.get('regulators').get('gene-literature'))=", len(output.get('regulators').get('gene-literature')))
+        if output.get('regulators').get('kinase-db'):
+            print("len(output.get('regulators').get('kinase-db'))=", len(output.get('regulators').get('kinase-db')))
+        if output.get('regulators').get('tf-db'):
+            print("len(output.get('regulators').get('tf-db'))=", len(output.get('regulators').get('tf-db')))
+        assert len(output.get('regulators')) == 6, output
+        assert len(output.get('regulators').get('gene-literature')) == 5, output
+        assert len(output.get('regulators').get('kinase-db')) == 2, output
+        assert len(output.get('regulators').get('tf-db')) == 5, output
+        
+###which of those increase the amount of myc? 
+class TestFindRegulation11(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindRegulation11, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agent_clj_from_text('myc')
+        _get_targets(target)
+        print('target=', str(target))
+        
+        of_those = agents_clj_from_text('EGFR, GSK3A, FOXA1, GATA3, HMGA1,AKAP4, AKT3, MAP4K4, STAT3, SRF,E2F4')
+        content = KQMLList('FIND-REGULATION')
+        content.set('target', target)
+        content.set('keyword', 'increase')
+        content.set('of-those', of_those)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('regulators'))=", len(output.get('regulators')))
+        if output.get('regulators').get('gene-literature'):
+            print("len(output.get('regulators').get('gene-literature'))=", len(output.get('regulators').get('gene-literature')))
+        if output.get('regulators').get('kinase-db'):
+            print("len(output.get('regulators').get('kinase-db'))=", len(output.get('regulators').get('kinase-db')))
+        assert len(output.get('regulators')) == 4, output
+        assert len(output.get('regulators').get('gene-literature')) == 8, output
+        assert len(output.get('regulators').get('kinase-db')) == 1, output
+
+#Which of those regulate cfos from literature?
+class TestFindRegulation12(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindRegulation12, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agent_clj_from_text('cFOS')
+        _get_targets(target)
+        print('target=', str(target))
+        
+        of_those = agents_clj_from_text('AATF,ATF5,E2F4,MXD1,HIF1A,STAT3, SRF,EGFR,TRIM28')
+        content = KQMLList('FIND-REGULATION')
+        content.set('target', target)
+        content.set('keyword', 'regulate')
+        content.set('source', 'literature')
+        content.set('of-those', of_those)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('regulators'))=", len(output.get('regulators')))
+        if output.get('regulators').get('gene-literature'):
+            print("len(output.get('regulators').get('gene-literature'))=", len(output.get('regulators').get('gene-literature')))
+        assert len(output.get('regulators')) == 2, output
+        assert len(output.get('regulators').get('gene-literature')) == 3, output
+        
+
 
 
 
