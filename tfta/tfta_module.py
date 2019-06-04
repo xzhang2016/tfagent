@@ -2090,7 +2090,7 @@ class TFTA_Module(Bioagent):
             
         #optional keyword
         keyword_name = _get_keyword_name(content, descr='keyword')
-        if len(keyword_name):
+        if keyword_name:
             try:
                 gene_list = self.tfta.find_gene_tissue_exclusive(tissue_name)
             except TissueNotFoundException:
@@ -2104,15 +2104,15 @@ class TFTA_Module(Bioagent):
                 return reply
         
         #check if it's a subsequent query with optional parameter
-        ogenes,nouse = get_of_those_list(content, descr='gene')
-        if len(ogenes):
+        ogenes,nouse = self._get_targets(content, descr='gene')
+        if ogenes:
             results = list(set(gene_list) & set(ogenes))
         else:
             results = gene_list
         if len(results):
-            results.sort()
-            gene_str = self.wrap_message(':genes ', results)
-            reply = KQMLList.from_string('(SUCCESS ' + gene_str + ')')
+            gene_json = self._get_genes_json(results)
+            reply = KQMLList('SUCCESS')
+            reply.set('genes', gene_json)
         else:
             reply = KQMLList.from_string('(SUCCESS :genes NIL)')
         return reply
