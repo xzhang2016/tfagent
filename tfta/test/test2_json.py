@@ -17,7 +17,7 @@ from indra.sources import trips
 # FIND-KINASE-REGULATION
 # IS-GENE-TISSUE
 # FIND-GENE-TISSUE
-#
+# FIND-TISSUE
 ######################################
 
 def _get_targets(target_arg):
@@ -675,6 +675,84 @@ class TestFindGeneTissue4(_IntegrationTest):
         assert len(output.get('genes')) == 44, output
 
 ###############################################################################
+# FIND-TISSUE
+#What tissues is STAT3 expressed in?
+class TestFindTissue1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTissue1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        gene = agent_clj_from_text('STAT3')
+        _get_targets(gene)
+        print('target=', str(gene))
+        
+        content = KQMLList('FIND-TISSUE')
+        content.set('gene', gene)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('tissue'))=", str(len(output.get('tissue'))))
+        assert len(output.get('tissue')) == 8, output
+
+#What tissues is MEK expressed in?
+class TestFindTissue2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTissue2, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        gene = agent_clj_from_text('MEK')
+        _get_targets(gene)
+        print('target=', str(gene))
+        
+        content = KQMLList('FIND-TISSUE')
+        content.set('gene', gene)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason') == 'FAMILY_NAME', output
+        print("len(output.get('clarification'))=", len(output.get('clarification')))
+        assert len(output.get('clarification')) == 5, output
+        
+#what tissues can I ask 
+class TestFindTissue3(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTissue3, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        content = KQMLList('FIND-TISSUE')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('tissue'))=", len(output.get('tissue')))
+        assert len(output.get('tissue')) == 30, output
+        
+#What tissues is frizzled8 expressed in?
+class TestFindTissue4(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTissue4, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        gene = agent_clj_from_text('frizzled8')
+        _get_targets(gene)
+        print('target=', str(gene))
+        
+        content = KQMLList('FIND-TISSUE')
+        content.set('gene', gene)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('tissue'))=", str(len(output.get('tissue'))))
+        assert len(output.get('tissue')) == 7, output
+
+####################################################################################
 #
 
 
