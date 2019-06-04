@@ -15,8 +15,8 @@ from indra.sources import trips
 # IS-GENE-ONTO
 # FIND-GENE-ONTO
 # FIND-KINASE-REGULATION
-# IS-TISSUE-GENE
-#
+# IS-GENE-TISSUE
+# FIND-GENE-TISSUE
 #
 ######################################
 
@@ -474,7 +474,7 @@ class TestFindKinaseReg5(_IntegrationTest):
         assert len(output.get('clarification')) == 5, output
 
 #######################################################################################
-#IS-TISSUE-GENE
+#IS-GENE-TISSUE
 ###Is stat3 expressed in liver? 
 class TestIsTissueGene1(_IntegrationTest):
     def __init__(self, *args):
@@ -599,7 +599,89 @@ class TestIsTissueGene6(_IntegrationTest):
         assert output.get('result') == 'TRUE', output
 
 ######################################################################################
+#FIND-GENE-TISSUE
+#what genes are expressed in liver? 
+class TestFindGeneTissue1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindGeneTissue1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        #gene = ekb_kstring_from_text('AKT')
+        tissue = 'liver'
+        content = KQMLList('FIND-GENE-TISSUE')
+        content.set('tissue', tissue)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('genes'))=", len(output.get('genes')))
+        assert len(output.get('genes')) == 1929, output
+        
+#among stat3,srf, kras, and hras, what genes are expressed in liver? 
+class TestFindGeneTissue2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindGeneTissue2, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        gene = agents_clj_from_text('stat3, srf, kras, hras')
+        tissue = 'liver'
+        content = KQMLList('FIND-GENE-TISSUE')
+        content.set('tissue', tissue)
+        content.set('gene', gene)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('genes'))=", len(output.get('genes')))
+        assert len(output.get('genes')) == 1, output
+        
+#what genes are exclusively expressed in liver? 
+class TestFindGeneTissue3(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindGeneTissue3, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        #gene = 'stat3, srf, kras, hras'
+        tissue = 'liver'
+        content = KQMLList('FIND-GENE-TISSUE')
+        content.set('tissue', tissue)
+        content.set('keyword', 'exclusive')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('genes'))=", len(output.get('genes')))
+        assert len(output.get('genes')) == 31, output
+        
+#what genes are exclusively expressed in brain? 
+class TestFindGeneTissue4(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindGeneTissue4, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        tissue = 'brain'
+        content = KQMLList('FIND-GENE-TISSUE')
+        content.set('tissue', tissue)
+        content.set('keyword', 'exclusive')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('genes'))=", len(output.get('genes')))
+        assert len(output.get('genes')) == 44, output
+
+###############################################################################
 #
+
+
+
+
+
+
 
 
 
