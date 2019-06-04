@@ -1626,10 +1626,6 @@ class TFTA:
                         kinase_names = list(set(kinase_names) & set([r[0] for r in res]))
                     else:
                         raise KinaseNotFoundException
-            if len(kinase_names):
-                kinase_names.sort()
-            else:
-                raise KinaseNotFoundException
         return kinase_names
         
     def find_kinase_target_keyword(self, target_names, keyword_name):
@@ -1654,10 +1650,6 @@ class TFTA:
                         kinase_names = list(set(kinase_names) & set([r[0] for r in res]))
                     else:
                         raise KinaseNotFoundException
-            if len(kinase_names):
-                kinase_names.sort()
-            else:
-                raise KinaseNotFoundException
         return kinase_names
         
     def find_gene_tissue(self, tissue_name):
