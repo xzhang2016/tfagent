@@ -1671,9 +1671,8 @@ class TFTA_Module(Bioagent):
         """
         Response to find-kinase-regulation with only target parameter
         """
-        target_names,term_id = get_of_those_list(content, descr='target')
-        if not len(target_names):
-            #target_arg = content.gets('target')
+        target_names,term_id = self._get_targets(content, descr='target')
+        if not target_names:
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         if term_id:
@@ -1685,17 +1684,21 @@ class TFTA_Module(Bioagent):
         except KinaseNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :kinase NIL)')
             return reply
-        kinase_str = self.wrap_message(':kinase ', kinases)
-        reply = KQMLList.from_string('(SUCCESS ' + kinase_str + ')')
+        
+        if kinases:
+            kin_json = self._get_genes_json(kinases)
+            reply = KQMLList('SUCCESS')
+            reply.set('kinase', kin_json)
+        else:
+            reply = KQMLList.from_string('(SUCCESS :kinase NIL)')
         return reply
         
     def respond_find_kinase_target_keyword(self, content):
         """
         Response to find-kinase-regulation with target and keyword parameter
         """
-        target_names,term_id = get_of_those_list(content, descr='target')
-        if not len(target_names):
-            #target_arg = content.gets('target')
+        target_names,term_id = self._get_targets(content, descr='target')
+        if not target_names:
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         if term_id:
@@ -1712,15 +1715,19 @@ class TFTA_Module(Bioagent):
         except KinaseNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :kinase NIL)')
             return reply
-        kinase_str = self.wrap_message(':kinase ', kinases)
-        reply = KQMLList.from_string('(SUCCESS ' + kinase_str + ')')
+        if kinases:
+            kin_json = self._get_genes_json(kinases)
+            reply = KQMLList('SUCCESS')
+            reply.set('kinase', kin_json)
+        else:
+            reply = KQMLList.from_string('(SUCCESS :kinase NIL)')
         return reply
         
     def respond_find_kinase_regulation(self, content):
         """
         Response to FIND-KINASE-REGULATION
         """
-        target_arg = content.gets('target')
+        target_arg = content.get('target')
         keyword_arg = content.get('keyword')
         if all([target_arg, keyword_arg]):
             reply = self.respond_find_kinase_target_keyword(content)
