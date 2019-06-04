@@ -129,7 +129,7 @@ class TFTA:
         """
         Return true if the gene is in the go category of go_name
         """
-        if go_name == 'transcription factor':
+        if go_name in ['transcription factor', 'tf']:
             if not self.trans_factor:
                 if self.tfdb is not None:
                     t = (gene_name, )
@@ -158,7 +158,7 @@ class TFTA:
         Return the genes which are in the category of go_name
         """
         go_genes = []
-        if go_name == 'transcription factor':
+        if go_name in ['transcription factor', 'tf']:
             if not self.trans_factor:
                 if self.tfdb is not None:
                     res = self.tfdb.execute("SELECT DISTINCT tf FROM transFactor").fetchall()
@@ -175,8 +175,6 @@ class TFTA:
                     res = self.tfdb.execute("SELECT geneSymbol FROM go2Genes WHERE termId = ? ", t).fetchall()
                     go_genes += [r[0] for r in res]
                 go_genes = list(set(go_genes) & set(gene_names))
-        if len(go_genes):
-            go_genes.sort()
         return go_genes
 
     def Is_tf_target_tissue(self,tf_name,target_name,tissue_name):
