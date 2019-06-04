@@ -252,21 +252,20 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_KEYWORD')
             return reply
         
-        gene_name,term_id = get_gene(content, descr='gene')
-        gene_arg = content.gets('gene')
+        gene_name,term_id = self._get_targets(content, descr='gene')
         if not gene_name:
             reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
             return reply
             
         #check if keyword is protein or gene
         if keyword_name in ['gene', 'protein']:
-            is_onto,is_ekb = self.is_protein_gene(gene_arg, keyword_name)
-            if not is_ekb:
-                reply = make_failure('ONLY_SUPPORT_EKB')
-                return reply
+            if gene_name:
+                is_onto = True
+            else:
+                is_onto = False
         else:
             try:
-                is_onto = self.tfta.Is_gene_onto(keyword_name, gene_name)
+                is_onto = self.tfta.Is_gene_onto(keyword_name, gene_name[0])
             except GONotFoundException:
                 reply = make_failure('GO_NOT_FOUND')
                 return reply
@@ -279,8 +278,8 @@ class TFTA_Module(Bioagent):
         """
         Respond to find-gene-onto
         """
-        regulator_arg = content.gets('regulator')
-        gene_arg = content.gets('gene')
+        regulator_arg = content.get('regulator')
+        gene_arg = content.get('gene')
         if regulator_arg:
             reply = self.respond_find_gene_onto_regulator(content)
         elif gene_arg:
@@ -298,9 +297,8 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_KEYWORD')
             return reply
         
-        gene_names,term_id = get_of_those_list(content, descr='gene')
+        gene_names,term_id = self._get_targets(content, descr='gene')
         if not gene_names:
-            #gene_arg = content.gets('gene')
             reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
             return reply
             
@@ -310,9 +308,9 @@ class TFTA_Module(Bioagent):
             reply = make_failure('GO_NOT_FOUND')
             return reply
         if len(results):
-            gene_list_str = self.wrap_message(':genes', results)
-            reply = KQMLList.from_string(
-                '(SUCCESS ' + gene_list_str + ')')
+            gene_json = self._get_genes_json(results)
+            reply = KQMLList('SUCCESS')
+            reply.set('genes', gene_json)
         else:
             reply = KQMLList.from_string('(SUCCESS :genes NIL)')
         return reply
@@ -326,9 +324,8 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_KEYWORD')
             return reply
             
-        regulator_names,term_id = get_of_those_list(content, descr='regulator')
+        regulator_names,term_id = self._get_targets(content, descr='regulator')
         if not regulator_names:
-            #regulator_arg = content.gets('regulator')
             reply = self.wrap_family_message(term_id, 'NO_REGULATOR_NAME')
             return reply
         if term_id:
@@ -347,8 +344,9 @@ class TFTA_Module(Bioagent):
                 reply = make_failure('GO_NOT_FOUND')
                 return reply
             if len(results):
-                gene_list_str = self.wrap_message(':genes', results)
-                reply = KQMLList.from_string('(SUCCESS ' + gene_list_str + ')')
+                gene_json = self._get_genes_json(results)
+                reply = KQMLList('SUCCESS')
+                reply.set('genes', gene_json)
             else:
                 reply = KQMLList.from_string('(SUCCESS :genes NIL)')
         else:
