@@ -475,6 +475,132 @@ class TestFindKinaseReg5(_IntegrationTest):
 
 #######################################################################################
 #IS-TISSUE-GENE
+###Is stat3 expressed in liver? 
+class TestIsTissueGene1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestIsTissueGene1, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agent_clj_from_text('stat3')
+        _get_targets(target)
+        print('target=', str(target))
+        
+        content = KQMLList('IS-GENE-TISSUE')
+        content.set('gene', target)
+        content.set('tissue', 'liver')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.get('result') == 'TRUE', output
+        
+###Is kras expressed in brain? 
+class TestIsTissueGene2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestIsTissueGene2, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agent_clj_from_text('kras')
+        _get_targets(target)
+        print('target=', str(target))
+        
+        content = KQMLList('IS-GENE-TISSUE')
+        content.set('gene', target)
+        content.set('tissue', 'brain')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.get('result') == 'FALSE', output
+
+###Is stat3 exclusively expressed in liver? 
+class TestIsTissueGene3(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestIsTissueGene3, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agent_clj_from_text('stat3')
+        _get_targets(target)
+        print('target=', str(target))
+        
+        content = KQMLList('IS-GENE-TISSUE')
+        content.set('gene', target)
+        content.set('tissue', 'liver')
+        content.set('keyword', 'exclusive')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.get('result') == 'FALSE', output
+        
+###Is GYS2 exclusively expressed in liver? 
+class TestIsTissueGene4(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestIsTissueGene4, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agent_clj_from_text('GYS2')
+        _get_targets(target)
+        print('target=', str(target))
+        
+        content = KQMLList('IS-GENE-TISSUE')
+        content.set('gene', target)
+        content.set('tissue', 'liver')
+        content.set('keyword', 'exclusive')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.get('result') == 'TRUE', output
+        
+###Is NEUROD2 exclusively expressed in brain? 
+class TestIsTissueGene5(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestIsTissueGene5, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agent_clj_from_text('NEUROD2')
+        _get_targets(target)
+        print('target=', str(target))
+        
+        content = KQMLList('IS-GENE-TISSUE')
+        content.set('gene', target)
+        content.set('tissue', 'brain')
+        content.set('keyword', 'exclusive')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.get('result') == 'TRUE', output
+
+###Is GAST expressed in stomach? 
+class TestIsTissueGene6(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestIsTissueGene6, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agent_clj_from_text('GAST')
+        _get_targets(target)
+        print('target=', str(target))
+        
+        content = KQMLList('IS-GENE-TISSUE')
+        content.set('gene', target)
+        content.set('tissue', 'stomach')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.get('result') == 'TRUE', output
+
+######################################################################################
+#
+
 
 
 
