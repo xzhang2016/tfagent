@@ -1063,14 +1063,13 @@ class TFTA_Module(Bioagent):
         For a given target list, reply the tfs regulating these genes
         and the regulated targets by each TF
         """
-        target_names,term_id = get_of_those_list(content, descr='target')
-        if len(target_names) < 2:
-            #target_arg = content.gets('target')
+        target_names,term_id = self._get_targets(content, descr='target')
+        if not target_names or len(target_names) < 2:
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
-        
+       
         #consider another parameter for subsequent query
-        of_those_names,nouse = get_of_those_list(content, descr='of-those')
+        of_those_names,nouse = self._get_targets(content, descr='of-those')
         
         try:
             tf_targets = self.tfta.find_common_tfs(target_names)
@@ -1079,28 +1078,25 @@ class TFTA_Module(Bioagent):
             return reply
         #cluster the tfs according to the targets
         tf_clustered = cluster_dict_by_value2(tf_targets)
-        tf_list_str = ''
         targets = list(tf_clustered.keys())
+        tf_target_mes = []
         for tg in targets:
-            tf_list = ''
             if of_those_names:
                 tfs = set(of_those_names) & set(tf_clustered[tg])
             else:
                 tfs = tf_clustered[tg]
             if tfs:
                 target_list = tg.split(',')
-                target_str = ''
-                for t in target_list:
-                    target_str += '(:name %s) ' % t
-                target_str = ':target-list (' + target_str + ')'
-                for tf in tfs:
-                    tf_list += '(:name %s) ' % tf
-                tf_list = ':tf-list (' + tf_list + ') '
-                tf_list += target_str
-                tf_list_str += '(' + tf_list + ') '
-        if tf_list_str:
-            reply = KQMLList.from_string(
-                '(SUCCESS :tfs (' + tf_list_str + '))')
+                target_json = self._get_genes_json(target_list)
+                tf_json = self._get_genes_json(tfs)
+                mes = KQMLList()
+                mes.set('tf-list', tf_json)
+                mes.set('target-list', target_json)
+                tf_target_mes.append(mes.to_string())
+        if tf_target_mes:
+            mes_str = '(' + ' '.join(tf_target_mes) + ')'
+            reply = KQMLList('SUCCESS')
+            reply.set('tfs', mes_str)
         else:
             reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
         return reply
