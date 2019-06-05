@@ -18,6 +18,7 @@ from indra.sources import trips
 # IS-GENE-TISSUE
 # FIND-GENE-TISSUE
 # FIND-TISSUE
+# FIND-COMMON-TF-GENES
 ######################################
 
 def _get_targets(target_arg):
@@ -753,11 +754,111 @@ class TestFindTissue4(_IntegrationTest):
         assert len(output.get('tissue')) == 7, output
 
 ####################################################################################
-#
+#FIND-COMMON-TF-GENES
+#What transcription factors are shared by the SRF, HRAS, and elk1 genes? (subtask: find-common-tf-genes)
+class TestFindCommonTfGenes1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindCommonTfGenes1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agents_clj_from_text('SRF, HRAS, elk1')
+        _get_targets(target)
+        print('target=', str(target))
+      
+        content = KQMLList('FIND-COMMON-TF-GENES')
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('tfs')) == 3, output
 
+#What transcription factors are in common to the STAT3, SOCS3, IFNG, FOXO3, and CREB5 genes?
+class TestFindCommonTfGenes2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindCommonTfGenes2, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agents_clj_from_text('STAT3, IFNG, FOXO3, SOCS3, CREB5')
+        _get_targets(target)
+        print('target=', str(target))
+        
+        content = KQMLList('FIND-COMMON-TF-GENES')
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        print('len(output)=' + str(len(output.get('tfs'))))
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('tfs')) == 8, output
 
+#test gene family
+#What transcription factors are in common to the STAT3, SOCS3, and MEK genes?
+#MEK will be ignored in this case
+class TestFindCommonTfGenes3(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindCommonTfGenes3, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agents_clj_from_text('STAT3, SOCS3, MEK')
+        _get_targets(target)
+        print('target=', str(target))
+        
+        content = KQMLList('FIND-COMMON-TF-GENES')
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('tfs')) == 1, output
 
+#What transcription factors are in common to the STAT3, SOCS3, and AKT genes?
+class TestFindCommonTfGenes4(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindCommonTfGenes4, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agents_clj_from_text('STAT3, AKT, MEK')
+        _get_targets(target)
+        print('target=', str(target))
+        
+        content = KQMLList('FIND-COMMON-TF-GENES')
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason') == 'FAMILY_NAME', output
+        assert len(output.get('clarification').get('as')) == 2, output
 
+#Which of these transcription factors are shared by the SRF, HRAS, FOS, and elk1 genes? (subtask: find-common-tf-genes)
+class TestFindCommonTfGenes5(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindCommonTfGenes5, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agents_clj_from_text('SRF, HRAS, cfos, elk1')
+        _get_targets(target)
+        print('target=', str(target))
+        
+        of_those = agents_clj_from_text('stat3,ELK1,TFAP2A,CREB1,TP53')
+        _get_targets(of_those)
+        print('target=', str(of_those))
+        
+        content = KQMLList('FIND-COMMON-TF-GENES')
+        content.set('target', target)
+        content.set('of-those', of_those)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('tfs'))=", len(output.get('tfs')))
+        assert len(output.get('tfs')) == 3, output
 
 
 
