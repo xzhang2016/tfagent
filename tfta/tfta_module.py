@@ -2558,8 +2558,6 @@ class TFTA_Module(Bioagent):
             kinase_names = list(set(kinase_names).intersection(set(of_those)))
         if len(kinase_names):
             kin_json = self._get_genes_json(kinase_names)
-            #kin_messages = KQMLList()
-            #kin_messages.set('kinase-db', kin_json)
         return kin_json
         
     def send_background_support(self, stmts, regulator_name, target_name, keyword_name):
@@ -2625,8 +2623,10 @@ class TFTA_Module(Bioagent):
     def wrap_family_message(self, term_id, msg):
         #use json format
         members = dict()
-        if len(term_id):
+        if term_id:
             members = self.tfta.find_members(term_id)
+        else:
+            reply = make_failure(msg)
         if members:
             id = list(members.keys())[0]
             mbj = self.make_cljson(members[id])
@@ -2640,7 +2640,7 @@ class TFTA_Module(Bioagent):
     
     def wrap_family_message_pathway(self, term_id, descr='pathways', msg="PATHWAY_NOT_FOUND"):
         #term_id = _get_term_id(target_arg)
-        if len(term_id):
+        if term_id:
             members = self.tfta.find_members(term_id)
             res_str = ''
             if members:
@@ -2844,7 +2844,7 @@ def trim_hyphen(descr):
 def trim_word(descr, word):
     #descr is a list
     ds = []
-    if len(descr):
+    if descr:
         for d in descr:
             if d[-len(word):] == word:
                 if len(d[:-len(word)-1]):
@@ -2920,7 +2920,7 @@ def _wrap_dbname_message(descr, db_names):
 def _combine_messages(mess_list):
     messages = ''
     for mess in mess_list:
-        if len(mess):
+        if mess:
             messages += mess
     return messages
     
