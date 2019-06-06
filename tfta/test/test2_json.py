@@ -19,6 +19,7 @@ from indra.sources import trips
 # FIND-GENE-TISSUE
 # FIND-TISSUE
 # FIND-COMMON-TF-GENES
+# FIND-EVIDENCE
 ######################################
 
 def _get_targets(target_arg):
@@ -859,6 +860,150 @@ class TestFindCommonTfGenes5(_IntegrationTest):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('tfs'))=", len(output.get('tfs')))
         assert len(output.get('tfs')) == 3, output
+
+######################################################################################
+# FIND-EVIDENCE
+##Show me evidence that kras regulate frizzled8? 
+class TestFindEvidence1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindEvidence1, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        regulator = agent_clj_from_text('kras')
+        target = agent_clj_from_text('fzd8')
+        _get_targets(target)
+        print('target=', str(target))
+        
+        content = KQMLList('FIND-EVIDENCE')
+        content.set('regulator', regulator)
+        content.set('target', target)
+        content.set('keyword', 'regulate')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('evidence'))=", str(len(output.get('evidence'))))
+        print("len(output.get('evidence').get('literature'))=", str(len(output.get('evidence').get('literature'))))
+        assert len(output.get('evidence')) == 2, output
+        assert len(output.get('evidence').get('literature')) == 1, output
+        
+##show me evidence that kras increase frizzled8? 
+class TestFindEvidence2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindEvidence2, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        regulator = agent_clj_from_text('kras')
+        target = agent_clj_from_text('fzd8')
+        
+        content = KQMLList('FIND-EVIDENCE')
+        content.set('regulator', regulator)
+        content.set('target', target)
+        content.set('keyword', 'increase')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('evidence'))=", str(len(output.get('evidence'))))
+        print("len(output.get('evidence').get('literature'))=", str(len(output.get('evidence').get('literature'))))
+        assert len(output.get('evidence')) == 2, output
+        assert len(output.get('evidence').get('literature')) == 1, output
+        
+##show me evidence that kras decrease frizzled8? 
+class TestFindEvidence3(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindEvidence3, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        regulator = agent_clj_from_text('kras')
+        target = agent_clj_from_text('fzd8')
+        
+        content = KQMLList('FIND-EVIDENCE')
+        content.set('regulator', regulator)
+        content.set('target', target)
+        content.set('keyword', 'decrease')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('evidence'))=", str(len(output.get('evidence'))))
+        print("type(output.get('evidence'))=",type(output.get('evidence')))
+        print("len(output.get('evidence').get('literature'))=", str(len(output.get('evidence').get('literature'))))
+        assert len(output.get('evidence')) == 2, output
+        assert len(output.get('evidence').get('literature')) == 1, output
+        
+##Show me the evidence that IL6 increase the amount of SOCS1.
+class TestFindEvidence4(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindEvidence4, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        regulator = agent_clj_from_text('il6')
+        target = agent_clj_from_text('socs1')
+        
+        content = KQMLList('FIND-EVIDENCE')
+        content.set('regulator',regulator)
+        content.set('target',target)
+        content.set('keyword', 'increase')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('evidence'))=", str(len(output.get('evidence'))))
+        print("len(output.get('evidence').get('literature'))=", str(len(output.get('evidence').get('literature'))))
+        assert len(output.get('evidence')) == 2, output
+        assert len(output.get('evidence').get('literature')) == 10, output
+        
+##Show me the evidence that SRF binds to the FOS gene.
+class TestFindEvidence5(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindEvidence5, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        regulator = agent_clj_from_text('SRF')
+        target = agent_clj_from_text('cfos')
+        
+        content = KQMLList('FIND-EVIDENCE')
+        content.set('regulator', regulator)
+        content.set('target', target)
+        content.set('keyword', 'bind')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('evidence'))=", str(len(output.get('evidence'))))
+        print("len(output.get('evidence').get('tf-db'))=", str(len(output.get('evidence').get('tf-db'))))
+        assert len(output.get('evidence')) == 2, output
+        assert len(output.get('evidence').get('tf-db')) == 2, output
+
+##Show me the evidence that SRF regulate FOS gene.
+class TestFindEvidence6(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindEvidence6, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        regulator = agent_clj_from_text('SRF')
+        target = agent_clj_from_text('cfos')
+        
+        content = KQMLList('FIND-EVIDENCE')
+        content.set('regulator', regulator)
+        content.set('target', target)
+        content.set('keyword', 'regulate')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('evidence'))=", str(len(output.get('evidence'))))
+        print("len(output.get('evidence').get('literature'))=", str(len(output.get('evidence').get('literature'))))
+        assert len(output.get('evidence')) == 4, output
+        assert len(output.get('evidence').get('literature')) == 2, output
+
 
 
 
