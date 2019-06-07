@@ -6,7 +6,7 @@ import operator
 import logging
 import sqlite3
 import numpy as np
-from collections import defaultdict
+from collections import defaultdict, Counter
 import math
 from indra import has_config
 from indra.tools import expand_families
@@ -1437,18 +1437,16 @@ class TFTA:
                 raise miRNANotFoundException
         return mirna,counts,targets
                          
-    def find_gene_count_miRNA(self, miRNA_name_dict):
+    def find_gene_count_miRNA(self, miRNA_names, limit=15):
         """
         For a given miRNA list, find the genes regulated by one of the miRNAs, and the
         frequency of the genes
-        What genes are most frequently (or commonly) regulated by a list of mIRs?
+        What genes are most frequently (or commonly) regulated by a list of microRNAs?
         """
-        genes = []
-        counts = dict()
+        gene_count = dict()
         temp = []
         mrna = defaultdict(list)
-        miRNA_mis = dict()
-        miRNA_names = list(miRNA_name_dict.keys())
+        miRNA_mis = []
         if self.tfdb is not None:
             for mir in miRNA_names:
                 t = (mir,)
@@ -1459,24 +1457,19 @@ class TFTA:
                     for m in [r[0] for r in res1]:
                         mrna[m].append(mir)
                 else:
-                     miRNA_mis[mir] = miRNA_name_dict[mir]
-            if temp:        
-                ug = list(set(temp))
-                if len(miRNA_names) > 1:
-                    for u in ug:
-                        ct = temp.count(u)
-                        if ct > 1:
-                            genes.append(u)
-                            counts[u] = ct
-                else:
-                    genes = ug
-                    for u in ug:
-                        counts[u] = 1
-                    #counts = np.ones(len(ug), dtype=np.int)
-                #sort
-                #if len(genes) > 1:
-                    #counts, genes = list(zip(*sorted(zip(counts,genes), reverse=True)))
-        return genes,counts,mrna,miRNA_mis
+                     miRNA_mis.append(mir)
+            if temp:
+                c = Counter(temp)
+                sorted_c = sorted(c.items(), key=operator.itemgetter(1), reverse=True)
+                num = 0
+                for gene,count in sorted_c:
+                    if num < limit:
+                        if count > 1:
+                            gene_count[gene] = count
+                            num += 1
+                    else:
+                        break
+        return gene_count,mrna,miRNA_mis
 
     def find_pathway_db_keyword(self, db_source, pathway_names):
         """
