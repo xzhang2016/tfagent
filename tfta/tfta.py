@@ -1229,14 +1229,17 @@ class TFTA:
                 #miRNAs.sort()
         return miRNAs
         
-    def find_target_miRNA(self, miRNA_name_dict):
+    def find_target_miRNA(self, miRNA_names):
         """
         Return Targets regulated by the given miRNAs
         example: What genes does miR-20b-5p target?
+        
+        parameter
+        ------------
+        miRNA_names: list
         """
-        miRNA_mis = dict()
+        miRNA_mis = []
         target_names = []
-        miRNA_names = list(miRNA_name_dict.keys())
         if self.tfdb is not None:
             t = (miRNA_names[0],)
             res = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo "
@@ -1245,8 +1248,8 @@ class TFTA:
                 target_names = [r[0] for r in res]
             else:
                 #raise miRNANotFoundException
-                miRNA_mis[miRNA_names[0]] = miRNA_name_dict[miRNA_names[0]]
-                return target_names,miRNA_mis 
+                miRNA_mis.append(miRNA_names[0])
+                return [],miRNA_mis 
             if len(miRNA_names)>1:
                 for i in range(1, len(miRNA_names)):
                     t = (miRNA_names[i],)
@@ -1256,22 +1259,24 @@ class TFTA:
                         target_names = list(set(target_names) & set([r[0] for r in res]))
                     else:
                         #raise miRNANotFoundException
-                        miRNA_mis[miRNA_names[i]] = miRNA_name_dict[miRNA_names[i]]
-                        return target_names,miRNA_mis
-                    if not len(target_names):
+                        miRNA_mis.append(miRNA_names[i])
+                        return [],miRNA_mis
+                    if not target_names:
                         break
-            if len(target_names):
-                target_names.sort()
         return target_names,miRNA_mis
         
-    def find_target_miRNA_strength(self, miRNA_name_dict, evidence_strength):
+    def find_target_miRNA_strength(self, miRNA_names, evidence_strength):
         """
         Return Targets regulated by the given miRNAs
         example: What genes does miR-20b-5p target?
+        
+        parameters
+        ------------
+        miRNA_names: list
+        evidence_strength: string
         """
-        miRNA_mis = dict()
+        miRNA_mis = []
         target_names = []
-        miRNA_names = list(miRNA_name_dict.keys())
         if self.tfdb is not None:
             if evidence_strength == 'strong':
                 t = (miRNA_names[0], '%Weak%')
@@ -1282,7 +1287,7 @@ class TFTA:
                 else:
                     #raise miRNANotFoundException
                     if self.check_mirna_not_in_db(miRNA_names[0]):
-                        miRNA_mis[miRNA_names[0]] = miRNA_name_dict[miRNA_names[0]]
+                        miRNA_mis.append(miRNA_names[0])
                     return [],miRNA_mis
                     
                 if len(miRNA_names)>1:
@@ -1295,9 +1300,9 @@ class TFTA:
                         else:
                             #raise miRNANotFoundException
                             if self.check_mirna_not_in_db(miRNA_names[i]):
-                                miRNA_mis[miRNA_names[i]] = miRNA_name_dict[miRNA_names[i]]
+                                miRNA_mis.append(miRNA_names[i])
                             return [],miRNA_mis
-                        if not len(target_names):
+                        if not target_names:
                             break
             else:
                 t = (miRNA_names[0], '%Weak%')
@@ -1308,7 +1313,7 @@ class TFTA:
                 else:
                     #raise miRNANotFoundException
                     if self.check_mirna_not_in_db(miRNA_names[0]):
-                        miRNA_mis[miRNA_names[0]] = miRNA_name_dict[miRNA_names[0]]
+                        miRNA_mis.append(miRNA_names[0])
                     return [],miRNA_mis
                 if len(miRNA_names)>1:
                     for i in range(1, len(miRNA_names)):
@@ -1320,12 +1325,10 @@ class TFTA:
                         else:
                             #raise miRNANotFoundException
                             if self.check_mirna_not_in_db(miRNA_names[i]):
-                                miRNA_mis[miRNA_names[i]] = miRNA_name_dict[miRNA_names[i]]
+                                miRNA_mis.append(miRNA_names[i])
                             return [],miRNA_mis
-                        if not len(target_names):
+                        if not target_names:
                             break
-            if len(target_names):
-                target_names.sort()
         return target_names,miRNA_mis
     
     def check_mirna_not_in_db(self, miRNA_name):
