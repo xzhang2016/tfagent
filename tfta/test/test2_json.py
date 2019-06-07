@@ -1004,7 +1004,30 @@ class TestFindEvidence6(_IntegrationTest):
         assert len(output.get('evidence')) == 4, output
         assert len(output.get('evidence').get('literature')) == 2, output
 
+#IncreaseAmount(miR_491(), GFAP())
+class TestFindEvidence7(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindEvidence7, self).__init__(TFTA_Module)
 
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        agents = Bioagent.get_agent(agent_clj_from_text('miR-491'))
+        print(agents)
+        print('name=', agents.name)
+        print('db_refs=', agents.db_refs)
+        regulator = agent_clj_from_text('miR-491')
+        target = agent_clj_from_text('GFAP')
+        
+        content = KQMLList('FIND-EVIDENCE')
+        content.set('regulator', regulator)
+        content.set('target', target)
+        content.set('keyword', 'increase')
+        print(content, '\n')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason') == 'NO_REGULATOR_NAME', output
 
 
 
