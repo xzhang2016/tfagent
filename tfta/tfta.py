@@ -1205,6 +1205,10 @@ class TFTA:
         """
         Return miRNAs regulating all the given targets
         example: What microRNAs target STAT3?
+        
+        parameter
+        ----------
+        target_names: list
         """
         miRNAs = []
         if self.tfdb is not None:
@@ -1225,8 +1229,6 @@ class TFTA:
                         miRNAs = list(set(miRNAs) & set([r[0] for r in res]))
                     else:
                         raise TargetNotFoundException
-            #if len(miRNAs):
-                #miRNAs.sort()
         return miRNAs
         
     def find_target_miRNA(self, miRNA_names):
