@@ -1291,38 +1291,8 @@ class TFTA_Module(Bioagent):
         reply = KQMLList.from_string(
             '(SUCCESS :go-terms (' + go_list_str + '))')            
         return reply
-
+        
     def respond_is_miRNA_target(self, content):
-        """
-        Respond to IS-MIRNA-TARGET request
-        """
-        #assume the miRNA is also in EKB XML format
-        miRNA_arg = content.gets('miRNA')
-        miRNA_name = list(_get_miRNA_name(miRNA_arg).keys())
-        if not len(miRNA_name):
-            reply = make_failure('NO_MIRNA_NAME')
-            return reply
-        
-        target_name,term_id = get_gene(content, descr='target')
-        if not len(target_name):
-            #target_arg = content.gets('target')
-            reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
-            return reply
-            
-        try:
-            is_target = self.tfta.Is_miRNA_target(miRNA_name[0], target_name)
-        except miRNANotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :is-miRNA-target FALSE)')
-            return reply
-        except TargetNotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :is-miRNA-target FALSE)')
-            return reply            
-        reply = KQMLList('SUCCESS')
-        is_target_str = 'TRUE' if is_target else 'FALSE'
-        reply.set('is-miRNA-target', is_target_str)
-        return reply
-        
-    def respond_is_miRNA_target2(self, content):
         """
         Respond to IS-MIRNA-TARGET request
         """
@@ -1395,22 +1365,17 @@ class TFTA_Module(Bioagent):
         """
         strength_arg = content.get('strength')
         if strength_arg:
-            reply = self.respond_find_target_miRNA_strength(content)
+            reply = self.find_target_miRNA_strength(content)
         else:
-            reply = self.respond_find_target_miRNA_all(content)
+            reply = self.find_target_miRNA_all(content)
         return reply
 
-    def respond_find_target_miRNA_strength(self, content):
+    def find_target_miRNA_strength(self, content):
         """
         Respond to FIND-TARGET-MIRNA request with strength parameter
         """
-        try:
-            miRNA_arg = content.gets('miRNA')
-            miRNA_names = _get_miRNA_name(miRNA_arg)
-        except Exception as e:
-            reply = make_failure('NO_MIRNA_NAME')
-            return reply
-        if not len(miRNA_names):
+        miRNA_names = self._get_mirnas(content)
+        if not miRNA_names:
             reply = make_failure('NO_MIRNA_NAME')
             return reply
             
@@ -1420,18 +1385,14 @@ class TFTA_Module(Bioagent):
             return reply
             
         #consider another parameter for subsequent query
-        of_those_names,nouse = get_of_those_list(content)
+        of_those_names,nouse = self._get_targets(content, descr='of-those')
         
         #consider an optional parameter to only return given type of genes
         target_type_set = self.get_target_type_set(content)
         
-        try:
-            target_names,miRNA_mis = self.tfta.find_target_miRNA_strength(miRNA_names, strength_name)
-        except miRNANotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :targets NIL)')
-            return reply
+        target_names,miRNA_mis = self.tfta.find_target_miRNA_strength(miRNA_names, strength_name)
         #check if it's necessary for user clarification
-        if len(miRNA_mis):
+        if miRNA_mis:
             reply = self._get_mirna_clarification(miRNA_mis)
             return reply
         else:
@@ -1442,37 +1403,29 @@ class TFTA_Module(Bioagent):
                 target_names = target_type_set & set(target_names)
             
             if len(target_names):
-                gene_list_str = self.wrap_message(':targets', target_names)
-                reply = KQMLList.from_string('(SUCCESS ' + gene_list_str + ')')
+                reply = self.wrap_message('targets', target_names)
             else:
                 reply = KQMLList.from_string('(SUCCESS :targets NIL)')
-        #self.gene_list = target_names  
         return reply
         
-    def respond_find_target_miRNA_all(self, content):
+    def find_target_miRNA_all(self, content):
         """
         Respond to FIND-TARGET-MIRNA request without strength parameter
         """
-        #assume the miRNA is also in EKB XML format
-        try:
-            miRNA_arg = content.gets('miRNA')
-            miRNA_names = _get_miRNA_name(miRNA_arg)
-        except Exception as e:
-            reply = make_failure('NO_MIRNA_NAME')
-            return reply
-        if not len(miRNA_names):
+        miRNA_names = self._get_mirnas(content)
+        if not miRNA_names:
             reply = make_failure('NO_MIRNA_NAME')
             return reply
             
         #consider another parameter for subsequent query
-        of_those_names,nouse = get_of_those_list(content)
+        of_those_names,nouse = self._get_targets(content, descr='of-those')
         
         #consider an optional parameter to only return given type of genes
         target_type_set = self.get_target_type_set(content)
         
         target_names,miRNA_mis = self.tfta.find_target_miRNA(miRNA_names)
         #check if it's necessary for user clarification
-        if len(miRNA_mis):
+        if miRNA_mis:
             reply = self._get_mirna_clarification(miRNA_mis)
             return reply
         else:
@@ -1484,11 +1437,9 @@ class TFTA_Module(Bioagent):
                 target_names = target_type_set & set(target_names)
             
             if len(target_names):
-                gene_list_str = self.wrap_message(':targets', target_names)
-                reply = KQMLList.from_string('(SUCCESS ' + gene_list_str + ')')
+                reply = self.wrap_message('targets', target_names)
             else:
                 reply = KQMLList.from_string('(SUCCESS :targets NIL)')
-        #self.gene_list = target_names  
         return reply
         
     def respond_find_evidence_miRNA_target(self, content):
@@ -1765,7 +1716,6 @@ class TFTA_Module(Bioagent):
         except TFNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
             return reply
-        #self.gene_list = tf_names  
         return reply
     
     def respond_find_regulation_source(self, content):
@@ -2156,7 +2106,7 @@ class TFTA_Module(Bioagent):
                  'FIND-COMMON-PATHWAY-GENES':respond_find_common_pathway_all,
                  'FIND-MIRNA-COUNT-GENE':respond_find_miRNA_count_target,
                  'FIND-GENE-COUNT-MIRNA':respond_find_target_count_miRNA,
-                 'IS-MIRNA-TARGET':respond_is_miRNA_target2,
+                 'IS-MIRNA-TARGET':respond_is_miRNA_target,
                  'FIND-COMMON-TF-GENES':respond_find_common_tfs_genes,
                  'IS-PATHWAY-GENE':respond_is_pathway_gene,
                  'FIND-TARGET-MIRNA':respond_find_target_miRNA,
