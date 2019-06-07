@@ -8,13 +8,13 @@ from indra.sources.trips.processor import TripsProcessor
 from indra.statements import Agent
 from bioagents import Bioagent
 from indra.sources import trips
-
+import re
 
 #####################################
 # Testing the following TFTA capabilities
 # IS-MIRNA-TARGET
 # FIND-TARGET-MIRNA
-# 
+# FIND-MIRNA-TARGET
 # 
 # 
 # 
@@ -51,6 +51,38 @@ def agents_clj_from_text(text):
     clj = Bioagent.make_cljson(agents)
     return clj
 
+def get_mirnas(mir_arg):
+    mirna = []
+    try:
+        agents = Bioagent.get_agent(mir_arg)
+    except Exception:
+        return []
+    if isinstance(agents, list):
+        mirna = [_get_mirna_name(a.name) for a in agents if a is not None]
+    elif isinstance(agents, Agent):
+        mirna = [_get_mirna_name(agents.name)]
+    if mirna:
+        print('mirna=', ','.join(mirna))
+    else:
+        print('mirna = None')
+    return mirna
+    
+def _get_mirna_name(str1):
+    plist = re.findall('([0-9]+-[a-zA-Z])', str1)
+    s = str1
+    for p in plist:
+        p1 = p.replace('-','')
+        s = s.replace(p, p1)
+    return s
+
+#In order to byparse trips due to the wrong interpretation of some microRNA names
+def make_mirna_cljson(mir_str):
+    mir_str = mir_str.replace(' ', '')
+    mir_list = mir_str.split(',')
+    mir_agent = [Agent(mir) for mir in mir_list]
+    mir_json = Bioagent.make_cljson(mir_agent)
+    return mir_json
+    
 #############################################################################
 # IS-MIRNA-TARGET
 #Does miR-20b-5p target STAT3? (subtask: is-mirna-target)
@@ -336,9 +368,105 @@ class TestFindTargetMirna11(_IntegrationTest):
         assert len(output.get('targets')) == 130, output
 
 ######################################################################################
+#FIND-MIRNA-TARGET
+#What microRNAs target STAT3? (subtask: FIND-MIRNA-TARGET)
+class TestFindMirna1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindMirna1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agent_clj_from_text('STAT3')
+        content = KQMLList('FIND-MIRNA-TARGET')
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('miRNAs'))=", len(output.get('miRNAs')))
+        assert len(output.get('miRNAs')) == 80, output
+        
+#What microRNAs target il2? (subtask: FIND-MIRNA-TARGET)
+class TestFindMirna2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindMirna2, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agent_clj_from_text('il2')
+        content = KQMLList('FIND-MIRNA-TARGET')
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('miRNAs'))", len(output.get('miRNAs')))
+        assert len(output.get('miRNAs')) == 5, output
+
+##What microRNAs target MEK? (subtask: FIND-MIRNA-TARGET)
+class TestFindMirna3(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindMirna3, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agent_clj_from_text('MEK')
+        content = KQMLList('FIND-MIRNA-TARGET')
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason') == 'FAMILY_NAME', output
+        print("len(output.get('clarification'))=", len(output.get('clarification')))
+        assert len(output.get('clarification')) == 5, output
+
+#test of-those
+#Which of those mirnas target il2?
+class TestFindMirna4(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindMirna4, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agent_clj_from_text('il2')
+        of_those = agents_clj_from_text('miR-20b-5p, miR-125b-5p, miR-337-3p, miR-155-5p, miR-877-3p, miR-181c-5p, miR-503-3p')
+        get_mirnas(of_those)
+        print(of_those)
+        
+        content = KQMLList('FIND-MIRNA-TARGET')
+        content.set('target', target)
+        content.set('of-those', of_those)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('miRNAs'))=", len(output.get('miRNAs')))
+        assert len(output.get('miRNAs')) == 2, output
+        
+#Which of those mirnas also target stat3? (use output from what micrornas target il2?)
+class TestFindMirna5(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindMirna5, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agent_clj_from_text('stat3')
+        of_those = agents_clj_from_text('miR-181c-5p, miR-484, MIR-155-5p, let-7i-5p, miR-503-3p')
+        get_mirnas(of_those)
+        print(of_those)
+        
+        content = KQMLList('FIND-MIRNA-TARGET')
+        content.set('target', target)
+        content.set('of-those', of_those)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('miRNAs'))=", len(output.get('miRNAs')))
+        assert len(output.get('miRNAs')) == 1, output
+
+#####################################################################################
 #
-
-
-
 
 
