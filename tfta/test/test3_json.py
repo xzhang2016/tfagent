@@ -15,7 +15,7 @@ import re
 # IS-MIRNA-TARGET
 # FIND-TARGET-MIRNA
 # FIND-MIRNA-TARGET
-# 
+# FIND-GENE-COUNT-MIRNA
 # 
 # 
 # 
@@ -467,6 +467,97 @@ class TestFindMirna5(_IntegrationTest):
         assert len(output.get('miRNAs')) == 1, output
 
 #####################################################################################
-#
+#FIND-GENE-COUNT-MIRNA
+##What genes are most frequently regulated by miR-335-5p, miR-155-5p, miR-145-5p, and miR-20a-5p?
+#(subtask: FIND-GENE-COUNT-MIRNA)
+class TestFindGeneCountMirna1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindGeneCountMirna1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = make_mirna_cljson('miR-335-5p, miR-155-5p, miR-145-5p, miR-20a-5p')
+        get_mirnas(mirna)
+        print('mirna=', mirna)
+        
+        content = KQMLList('FIND-GENE-COUNT-MIRNA')
+        content.set('miRNA', mirna)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets'))=", str(len(output.get('targets'))))
+        assert len(output.get('targets')) == 15, output
+        
+#What genes are most frequently regulated by miR-335-5p, miR-155-5p and miR-145-5p?
+#(subtask: FIND-GENE-COUNT-MIRNA)
+class TestFindGeneCountMirna2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindGeneCountMirna2, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = make_mirna_cljson('miR-335-5p, miR-155-5p, miR-145-5p')
+        get_mirnas(mirna)
+        print('mirna=', mirna)
+        
+        content = KQMLList('FIND-GENE-COUNT-MIRNA')
+        content.set('miRNA', mirna)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets'))=", str(len(output.get('targets'))))
+        assert len(output.get('targets')) == 15, output
+        
+#clarification
+#What genes are most frequently regulated by miR-128, miR-200c, and miR-20a-5p?
+class TestFindGeneCountMirna3(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindGeneCountMirna3, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = make_mirna_cljson('miR-122, miR-200c, and miR-20a-5p')
+        get_mirnas(mirna)
+        print('mirna=', mirna)
+        
+        content = KQMLList('FIND-GENE-COUNT-MIRNA')
+        content.set('miRNA', mirna)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason') == 'MIRNA_NOT_FOUND', output
+        print("len(output.get('clarification').get('as'))=",len(output.get('clarification').get('as')))
+        assert len(output.get('clarification').get('as')) == 2, output
+        
+#subsequent query
+#Which of those genes are most frequently regulated by miR-335-5p, miR-155-5p, miR-145-5p, and miR-20a-5p?
+#(subtask: FIND-GENE-COUNT-MIRNA)
+class TestFindGeneCountMirna4(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindGeneCountMirna4, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = make_mirna_cljson('miR-335-5p, miR-155-5p, miR-145-5p, miR-20a-5p')
+        of_those = agents_clj_from_text('stat3,srf,hras,CDK19, HSPA4L,FOXRED2,ZBTB25,cd28,sp4,TNKS2')
+        
+        content = KQMLList('FIND-GENE-COUNT-MIRNA')
+        content.set('miRNA', mirna)
+        content.set('of-those', of_those)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets'))=", str(len(output.get('targets'))))
+        assert len(output.get('targets')) == 15, output
+
+
+
+
+
+
 
 
