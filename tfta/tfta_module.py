@@ -1448,22 +1448,20 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string('(SUCCESS :evidence NIL)')   
         return reply
 
-    def respond_find_target_count_miRNA(self, content):
+    def respond_find_gene_count_miRNA(self, content):
         """
         Respond to FIND-GENE-COUNT-MIRNA request
         """
-        #assume the miRNA is also in EKB XML format
-        miRNA_arg = content.gets('miRNA')
-        miRNA_names = _get_miRNA_name(miRNA_arg)
-        if not len(miRNA_names):
+        miRNA_names = self._get_mirnas(content)
+        if not miRNA_names:
             reply = make_failure('NO_MIRNA_NAME')
             return reply
         
         #consider another parameter for subsequent query
-        of_those_names,nouse = get_of_those_list(content)
+        of_those_names,nouse = self._get_targets(content, descr='of-those')
         
-        targets,counts,mrna,miRNA_mis = self.tfta.find_gene_count_miRNA(miRNA_names)
-        if not len(targets):
+        target_count,mrna,miRNA_mis = self.tfta.find_gene_count_miRNA(miRNA_names)
+        if not len(target_count):
             #clarification
             if miRNA_mis:
                 reply = self._get_mirna_clarification(miRNA_mis)
@@ -1472,24 +1470,24 @@ class TFTA_Module(Bioagent):
                 reply = KQMLList.from_string('(SUCCESS :targets NIL)')
                 return reply
                 
-        target_str = ''
+        targets = set(target_count.keys())
         if of_those_names:
-            ftargets = set(of_those_names) & set(targets)
-        else:
-            ftargets = targets
-        if ftargets:
-            for t in ftargets:
-                ct = counts[t]
-                ms = mrna[t]
-                m_str = ''
-                for m in ms:
-                    m_str += '(:name %s)' % m
-                m_str = '(' + m_str + ')'
-                target_str += '(:name %s :count %d :miRNA %s) ' % (t, ct, m_str)
-            reply = KQMLList.from_string('(SUCCESS :targets (' + target_str + '))')
+            targets = set(of_those_names) & targets
+        
+        target_mir_mes = []
+        if targets:
+            for t in targets:
+                mes = KQMLList()
+                mes.set('target', self.make_cljson(Agent(t)))
+                mes.set('count', str(target_count[t]))
+                mes.set('miRNA', self.make_cljson([Agent(mir) for mir in mrna[t]]))
+                target_mir_mes.append(mes.to_string())
+        if target_mir_mes:
+            mes_str = '(' + ' '.join(target_mir_mes) + ')'
+            reply = KQMLList('SUCCESS')
+            reply.set('targets', mes_str)
         else:
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
-        #self.gene_list = targets
         return reply
              
     def respond_find_miRNA_count_target(self, content):
@@ -2070,7 +2068,7 @@ class TFTA_Module(Bioagent):
                  'FIND-PATHWAY':respond_find_pathway, 'FIND-TARGET':respond_find_target,
                  'FIND-COMMON-PATHWAY-GENES':respond_find_common_pathway_all,
                  'FIND-MIRNA-COUNT-GENE':respond_find_miRNA_count_target,
-                 'FIND-GENE-COUNT-MIRNA':respond_find_target_count_miRNA,
+                 'FIND-GENE-COUNT-MIRNA':respond_find_gene_count_miRNA,
                  'IS-MIRNA-TARGET':respond_is_miRNA_target,
                  'FIND-COMMON-TF-GENES':respond_find_common_tfs_genes,
                  'IS-PATHWAY-GENE':respond_is_pathway_gene,
