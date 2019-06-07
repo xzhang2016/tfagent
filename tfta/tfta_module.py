@@ -1326,27 +1326,25 @@ class TFTA_Module(Bioagent):
         """
         Respond to IS-MIRNA-TARGET request
         """
-        miRNA_arg = content.gets('miRNA')
-        miRNA_name = _get_miRNA_name(miRNA_arg)
-        if not len(miRNA_name):
+        miRNA_name = self._get_mirnas(content)
+        if not miRNA_name:
             reply = make_failure('NO_MIRNA_NAME')
             return reply
         
-        target_name,term_id = get_gene(content, descr='target')
-        if not len(target_name):
-            #target_arg = content.gets('target')
+        target_name,term_id = self._get_targets(content, descr='target')
+        if not target_name:
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         
-        is_target,expr,supt,pmid,miRNA_mis = self.tfta.Is_miRNA_target2(miRNA_name, target_name)
+        is_target,expr,supt,pmid,miRNA_mis = self.tfta.Is_miRNA_target(miRNA_name[0], target_name[0])
         
         #provenance support
-        self.send_background_support_mirna(list(miRNA_name.keys())[0], target_name, expr, supt, pmid)
+        self.send_background_support_mirna(miRNA_name[0], target_name[0], expr, supt, pmid)
         
         #respond to BA
         #check if it's necessary for user clarification
-        if len(miRNA_mis):
-            reply = self.get_reply_mirna_clarification(miRNA_mis)
+        if miRNA_mis:
+            reply = self._get_mirna_clarification(miRNA_mis)
             return reply
         else:
             reply = KQMLList('SUCCESS')
@@ -1434,7 +1432,7 @@ class TFTA_Module(Bioagent):
             return reply
         #check if it's necessary for user clarification
         if len(miRNA_mis):
-            reply = self.get_reply_mirna_clarification(miRNA_mis)
+            reply = self._get_mirna_clarification(miRNA_mis)
             return reply
         else:
             if of_those_names:
@@ -1475,7 +1473,7 @@ class TFTA_Module(Bioagent):
         target_names,miRNA_mis = self.tfta.find_target_miRNA(miRNA_names)
         #check if it's necessary for user clarification
         if len(miRNA_mis):
-            reply = self.get_reply_mirna_clarification(miRNA_mis)
+            reply = self._get_mirna_clarification(miRNA_mis)
             return reply
         else:
             if of_those_names:
@@ -1517,7 +1515,7 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string('(SUCCESS :evidence NIL)')
             return reply
         if miRNA_mis:
-            reply = self.get_reply_mirna_clarification(miRNA_mis)
+            reply = self._get_mirna_clarification(miRNA_mis)
             return reply
         if len(experiments):
             evidence_list_str = ''
@@ -1551,7 +1549,7 @@ class TFTA_Module(Bioagent):
         if not len(targets):
             #clarification
             if miRNA_mis:
-                reply = self.get_reply_mirna_clarification(miRNA_mis)
+                reply = self._get_mirna_clarification(miRNA_mis)
                 return reply
             else:
                 reply = KQMLList.from_string('(SUCCESS :targets NIL)')
@@ -1757,7 +1755,7 @@ class TFTA_Module(Bioagent):
             tf_names,miRNA_mis = self.tfta.find_tf_miRNA(miRNA_names)
             #check if it's necessary for user clarification
             if len(miRNA_mis):
-                reply = self.get_reply_mirna_clarification(miRNA_mis)
+                reply = self._get_mirna_clarification(miRNA_mis)
                 return reply
             else:
                 if of_those_names:
@@ -2659,30 +2657,22 @@ class TFTA_Module(Bioagent):
             reply.set(descr, 'NIL')
         return reply
     
-    def get_reply_mirna_clarification(self, miRNA_mis):
-        try:
-            clari_mirna = self.tfta.get_similar_miRNAs(list(miRNA_mis.keys())[0])
-            c_str = _wrap_mirna_clarification(miRNA_mis, clari_mirna)
-            reply = make_failure_clarification('MIRNA_NOT_FOUND', c_str)
-            return reply
-        except miRNANotFoundException:
-            reply = make_failure('NO_SIMILAR_MIRNA')
-            return reply
-    
-    def is_protein_gene(self, gene_arg, keyword):
-        gene_map = {'gene':['ONT::GENE-PROTEIN', 'ONT:GENE'], 'protein': ['ONT::GENE-PROTEIN', 'ONT:PROTEIN']}
-        #gene_arg = content.gets('gene')
-        is_onto = False
-        is_ekb = True
-        if '<ekb' in gene_arg or '<EKB' in gene_arg:
-            tp = TripsProcessor(gene_arg)
-            for term in tp.tree.findall('TERM'):
-                if term.find('type').text in gene_map[keyword]:
-                    is_onto = True
-                    break
+    def _get_mirna_clarification(self, miRNA_mis):
+        """
+        miRNA_mis: list of miRNA names
+        """
+        #only consider the single miRNA case
+        clari_mirna = self.tfta.get_similar_miRNAs(miRNA_mis[0])
+        if clari_mirna:
+            mir_agent = [Agent(mir) for mir in clari_mirna]
+            mir_json = self.make_cljson(mir_agent)
+            res = KQMLList('resolve')
+            res.set('miRNA', miRNA_mis[0])
+            res.set('as', mir_json)
+            reply = make_failure_clarification('MIRNA_NOT_FOUND', res)
         else:
-            is_ekb = False
-        return is_onto, is_ekb
+            reply = make_failure('NO_SIMILAR_MIRNA')
+        return reply
     
     def _get_targets(self, content, descr='target'):
         #parse json message format
@@ -2717,19 +2707,24 @@ class TFTA_Module(Bioagent):
             return res
         else:
             return None
-                
-#------------------------------------------------------------------------#######
-def _get_target(target_str):
-    agent = None
-    ont1 = ['ONT::PROTEIN', 'ONT::GENE-PROTEIN', 'ONT::GENE']
-    tp = TripsProcessor(target_str)
-    for term in tp.tree.findall('TERM'):
-        if term.find('type').text in ont1:
-            term_id = term.attrib['id']
-            agent = tp._get_agent_by_id(term_id, None)
-            break
-    return agent
     
+    def _get_mirnas(self, content, descr='miRNA'):
+        mirna = []
+        try:
+            mir_arg = content.get(descr)
+        except Exception:
+            return []
+        try:
+            agents = self.get_agent(mir_arg)
+        except Exception:
+            return []
+        if isinstance(agents, list):
+            mirna = [_get_mirna_name(a.name) for a in agents if a is not None]
+        elif isinstance(agents, Agent):
+            mirna = [_get_mirna_name(agents.name)]
+        return mirna
+        
+#------------------------------------------------------------------------#######
 def _get_targets(target_arg):
    tp = TripsProcessor(target_arg)
    #agents: dict with term id as key, agent as value
@@ -2746,16 +2741,6 @@ def _get_targets(target_arg):
            f_family[k] = a
    return protein_agents, f_family
     
-def _get_family_name(target_arg):
-    agent = []
-    ont1 = ['ONT::PROTEIN-FAMILY', 'ONT::GENE-FAMILY']
-    tp = TripsProcessor(target_arg)
-    for term in tp.tree.findall('TERM'):
-        if term.find('type').text in ont1:
-            term_id = term.attrib['id']
-            agent.append(tp._get_agent_by_id(term_id, None))
-    return agent
-
 def _get_pathway_name(target_str):
     #print('In _get_pathway_name')
     #tree = ET.XML(xml_string, parser=UTB())
@@ -2808,12 +2793,12 @@ def _get_miRNA_name(xml_string):
                 s = term.find('name')
                 if s is not None:
                     s1 = s.text
-                    s1 = rtrim_hyphen(s1)
+                    s1 = _get_mirna_name(s1)
                     miRNA_names[s1.upper()] = term.attrib['id']
     except Exception as e:
         return miRNA_names
     return miRNA_names
-
+    
 def make_failure(reason):
     msg = KQMLList('FAILURE')
     msg.set('reason', reason)
@@ -2853,7 +2838,7 @@ def trim_word(descr, word):
                 ds.append(d)
     return ds
 
-def rtrim_hyphen(str1):
+def _get_mirna_name(str1):
     plist = re.findall('([0-9]+-[a-zA-Z])', str1)
     s = str1
     for p in plist:
@@ -2924,17 +2909,6 @@ def _combine_messages(mess_list):
             messages += mess
     return messages
     
-def _wrap_mirna_clarification(miRNA_mis, clari_mirna):
-    """
-    miRNA_mis: dict
-    clari_mirna: list
-    """
-    c_str = ''
-    for c in clari_mirna:
-        c_str += '(:name %s) ' % c
-    c_str = '(resolve :term ' + list(miRNA_mis.values())[0] + ' :as (' + c_str + '))'
-    return c_str
-
 def _wrap_mirna_clarification2(miRNA_mis, clari_mirna):
     """
     miRNA_mis: dict
