@@ -266,7 +266,6 @@ class TFTA:
         """
         Return TFs regulating the given target list as well as the regulated targets by each TF
         """
-        #query
         tf_targets = defaultdict(list)
         counts = defaultdict(int)
         if self.tfdb is not None:
@@ -1176,26 +1175,6 @@ class TFTA:
 
     def Is_miRNA_target(self, miRNA_name, target_name):
         """
-        Return True if the miRNA regulates the target, and False if not
-        query example: Does miR-20b-5p target STAT3?
-        """
-        if self.tfdb is not None:
-             t = (miRNA_name,)
-             res = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo WHERE mirna LIKE ? ", t).fetchall()
-             if not res:
-                 raise miRNANotFoundException
-             for r in res:
-                 if r[0].upper() == target_name.upper():
-                     return True
-             #check if target_name in the database
-             t = (target_name,)
-             res = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo WHERE target = ? ", t).fetchall()
-             if not res:
-                 raise TargetNotFoundException       
-        return False
-        
-    def Is_miRNA_target2(self, miRNA_name_dict, target_name):
-        """
         Return True if the miRNA regulates the target, and False if not;
         also return evidence for provenance support
         query example: Does miR-20b-5p target STAT3?
@@ -1203,8 +1182,7 @@ class TFTA:
         expr = defaultdict(list)
         supt = defaultdict(list)
         pmid = defaultdict(list)
-        miRNA_mis = dict()
-        miRNA_name = list(miRNA_name_dict.keys())[0]
+        miRNA_mis = []
         if self.tfdb is not None:
             t = (miRNA_name, target_name)
             res = self.tfdb.execute("SELECT * FROM mirnaInfo WHERE mirna LIKE ? "
@@ -1220,7 +1198,7 @@ class TFTA:
                 t = (miRNA_name,)
                 res = self.tfdb.execute("SELECT * FROM mirnaInfo WHERE mirna LIKE ? ", t).fetchall()
                 if not res:
-                    miRNA_mis[miRNA_name] = miRNA_name_dict[miRNA_name]
+                    miRNA_mis = [miRNA_name]
         return False, expr, supt, pmid, miRNA_mis
         
     def find_miRNA_target(self, target_names):
@@ -1549,7 +1527,7 @@ class TFTA:
                         clari_miRNA[miRNA_name] = [r[0] for r in res]
         return clari_miRNA
         
-    def get_similar_miRNAs(self, miRNA_name):
+    def get_similar_miRNAs2(self, miRNA_name):
         """
         return a list of miRNAs beginning with the given miRNA which 
         is not in the database, for user clarification purpose
@@ -1567,23 +1545,20 @@ class TFTA:
                 raise miRNANotFoundException
         return clari_miRNA
         
-    def get_similar_miRNAs2(self, miRNA_names):
+    def get_similar_miRNAs(self, miRNA_name):
         """
         For each miRNA, return a list of miRNAs beginning with the given miRNA which 
         is not in the database, for user clarification purpose
-        miRNA_names is a list of given miRNA name
+        miRNA_name: string, miRNA name
         """
-        clari_miRNA = dict()
+        clari_miRNA = []
         if self.tfdb is not None:
-            for miRNA_name in miRNA_names:
-                regstr = miRNA_name + '-%'
-                t = (regstr,)
-                res = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo "
+            regstr = miRNA_name + '-%'
+            t = (regstr,)
+            res = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo "
                                     "WHERE mirna LIKE ? ", t).fetchall()
-                if res:
-                    clari_miRNA[miRNA_name] = [r[0] for r in res]
-            if not clari_miRNA:
-                raise miRNANotFoundException
+            if res:
+                clari_miRNA = [r[0] for r in res]
         return clari_miRNA
 
     def find_tissue_gene(self, gene_name):
