@@ -167,38 +167,6 @@ class TFTA_Module(Bioagent):
         else:
             reply = make_failure('UNKNOWN_TASK')
         return reply
-    
-    def respond_find_gene(self, content):
-        """
-        Response content to find-gene request, which includes:
-        find-gene-pathway, find-tf-pathway, find-kinase-pathway
-        """
-        #pathway_arg = content.gets('pathway')
-        subtype_name = _get_keyword_name(content, descr='subtype')
-        if subtype_name == 'tf':
-            reply = self.respond_find_tf_pathway(content)
-        elif subtype_name == 'gene':
-            reply = self.respond_find_gene_pathway(content)
-        elif subtype_name == 'kinase':
-            reply = self.respond_find_kinase_pathway(content)
-        else:
-            reply = make_failure('UNKNOWN_TASK')
-        return reply
-      
-    def respond_find_miRNA(self, content):
-        """
-        Response content to find-mirna request, which includes:
-        find-mirna-target, find-mirna-count-gene
-        """
-        target_arg = content.gets('target')
-        count_arg = content.get('count')
-        if all([target_arg,count_arg]):
-            reply = self.respond_find_miRNA_count_target(content)
-        elif target_arg:
-            reply = self.respond_find_miRNA_target(content)
-        else:
-            reply = make_failure('UNKNOWN_TASK')
-        return reply
         
     def respond_find_common_pathway_all(self, content):
         """
@@ -1326,9 +1294,8 @@ class TFTA_Module(Bioagent):
         """
         Respond to FIND-MIRNA-TARGET request
         """
-        target_names,term_id = get_of_those_list(content, descr='target')
-        if not len(target_names) or term_id:
-            #target_arg = content.gets('target')
+        target_names,term_id = self._get_targets(content, descr='target')
+        if not target_names:
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         if term_id:
@@ -1336,7 +1303,7 @@ class TFTA_Module(Bioagent):
             return reply
         
         ##consider another parameter for subsequent query
-        of_those_names = get_of_those_mirna(content, descr='of-those')
+        of_those_names = self._get_mirnas(content, descr='of-those')
         
         try:
             miRNA_names = self.tfta.find_miRNA_target(target_names)
@@ -1350,11 +1317,10 @@ class TFTA_Module(Bioagent):
             miRNA_names = res_db & res_of
             
         if len(miRNA_names):
-            miRNA_list_str = ''
-            for m in miRNA_names:
-                miRNA_list_str += '(:name %s ) ' % m
-            reply = KQMLList.from_string(
-                '(SUCCESS :miRNAs (' + miRNA_list_str + '))')
+            mir_agent = [Agent(mir) for mir in miRNA_names]
+            mir_json = self.make_cljson(mir_agent)
+            reply = KQMLList('SUCCESS')
+            reply.set('miRNAs', mir_json)
         else:
             reply = KQMLList.from_string('(SUCCESS :miRNAs NIL)')
         return reply
@@ -2102,7 +2068,6 @@ class TFTA_Module(Bioagent):
         
     task_func = {'IS-REGULATION':respond_is_regulation, 'FIND-TF':respond_find_tf,
                  'FIND-PATHWAY':respond_find_pathway, 'FIND-TARGET':respond_find_target,
-                 'FIND-GENE':respond_find_gene, 'FIND-MIRNA':respond_find_miRNA,
                  'FIND-COMMON-PATHWAY-GENES':respond_find_common_pathway_all,
                  'FIND-MIRNA-COUNT-GENE':respond_find_miRNA_count_target,
                  'FIND-GENE-COUNT-MIRNA':respond_find_target_count_miRNA,
