@@ -13,7 +13,7 @@ from indra.sources import trips
 #####################################
 # Testing the following TFTA capabilities
 # IS-MIRNA-TARGET
-# 
+# FIND-TARGET-MIRNA
 # 
 # 
 # 
@@ -125,8 +125,218 @@ class TestIsMirnaTarget3(_IntegrationTest):
         assert len(output.get('clarification').get('as')) == 2, output
 
 ####################################################################################
-#
+#FIND-TARGET-MIRNA
+#What genes does miR-20b-5p target? (subtask: find-target-mirna)
+class TestFindTargetMirna1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTargetMirna1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = agent_clj_from_text('miR-20b-5p')
+        content = KQMLList('FIND-TARGET-MIRNA')
+        content.set('miRNA', mirna)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets'))=", len(output.get('targets')))
+        assert len(output.get('targets')) == 917, output
 
+#What genes are regulated by miR-297? (subtask: find-target-mirna)
+class TestFindTargetMirna2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTargetMirna2, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = agent_clj_from_text('miR-297')
+        content = KQMLList('FIND-TARGET-MIRNA')
+        content.set('miRNA', mirna)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets')) = ", len(output.get('targets')))
+        assert len(output.get('targets')) == 190, output
+        
+#What genes are regulated by miR-20b-5p and MIR-29B-1-5P? (subtask: find-target-mirna)
+class TestFindTargetMirna3(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTargetMirna3, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = agents_clj_from_text('miR-20b-5p, MIR-29B-1-5P')
+        print("mirna=", mirna)
+        content = KQMLList('FIND-TARGET-MIRNA')
+        content.set('miRNA', mirna)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets')) = ", len(output.get('targets')))
+        assert len(output.get('targets')) == 12, output
+
+#What are the genes that have strong evidence of being regulated by mir-122-5p.? (subtask: find-target-mirna)
+class TestFindTargetMirna4(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTargetMirna4, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = agent_clj_from_text('mir-122-5p')
+        content = KQMLList('FIND-TARGET-MIRNA')
+        content.set('miRNA', mirna)
+        content.set('strength', 'strong')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets')) = ", len(output.get('targets')))
+        assert len(output.get('targets')) == 69, output
+        
+#What are the genes that have weak evidence of being regulated by mir-122-5p.? (subtask: find-target-mirna)
+class TestFindTargetMirna5(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTargetMirna5, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = agent_clj_from_text('mir-122-5p')
+        content = KQMLList('FIND-TARGET-MIRNA')
+        content.set('miRNA', mirna)
+        content.set('strength', 'weak')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets')) = ", len(output.get('targets')))
+        assert len(output.get('targets')) == 556, output
+
+#clarification test        
+#What are the genes that have weak evidence of being regulated by mir-128? (subtask: find-target-mirna)
+class TestFindTargetMirna6(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTargetMirna6, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = agent_clj_from_text('mir-128')
+        content = KQMLList('FIND-TARGET-MIRNA')
+        content.set('miRNA', mirna)
+        content.set('strength', 'weak')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        print("output.get('reason') = ", output.get('reason'))
+        assert output.get('reason') == 'MIRNA_NOT_FOUND', output
+        assert len(output.get('clarification').get('as')) == 3, output
+        
+#What genes are regulated by miR-200C? (subtask: find-target-mirna)
+class TestFindTargetMirna7(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTargetMirna7, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = agent_clj_from_text('miR-200C')
+        content = KQMLList('FIND-TARGET-MIRNA')
+        content.set('miRNA', mirna)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        print("output.get('reason') = ", output.get('targets'))
+        assert output.get('reason') == 'MIRNA_NOT_FOUND', output
+        assert len(output.get('clarification').get('as')) == 2, output
+
+#Which of those genes does miR-20b-5p target? (subtask: find-target-mirna)
+class TestFindTargetMirna8(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTargetMirna8, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = agent_clj_from_text('miR-20b-5p')
+        of_those = agents_clj_from_text("STAT3, SRF, HRAS, KRAS, ELK1, JAK1, JAK2, FOS")
+        _get_targets(of_those)
+        print('target=', str(of_those))
+        
+        content = KQMLList('FIND-TARGET-MIRNA')
+        content.set('miRNA', mirna)
+        content.set('of-those', of_those)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('targets')) == 2, output
+        
+#What are the genes that have weak evidence of being regulated by mir-122-5p.? (subtask: find-target-mirna)
+class TestFindTargetMirna9(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTargetMirna9, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = agent_clj_from_text('mir-122-5p')
+        of_those = agents_clj_from_text("STAT3, SRF, CDK4, CDK19, CSRP1, DZIP1L, HSPA4L")
+        _get_targets(of_those)
+        print('target=', str(of_those))
+        
+        content = KQMLList('FIND-TARGET-MIRNA')
+        content.set('miRNA', mirna)
+        content.set('strength', 'weak')
+        content.set('of-those', of_those)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets')) = ", len(output.get('targets')))
+        assert len(output.get('targets')) == 5, output
+
+#test target-type
+#What kinases does miR-20b-5p target? (subtask: find-target-mirna)
+class TestFindTargetMirna10(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTargetMirna10, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = agent_clj_from_text('miR-20b-5p')
+        target_type = 'kinase'
+        content = KQMLList('FIND-TARGET-MIRNA')
+        content.set('miRNA', mirna)
+        content.set('target-type', target_type)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets'))=", len(output.get('targets')))
+        assert len(output.get('targets')) == 40, output
+        
+#What transcription facotrs does miR-20b-5p target? (subtask: find-target-mirna)
+class TestFindTargetMirna11(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTargetMirna11, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = agent_clj_from_text('miR-20b-5p')
+        target_type = 'transcription factor'
+        content = KQMLList('FIND-TARGET-MIRNA')
+        content.set('miRNA', mirna)
+        content.set('target-type', target_type)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets'))=", len(output.get('targets')))
+        assert len(output.get('targets')) == 130, output
+
+######################################################################################
+#
 
 
 
