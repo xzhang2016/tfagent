@@ -1490,34 +1490,33 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
         return reply
              
-    def respond_find_miRNA_count_target(self, content):
+    def respond_find_miRNA_count_gene(self, content):
         """
         Respond to FIND-MIRNA-COUNT-GENE request
         """
-        target_names,term_id = get_of_those_list(content, descr='target')
-        if len(target_names) < 2:
-            #target_arg = content.gets('target')
+        target_names,term_id = self._get_targets(content, descr='target')
+        if not target_names or len(target_names) < 2:
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
-            
-        try:
-            mirnas,counts,genes = self.tfta.find_miRNA_count_gene(target_names)
-        except miRNANotFoundException:
+        #consider another parameter for subsequent query
+        of_those_names = self._get_mirnas(content, descr='of-those')
+        
+        mirna_count,mir_targets = self.tfta.find_miRNA_count_gene(target_names, of_those=of_those_names)
+        
+        mir_target_mes = []
+        if mirna_count:
+            for mir,count in mirna_count.items():
+                mes = KQMLList()
+                mes.set('miRNA', self.make_cljson(Agent(mir)))
+                mes.set('count', str(count))
+                mes.set('target', self.make_cljson([Agent(t) for t in mir_targets[mir]]))
+                mir_target_mes.append(mes.to_string())
+        if mir_target_mes:
+            mes_str = '(' + ' '.join(mir_target_mes) + ')'
+            reply = KQMLList('SUCCESS')
+            reply.set('miRNAs', mes_str)
+        else:
             reply = KQMLList.from_string('(SUCCESS :miRNAs NIL)')
-            return reply
-        except TargetNotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :miRNAs NIL)')
-            return reply            
-        mirna_str = ''
-        for m,ct in zip(mirnas,counts):
-            gs = genes[m]
-            g_str = ''
-            for g in gs:
-                g_str += '(:name %s) ' % g
-            g_str = '(' + g_str + ')'
-            mirna_str += '(:name %s :count %d :targets %s) ' % (m, ct, g_str)
-        reply = KQMLList.from_string(
-            '(SUCCESS :miRNAs (' + mirna_str + '))')
         return reply
 
     def respond_find_pathway_db_keyword(self, content):
@@ -2067,7 +2066,7 @@ class TFTA_Module(Bioagent):
     task_func = {'IS-REGULATION':respond_is_regulation, 'FIND-TF':respond_find_tf,
                  'FIND-PATHWAY':respond_find_pathway, 'FIND-TARGET':respond_find_target,
                  'FIND-COMMON-PATHWAY-GENES':respond_find_common_pathway_all,
-                 'FIND-MIRNA-COUNT-GENE':respond_find_miRNA_count_target,
+                 'FIND-MIRNA-COUNT-GENE':respond_find_miRNA_count_gene,
                  'FIND-GENE-COUNT-MIRNA':respond_find_gene_count_miRNA,
                  'IS-MIRNA-TARGET':respond_is_miRNA_target,
                  'FIND-COMMON-TF-GENES':respond_find_common_tfs_genes,
@@ -2757,7 +2756,7 @@ def _get_mirna_name(str1):
     for p in plist:
         p1 = p.replace('-','')
         s = s.replace(p, p1)
-    return s
+    return s.upper()
 
 def cluster_dict_by_value(d):
     #d is a list with tuple pair
