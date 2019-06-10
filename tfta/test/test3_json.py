@@ -554,7 +554,50 @@ class TestFindGeneCountMirna4(_IntegrationTest):
         print("len(output.get('targets'))=", str(len(output.get('targets'))))
         assert len(output.get('targets')) == 15, output
 
+#######################################################################################
+##FIND-MIRNA-COUNT-GENE
+#What miRNAs most frequently regulate EGFR, SRF, STAT3, JAK2, and SMAD3?
+#(subtask: FIND-MIRNA-COUNT-GENE)
+class TestFindMirnaCountGene1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindMirnaCountGene1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agents_clj_from_text('EGFR, SRF, STAT3, JAK2, SMAD3')
+        
+        content = KQMLList('FIND-MIRNA-COUNT-GENE')
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('miRNAs'))=", len(output.get('miRNAs')))
+        assert len(output.get('miRNAs')) == 23, output
 
+
+#which of those miRNAs most frequently regulate EGFR, SRF, STAT3, JAK2, and SMAD3?
+#(subtask: FIND-MIRNA-COUNT-GENE)
+class TestFindMirnaCountGene2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindMirnaCountGene2, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agents_clj_from_text('EGFR, SRF, STAT3, JAK2, SMAD3')
+        of_those = make_mirna_cljson('miR-200a-3p,miR-125b-5p, miR-29b-1-5p, miR-16-5p, miR-335-5p, miR-155-5p, miR-145-5p')
+        get_mirnas(of_those)
+        print('of_those=', of_those)
+        
+        content = KQMLList('FIND-MIRNA-COUNT-GENE')
+        content.set('target', target)
+        content.set('of-those', of_those)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('miRNAs'))=", len(output.get('miRNAs')))
+        assert len(output.get('miRNAs')) == 7, output
 
 
 
