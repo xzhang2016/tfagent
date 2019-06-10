@@ -1360,17 +1360,21 @@ class TFTA:
                 tf_names = list(set(target_names) & self.trans_factor)
         return tf_names,miRNA_mis
         
-    def find_evidence_miRNA_target(self, miRNA_name_dict, target_name):
+    def find_evidence_miRNA_target(self, miRNA_name, target_name):
         """
-        miRNA_name: str
+        
         Return experimental evidence that the given miRNA regulates the target
         example: What is the evidence that miR-148a-3p targets DNMT1?
+        
+        parameter
+        --------------
+        miRNA_name: str
+        target_name: str
         """
-        miRNA_mis = dict()
+        miRNA_mis = []
         experiments = []
         support_types = []
         pmid_link = []
-        miRNA_name = list(miRNA_name_dict.keys())[0]
         if self.tfdb is not None:
             t = (miRNA_name, target_name)
             res = self.tfdb.execute("SELECT * FROM mirnaInfo "
@@ -1385,7 +1389,7 @@ class TFTA:
                 res = self.tfdb.execute("SELECT * FROM mirnaInfo "
                                         "WHERE mirna LIKE ? ", t).fetchall()
                 if not res:
-                    miRNA_mis[miRNA_name] = miRNA_name_dict[miRNA_name]
+                    miRNA_mis.append(miRNA_name)
         return experiments, support_types, pmid_link, miRNA_mis
 
     def find_miRNA_count_gene(self, gene_names, of_those=None, limit=30):
