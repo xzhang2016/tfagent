@@ -1648,33 +1648,25 @@ class TFTA_Module(Bioagent):
         """
         Response to FIND-TF-MIRNA
         """
-        try:
-            miRNA_arg = content.gets('miRNA')
-            miRNA_names = _get_miRNA_name(miRNA_arg)
-        except Exception as e:
+        miRNA_names = self._get_mirnas(content)
+        if not miRNA_names:
             reply = make_failure('NO_MIRNA_NAME')
             return reply
-        if not len(miRNA_names):
-            reply = make_failure('NO_MIRNA_NAME')
-            return reply 
             
         #consider an additional parameter for subsequent query
-        of_those_names,nouse = get_of_those_list(content, descr='of-those')
+        of_those_names,nouse = self._get_targets(content, descr='of-those')
         
-        try:
-            tf_names,miRNA_mis = self.tfta.find_tf_miRNA(miRNA_names)
-            #check if it's necessary for user clarification
-            if len(miRNA_mis):
-                reply = self._get_mirna_clarification(miRNA_mis)
-                return reply
+        tf_names,miRNA_mis = self.tfta.find_tf_miRNA(miRNA_names)
+        #check if it's necessary for user clarification
+        if miRNA_mis:
+            reply = self._get_mirna_clarification(miRNA_mis)
+        else:
+            if of_those_names:
+                tf_names = set(of_those_names) & set(tf_names)
+            if tf_names:
+                reply = self.wrap_message(':tfs ', tf_names)
             else:
-                if of_those_names:
-                    tf_names = set(of_those_names) & set(tf_names)
-                tf_list_str = self.wrap_message(':tfs ', tf_names)
-                reply = KQMLList.from_string('(SUCCESS ' + tf_list_str + ')')
-        except TFNotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
-            return reply
+                reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
         return reply
     
     def respond_find_regulation_source(self, content):
