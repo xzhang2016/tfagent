@@ -1460,8 +1460,8 @@ class TFTA_Module(Bioagent):
         #consider another parameter for subsequent query
         of_those_names,nouse = self._get_targets(content, descr='of-those')
         
-        target_count,mrna,miRNA_mis = self.tfta.find_gene_count_miRNA(miRNA_names)
-        if not len(target_count):
+        target_count,target_mirna,miRNA_mis = self.tfta.find_gene_count_miRNA(miRNA_names, of_those=of_those_names)
+        if not target_count:
             #clarification
             if miRNA_mis:
                 reply = self._get_mirna_clarification(miRNA_mis)
@@ -1469,18 +1469,14 @@ class TFTA_Module(Bioagent):
             else:
                 reply = KQMLList.from_string('(SUCCESS :targets NIL)')
                 return reply
-                
-        targets = set(target_count.keys())
-        if of_those_names:
-            targets = set(of_those_names) & targets
         
         target_mir_mes = []
-        if targets:
-            for t in targets:
+        if target_count:
+            for t,c in target_count.items():
                 mes = KQMLList()
                 mes.set('target', self.make_cljson(Agent(t)))
-                mes.set('count', str(target_count[t]))
-                mes.set('miRNA', self.make_cljson([Agent(mir) for mir in mrna[t]]))
+                mes.set('count', str(c))
+                mes.set('miRNA', self.make_cljson([Agent(mir) for mir in target_mirna[t]]))
                 target_mir_mes.append(mes.to_string())
         if target_mir_mes:
             mes_str = '(' + ' '.join(target_mir_mes) + ')'
