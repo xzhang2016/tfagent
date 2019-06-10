@@ -18,7 +18,7 @@ import re
 # FIND-GENE-COUNT-MIRNA
 # FIND-MIRNA-COUNT-GENE
 # FIND-TF-MIRNA
-# 
+# FIND-EVIDENCE-MIRNA-TARGET
 # 
 ######################################
 
@@ -711,6 +711,103 @@ class TestFindTfMirna4(_IntegrationTest):
         print("len(output.get('tfs'))=", str(len(output.get('tfs'))))
         assert len(output.get('tfs')) == 3, output
 
+###################################################################################
+# FIND-EVIDENCE-MIRNA-TARGET
+#show me evidence that miR-148a-3p targets DNMT1?
+class TestFindEvidenceMirnaTarget1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindEvidenceMirnaTarget1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = make_mirna_cljson('miR-148a-3p')
+        get_mirnas(mirna)
+        print('mirna=', mirna)
+        
+        target = agent_clj_from_text('DNMT1')
+        
+        content = KQMLList('FIND-EVIDENCE-MIRNA-TARGET')
+        content.set('miRNA', mirna)
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('evidence'))=", len(output.get('evidence')))
+        assert len(output.get('evidence')) == 7, output
+
+#clarification
+#show me evidence that miR-148a targets DNMT1?
+class TestFindEvidenceMirnaTarget2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindEvidenceMirnaTarget2, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = make_mirna_cljson('miR-148a')
+        get_mirnas(mirna)
+        print('mirna=', mirna)
+        
+        target = agent_clj_from_text('DNMT1')
+        
+        content = KQMLList('FIND-EVIDENCE-MIRNA-TARGET')
+        content.set('miRNA', mirna)
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason') == 'MIRNA_NOT_FOUND', output
+        assert len(output.get('clarification').get('as')) == 2, output
+        
+#show me evidence that miR-148 targets DNMT1?
+class TestFindEvidenceMirnaTarget3(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindEvidenceMirnaTarget3, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = make_mirna_cljson('miR-148')
+        get_mirnas(mirna)
+        print('mirna=', mirna)
+        
+        target = agent_clj_from_text('DNMT1')
+        
+        content = KQMLList('FIND-EVIDENCE-MIRNA-TARGET')
+        content.set('miRNA', mirna)
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason') == 'NO_SIMILAR_MIRNA', output
+
+#test family name
+#show me evidence that miR-148a-3p targets STAT?
+class TestFindEvidenceMirnaTarget4(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindEvidenceMirnaTarget4, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = make_mirna_cljson('miR-148a-3p')
+        get_mirnas(mirna)
+        print('mirna=', mirna)
+        
+        target = agent_clj_from_text('STAT')
+        
+        content = KQMLList('FIND-EVIDENCE-MIRNA-TARGET')
+        content.set('miRNA', mirna)
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason') == 'FAMILY_NAME', output
+        print("len(output.get('clarification'))=", len(output.get('clarification')))
+        print("len(output.get('clarification').get('as'))=", len(output.get('clarification').get('as')))
+        assert len(output.get('clarification')) == 5, output
+        assert len(output.get('clarification').get('as')) == 8, output
 
 
 
