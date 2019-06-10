@@ -1396,46 +1396,44 @@ class TFTA:
                     miRNA_mis[miRNA_name] = miRNA_name_dict[miRNA_name]
         return experiments, support_types, pmid_link, miRNA_mis
 
-    def find_miRNA_count_gene(self, gene_names):
+    def find_miRNA_count_gene(self, gene_names, of_those=None, limit=30):
         """
         For a given gene list, find the miRNAs regulate one of the genes, and the
         frequency of the miRNAs
-        What mirs most frequently or commonly regulate a list of genes
+        What(which of those) mirs most frequently or commonly regulate a list of genes
         """
-        mirna = []
-        counts = []
+        mirna_count = dict()
         temp = []
-        targets = defaultdict(list)
+        mir_targets = defaultdict(list)
         if self.tfdb is not None:
             for gene_name in gene_names:
                 t = (gene_name,)
                 res1 = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo "
                                          "WHERE target = ? ", t).fetchall()
                 if res1:
-                    temp = temp + [r[0] for r in res1]
-                    for m in [r[0] for r in res1]:
-                        targets[m].append(gene_name)
-            #handle the case that all input targets are not in the database
-            if not len(temp):
-                raise TargetNotFoundException 
-            else:               
-                #miRNA count
-                um = list(set(temp))
-                if len(gene_names)>1:
-                    for u in um:
-                        ct = temp.count(u)
-                        if ct > 1:
-                            mirna.append(u)
-                            counts.append(ct)
-                    #sort
-                    if len(mirna) > 1:
-                        counts, mirna = list(zip(*sorted(zip(counts,mirna), reverse=True)))
-                else:
-                    mirna = um
-                    counts = np.ones(len(um), dtype=np.int)
-            if not len(mirna):
-                raise miRNANotFoundException
-        return mirna,counts,targets
+                    temp = temp + [r[0].upper() for r in res1]
+                    for mir in [r[0].upper() for r in res1]:
+                        mir_targets[mir].append(gene_name)
+            if temp:
+                mcount = Counter(temp)
+                sorted_c = sorted(mcount.items(), key=operator.itemgetter(1), reverse=True)
+                num = 0
+                for mir,count in sorted_c:
+                    if of_those:
+                        if num < limit:
+                            if mir in of_those and count > 1:
+                                mirna_count[mir] = count
+                                num += 1
+                        else:
+                            break
+                    else:
+                        if num < limit:
+                            if count > 1:
+                                mirna_count[mir] = count
+                                num += 1
+                        else:
+                            break
+        return mirna_count,mir_targets
                          
     def find_gene_count_miRNA(self, miRNA_names, limit=15):
         """
