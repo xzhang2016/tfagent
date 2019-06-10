@@ -16,8 +16,8 @@ import re
 # FIND-TARGET-MIRNA
 # FIND-MIRNA-TARGET
 # FIND-GENE-COUNT-MIRNA
-# 
-# 
+# FIND-MIRNA-COUNT-GENE
+# FIND-TF-MIRNA
 # 
 # 
 ######################################
@@ -625,6 +625,96 @@ class TestFindMirnaCountGene3(_IntegrationTest):
         assert len(output.get('clarification')) == 3, output
 
 ####################################################################################
+# FIND-TF-MIRNA
+##what transcription factors does miR-124-3p regulate? 
+class TestFindTfMirna1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTfMirna1, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = make_mirna_cljson('miR-124-3p')
+        get_mirnas(mirna)
+        print('mirna=', mirna)
+        
+        content = KQMLList('FIND-TF-MIRNA')
+        content.set('miRNA', mirna)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('tfs'))=", str(len(output.get('tfs'))))
+        assert len(output.get('tfs')) == 156, output
+
+##what transcription factors does miR-200c regulate? 
+class TestFindTfMirna2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTfMirna2, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = make_mirna_cljson('miR-200c')
+        get_mirnas(mirna)
+        print('mirna=', mirna)
+        
+        content = KQMLList('FIND-TF-MIRNA')
+        content.set('miRNA', mirna)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason') == 'MIRNA_NOT_FOUND', output
+        print("len(output.get('clarification'))=", str(len(output.get('clarification'))))
+        assert len(output.get('clarification')) == 5, output
+        assert len(output.get('clarification').get('as')) == 2, output
+        
+##what transcription factors does miR-200c-3p regulate? 
+class TestFindTfMirna3(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTfMirna3, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = make_mirna_cljson('miR-200c-3p')
+        get_mirnas(mirna)
+        print('mirna=', mirna)
+        
+        content = KQMLList('FIND-TF-MIRNA')
+        content.set('miRNA', mirna)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('tfs'))=", str(len(output.get('tfs'))))
+        assert len(output.get('tfs')) == 39, output
+        
+#subsequent query
+##which of these transcription factors does miR-200c-3p regulate? 
+class TestFindTfMirna4(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTfMirna4, self).__init__(TFTA_Module)
+
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = make_mirna_cljson('miR-200c-3p')
+        get_mirnas(mirna)
+        print('mirna=', mirna)
+        
+        of_those = agents_clj_from_text('ATRX, DNMT3B, MBD5,stat3,ZMAT3')
+        content = KQMLList('FIND-TF-MIRNA')
+        content.set('miRNA', mirna)
+        content.set('of-those', of_those)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('tfs'))=", str(len(output.get('tfs'))))
+        assert len(output.get('tfs')) == 3, output
+
+
+
+
+
 
 
 
