@@ -1418,15 +1418,16 @@ class TFTA:
                 mcount = Counter(temp)
                 sorted_c = sorted(mcount.items(), key=operator.itemgetter(1), reverse=True)
                 num = 0
-                for mir,count in sorted_c:
-                    if of_those:
+                if of_those:
+                    for mir,count in sorted_c:
                         if num < limit:
                             if mir in of_those and count > 1:
                                 mirna_count[mir] = count
                                 num += 1
                         else:
                             break
-                    else:
+                else:
+                    for mir,count in sorted_c:
                         if num < limit:
                             if count > 1:
                                 mirna_count[mir] = count
@@ -1435,15 +1436,21 @@ class TFTA:
                             break
         return mirna_count,mir_targets
                          
-    def find_gene_count_miRNA(self, miRNA_names, limit=15):
+    def find_gene_count_miRNA(self, miRNA_names, of_those=None, limit=30):
         """
         For a given miRNA list, find the genes regulated by one of the miRNAs, and the
         frequency of the genes
         What genes are most frequently (or commonly) regulated by a list of microRNAs?
+        
+        parameters
+        ----------------
+        miRNA_names:list
+        of_those: list of gene names or None
+        limit: int
         """
         gene_count = dict()
         temp = []
-        mrna = defaultdict(list)
+        target_mirna = defaultdict(list)
         miRNA_mis = []
         if self.tfdb is not None:
             for mir in miRNA_names:
@@ -1452,22 +1459,31 @@ class TFTA:
                                          "WHERE mirna LIKE ? ", t).fetchall()
                 if res1:
                     temp = temp + [r[0] for r in res1]
-                    for m in [r[0] for r in res1]:
-                        mrna[m].append(mir)
+                    for target in [r[0] for r in res1]:
+                        target_mirna[target].append(mir)
                 else:
                      miRNA_mis.append(mir)
             if temp:
                 c = Counter(temp)
                 sorted_c = sorted(c.items(), key=operator.itemgetter(1), reverse=True)
                 num = 0
-                for gene,count in sorted_c:
-                    if num < limit:
-                        if count > 1:
-                            gene_count[gene] = count
-                            num += 1
-                    else:
-                        break
-        return gene_count,mrna,miRNA_mis
+                if of_those:
+                    for gene,count in sorted_c:
+                        if num < limit:
+                            if gene in of_those and count > 1:
+                                gene_count[gene] = count
+                                num += 1
+                        else:
+                            break
+                else:
+                    for gene,count in sorted_c:
+                        if num < limit:
+                            if count > 1:
+                                gene_count[gene] = count
+                                num += 1
+                        else:
+                            break
+        return gene_count,target_mirna,miRNA_mis
 
     def find_pathway_db_keyword(self, db_source, pathway_names):
         """
