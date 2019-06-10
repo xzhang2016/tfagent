@@ -1412,38 +1412,37 @@ class TFTA_Module(Bioagent):
         """
         Respond to FIND-EVIDENCE-MIRNA-TARGET request
         """
-        #assume the miRNA is also in EKB XML format
-        miRNA_arg = content.gets('miRNA')
-        miRNA_name = _get_miRNA_name(miRNA_arg)
-        if not len(miRNA_name):
+        miRNA_name = self._get_mirnas(content)
+        if not miRNA_name:
             reply = make_failure('NO_MIRNA_NAME')
             return reply
         
-        target_name,term_id = get_gene(content, descr='target')
-        if not len(target_name):
-            #target_arg = content.gets('target')
+        target_name,term_id = self._get_targets(content, descr='target')
+        if not target_name:
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
                    
-        try:
-            experiments,supportType,pmlink,miRNA_mis = \
-                self.tfta.find_evidence_miRNA_target(miRNA_name, target_name)
-        except Exception as e:
-            reply = KQMLList.from_string('(SUCCESS :evidence NIL)')
-            return reply
+        expe,sType,pmlink,miRNA_mis = self.tfta.find_evidence_miRNA_target(miRNA_name[0], target_name[0])
+        
         if miRNA_mis:
             reply = self._get_mirna_clarification(miRNA_mis)
             return reply
-        if len(experiments):
-            evidence_list_str = ''
-            for e,s,l in zip(experiments,supportType,pmlink):
+        
+        mes_list = []
+        if expe:
+            for e,s,l in zip(expe,sType,pmlink):
                 en = '"' + e + '"'
                 sn = '"' + s + '"'
                 ln = '"' + l + '"'
-                evidence_list_str += \
-                    '(:experiment %s :supportType %s :pubmedLink %s) ' % (en, sn, ln)
-            reply = KQMLList.from_string(
-                '(SUCCESS :evidence (' + evidence_list_str + '))')
+                mes = KQMLList()
+                mes.set('experiment', en)
+                mes.set('supportType', sn)
+                mes.set('pubmedLink', ln)
+                mes_list.append(mes.to_string())
+        if mes_list:
+            evi_str = '(' + ' '.join(mes_list) + ')'
+            reply = KQMLList('SUCCESS')
+            reply.set('evidence', evi_str)
         else:
             reply = KQMLList.from_string('(SUCCESS :evidence NIL)')   
         return reply
