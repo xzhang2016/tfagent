@@ -13,6 +13,7 @@ from kqml import KQMLModule, KQMLPerformative, KQMLList
 from .tfta import TFTA, TFNotFoundException, TargetNotFoundException, PathwayNotFoundException 
 from .tfta import GONotFoundException, miRNANotFoundException, TissueNotFoundException
 from .tfta import KinaseNotFoundException
+from enrichment.GO import GOEnrich
 from indra.sources.trips.processor import TripsProcessor
 from collections import defaultdict
 from bioagents import Bioagent
@@ -51,7 +52,7 @@ class TFTA_Module(Bioagent):
              'FIND-TF', 'FIND-PATHWAY', 'FIND-TARGET', 'FIND-GENE', 'FIND-MIRNA',
              'IS-GENE-ONTO', 'FIND-GENE-ONTO', 'FIND-KINASE-REGULATION',
              'FIND-TF-MIRNA', 'FIND-REGULATION', 'FIND-EVIDENCE', 'FIND-GENE-TISSUE',
-             'IS-GENE-TISSUE', 'FIND-KINASE-PATHWAY']
+             'IS-GENE-TISSUE', 'FIND-KINASE-PATHWAY', 'GO-ENRICHMENT', 'GO-ANNOTATION']
     #keep the genes from the most recent previous call, which are used to input 
     #find-gene-onto if there's no gene input 
     #gene_list = ['STAT3', 'JAK1', 'JAK2', 'ELK1', 'FOS', 'SMAD2', 'KDM4B']
@@ -60,8 +61,9 @@ class TFTA_Module(Bioagent):
     def __init__(self, **kwargs):
         #Instantiate a singleton TFTA agent
         self.tfta = TFTA()
+        self.go = GOEnrich()
         self.stmts_indra = dict()
-        self.hgnc_info = dict()
+        #self.hgnc_info = dict()
     
         # Call the constructor of Bioagent
         super(TFTA_Module, self).__init__(**kwargs)
@@ -2027,19 +2029,56 @@ class TFTA_Module(Bioagent):
         reply.set('result', is_express_str)
         return reply
         
-#
-    def respond_get_family_name(self, content):
-        family_arg = content.gets('family')
-        
-        agent = _get_family_name(family_arg)
-        if agent:
-            res_str = ' (:for ' + agent[0].name + ' :error FAMILY_NAME_NOT_ALLOWED)'
-            reply = make_failure(res_str)
+    def respond_go_enrichment(self, content):
+        """
+        Respond to GO-ENRICHMENT
+        """
+        gene_names,term_id = self._get_targets(content, descr='gene')
+        if not gene_names:
+            reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
+            return reply
+            
+        results = self.go.go_enrichment_analysis(gene_names)
+        #return GO_id, GO_name, p_bonferroni, study_items
+        mes_json = []
+        if results:
+            for res in results:
+                mes = KQMLList()
+                mes.sets('GO-term', res.goterm.id)
+                mes.sets('GO-name', res.name)
+                mes.sets('p-bonferroni', str(res.p_bonferroni))
+                gene_agent = [Agent(g) for g in res.study_items]
+                gene_json = self.make_cljson(gene_agent)
+                mes.set('genes', gene_json)
+                mes_json.append(mes.to_string())
+            reply=KQMLList('SUCCESS')
+            res_str = '(' + ' '.join(mes_json) + ')'
+            reply.set('results', res_str)
+            return reply
         else:
-            reply = KQMLList.from_string('(SUCCESS :family NIL)')
-        return reply
-        
+            reply = KQMLList.from_string('(SUCCESS :results NIL)')
+            return reply
     
+    def respond_go_annotation(self, content):
+        """
+        Respond to GO-ANNOTATION
+        """
+        keyword_name = _get_keyword_name(content, hyphen=True)
+        if not keyword_name:
+            reply = make_failure('NO_KEYWORD_NAME')
+            return reply
+        
+        results = self.go.get_annotations_keyword(keyword_name)
+        if results:
+            #return GO_ID, gene_name
+            agent = [Agent(key, db_refs={'GO':value['GO_ID']}) for key, value in results.items()]
+            a_json = self.make_cljson(agent)
+            reply = KQMLList('SUCCESS')
+            reply.set('genes', a_json)
+            return reply
+        else:
+            reply = KQMLList.from_string('(SUCCESS :genes NIL)')
+            return reply
         
     task_func = {'IS-REGULATION':respond_is_regulation, 'FIND-TF':respond_find_tf,
                  'FIND-PATHWAY':respond_find_pathway, 'FIND-TARGET':respond_find_target,
@@ -2077,7 +2116,8 @@ class TFTA_Module(Bioagent):
                  'FIND-EVIDENCE':respond_find_evidence,
                  'FIND-GENE-TISSUE':respond_find_gene_tissue,
                  'IS-GENE-TISSUE':respond_is_gene_tissue,
-                 'FIND-KINASE-PATHWAY':respond_find_kinase_pathway}
+                 'FIND-KINASE-PATHWAY':respond_find_kinase_pathway,
+                 'GO-ENRICHMENT':respond_go_enrichment, 'GO-ANNOTATION':respond_go_annotation}
     
     def receive_request(self, msg, content):
         """If a "request" message is received, decode the task and
