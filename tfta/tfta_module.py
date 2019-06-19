@@ -1267,10 +1267,10 @@ class TFTA_Module(Bioagent):
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         
-        is_target,expr,supt,pmid,miRNA_mis = self.tfta.Is_miRNA_target(miRNA_name[0], target_name[0])
+        is_target,expr,supt,pmid,miRNA_mis = self.tfta.Is_miRNA_target(miRNA_name, target_name[0])
         
         #provenance support
-        self.send_background_support_mirna(miRNA_name[0], target_name[0], expr, supt, pmid)
+        #self.send_background_support_mirna(list(miRNA_name.keys())[0], target_name[0], expr, supt, pmid)
         
         #respond to BA
         #check if it's necessary for user clarification
@@ -1415,7 +1415,7 @@ class TFTA_Module(Bioagent):
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
                    
-        expe,sType,pmlink,miRNA_mis = self.tfta.find_evidence_miRNA_target(miRNA_name[0], target_name[0])
+        expe,sType,pmlink,miRNA_mis = self.tfta.find_evidence_miRNA_target(miRNA_name, target_name[0])
         
         if miRNA_mis:
             reply = self._get_mirna_clarification(miRNA_mis)
@@ -2549,17 +2549,24 @@ class TFTA_Module(Bioagent):
         return target_type_set
     
     def wrap_family_message(self, term_id, msg):
+        """
+        parameter
+        -------------
+        term_id: dict, key is trips id or family name, value is Agent
+        msg: str
+        """
         #use json format
-        members = dict()
+        #only consider one family for clarification for now
+        members = []
         if term_id:
-            members = self.tfta.find_members(term_id)
+            term = list(term_id.keys())[0]
+            members = self.tfta.find_member(term_id[term])
         else:
             reply = make_failure(msg)
         if members:
-            id = list(members.keys())[0]
-            mbj = self.make_cljson(members[id])
+            mbj = self.make_cljson(members)
             res_str = KQMLList('resolve')
-            res_str.set('family', id)
+            res_str.set('term', term)
             res_str.set('as', mbj)
             reply = make_failure_clarification('FAMILY_NAME', res_str)
         else:
@@ -2652,15 +2659,16 @@ class TFTA_Module(Bioagent):
     
     def _get_mirna_clarification(self, miRNA_mis):
         """
-        miRNA_mis: list of miRNA names
+        miRNA_mis: dict, key is mirna name, value is trips term id or mirna name
         """
         #only consider the single miRNA case
-        clari_mirna = self.tfta.get_similar_miRNAs(miRNA_mis[0])
+        mirna = list(miRNA_mis.keys())[0]
+        clari_mirna = self.tfta.get_similar_miRNAs(mirna)
         if clari_mirna:
             mir_agent = [Agent(mir) for mir in clari_mirna]
             mir_json = self.make_cljson(mir_agent)
             res = KQMLList('resolve')
-            res.set('miRNA', miRNA_mis[0])
+            res.set('term', miRNA_mis[mirna])
             res.set('as', mir_json)
             reply = make_failure_clarification('MIRNA_NOT_FOUND', res)
         else:
@@ -2669,8 +2677,8 @@ class TFTA_Module(Bioagent):
     
     def _get_targets(self, content, descr='target'):
         #parse json message format
-        proteins = None
-        family = None
+        proteins = []
+        family = dict()
         try:
             target_arg = content.get(descr)
         except Exception:
@@ -2680,15 +2688,24 @@ class TFTA_Module(Bioagent):
         except Exception:
             return None,None
         if isinstance(agents, list):
-            proteins = [a.name for a in agents if a is not None and ('UP' in a.db_refs or 'HGNC' in a.db_refs)]
+            proteins = [a.name for a in agents if a is not None and ('UP' in a.db_refs or 'HGNC' in a.db_refs or len(a.db_refs)==0)]
             #family = {a.db_refs['TRIPS']:a.name for a in agents if a is not None and 'FPLX' in a.db_refs and a.name not in proteins}
-            family = [a for a in agents if a is not None and 'FPLX' in a.db_refs and a.name not in proteins]
+            #consider +trips+ as an optional id
+            for a in agents:
+                if a is not None and 'FPLX' in a.db_refs and a.name not in proteins:
+                    if 'TRIPS' in a.db_refs:
+                        family[a.db_refs['TRIPS']] = a
+                    else:
+                        family[a.name] = a
         elif isinstance(agents, Agent):
-            if 'UP' in agents.db_refs or 'HGNC' in agents.db_refs:
+            if 'UP' in agents.db_refs or 'HGNC' in agents.db_refs or len(agents.db_refs)==0:
                 proteins = [agents.name]
             if not proteins and 'FPLX' in agents.db_refs:
                 #family = {agents.db_refs['TRIPS']:agents.name}
-                family = [agents]
+                if 'TRIPS' in agents.db_refs:
+                    family[agents.db_refs['TRIPS']] = agents
+                else:
+                    family[agents.name] = agents
         return proteins,family
                 
     def _combine_json_list(self, descr_list, json_list):
@@ -2702,7 +2719,9 @@ class TFTA_Module(Bioagent):
             return None
     
     def _get_mirnas(self, content, descr='miRNA'):
-        mirna = []
+        #JSON format
+        #consider +trips+ if it exist
+        mirna = {}
         try:
             mir_arg = content.get(descr)
         except Exception:
@@ -2712,9 +2731,22 @@ class TFTA_Module(Bioagent):
         except Exception:
             return []
         if isinstance(agents, list):
-            mirna = [_get_mirna_name(a.name) for a in agents if a is not None]
+            for a in agents:
+                if a is not None:
+                    if 'TRIPS' in a.db_refs:
+                        mirna[_get_mirna_name(a.name)] = a.db_refs['TRIPS']
+                    else:
+                        mname = _get_mirna_name(a.name)
+                        mirna[mname] = mname
+            #mirna = [_get_mirna_name(a.name) for a in agents if a is not None]
         elif isinstance(agents, Agent):
-            mirna = [_get_mirna_name(agents.name)]
+            if agents is not None:
+                if 'TRIPS' in agents.db_refs:
+                    mirna[_get_mirna_name(agents.name)] = agents.db_refs['TRIPS']
+                else:
+                    mname = _get_mirna_name(agents.name)
+                    mirna[mname] = mname
+            #mirna = [_get_mirna_name(agents.name)]
         return mirna
         
 #------------------------------------------------------------------------#######
@@ -2832,12 +2864,19 @@ def trim_word(descr, word):
     return ds
 
 def _get_mirna_name(str1):
-    plist = re.findall('([0-9]+-[a-zA-Z])', str1)
-    s = str1
-    for p in plist:
-        p1 = p.replace('-','')
-        s = s.replace(p, p1)
-    return s.upper()
+    #handle two forms of input, like MIR-PUNC-MINUS-20-B-PUNC-MINUS-5-P and MIR-20-B-5-P
+    if 'PUNC-MINUS' in str1:
+        str2 = str1.replace('-PUNC-MINUS-','_')
+        str2 = str2.replace('-','')
+        str2 = str2.replace('_', '-')
+        return str2.upper()
+    else:
+        plist = re.findall('([0-9]+-[a-zA-Z])', str1)
+        s = str1
+        for p in plist:
+            p1 = p.replace('-','')
+            s = s.replace(p, p1)
+        return s.upper()
 
 def cluster_dict_by_value(d):
     #d is a list with tuple pair
