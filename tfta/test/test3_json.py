@@ -68,12 +68,19 @@ def get_mirnas(mir_arg):
     return mirna
     
 def _get_mirna_name(str1):
-    plist = re.findall('([0-9]+-[a-zA-Z])', str1)
-    s = str1
-    for p in plist:
-        p1 = p.replace('-','')
-        s = s.replace(p, p1)
-    return s
+    #handle two forms of input, like MIR-PUNC-MINUS-20-B-PUNC-MINUS-5-P and MIR-20-B-5-P
+    if 'PUNC-MINUS' in str1:
+        str2 = str1.replace('-PUNC-MINUS-','_')
+        str2 = str2.replace('-','')
+        str2 = str2.replace('_', '-')
+        return str2.upper()
+    else:
+        plist = re.findall('([0-9]+-[a-zA-Z])', str1)
+        s = str1
+        for p in plist:
+            p1 = p.replace('-','')
+            s = s.replace(p, p1)
+        return s.upper()
 
 #In order to byparse trips due to the wrong interpretation of some microRNA names
 def make_mirna_cljson(mir_str):
@@ -622,7 +629,7 @@ class TestFindMirnaCountGene3(_IntegrationTest):
         print("len(output.get('clarification'))=", len(output.get('clarification')))
         print("len(output.get('clarification').get('as'))=", len(output.get('clarification').get('as')))
         assert len(output.get('clarification')) == 5, output
-        assert len(output.get('clarification')) == 3, output
+        assert len(output.get('clarification').get('as')) == 3, output
 
 ####################################################################################
 # FIND-TF-MIRNA
