@@ -1310,7 +1310,7 @@ class TFTA_Module(Bioagent):
             miRNA_names = res_db & res_of
             
         if len(miRNA_names):
-            mir_agent = [Agent(mir) for mir in miRNA_names]
+            mir_agent = [Agent(mir, db_refs={'type':'MIRNA'}) for mir in miRNA_names]
             mir_json = self.make_cljson(mir_agent)
             reply = KQMLList('SUCCESS')
             reply.set('miRNAs', mir_json)
@@ -1495,7 +1495,7 @@ class TFTA_Module(Bioagent):
         if mirna_count:
             for mir,count in mirna_count.items():
                 mes = KQMLList()
-                mes.set('miRNA', self.make_cljson(Agent(mir)))
+                mes.set('miRNA', self.make_cljson(Agent(mir, db_refs={'type': 'MIRNA'})))
                 mes.set('count', str(count))
                 mes.set('target', self.make_cljson([Agent(t) for t in mir_targets[mir]]))
                 mir_target_mes.append(mes.to_string())
