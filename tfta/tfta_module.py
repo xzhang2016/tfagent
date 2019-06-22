@@ -904,24 +904,21 @@ class TFTA_Module(Bioagent):
         Response content to FIND_TF_PATHWAY request
         For a given pathway name, reply the tfs within the pathway
         """
-        pathway_arg = content.gets('pathway')
-        pathway_names = _get_pathway_name(pathway_arg)
-        pathway_names = trim_word(pathway_names, 'pathway')
-        if not len(pathway_names):
+        pathway_names = self._get_pathway_name(content)
+        if not pathway_names:
             reply = make_failure('NO_PATHWAY_NAME')
             return reply
         
         #consider another optional parameter for subsequent query
-        of_gene_names,nouse = get_of_those_list(content, descr='of-those')
+        of_gene_names,nouse = self._get_targets(content, descr='of-those')
         
         try:
-            pathwayName,tflist,dblink = \
-                self.tfta.find_tf_pathway(pathway_names)
+            pathwayName,tflist,dblink = self.tfta.find_tf_pathway(pathway_names)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
         reply = self._wrap_pathway_genelist_message(pathwayName, dblink, tflist, pathway_names=pathway_names,
-                                               gene_descr=':tfs', of_gene_names=of_gene_names)
+                                               gene_descr='tfs', of_gene_names=of_gene_names)
         return reply
         
     def respond_find_kinase_pathway(self, content):
