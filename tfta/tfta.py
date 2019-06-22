@@ -580,7 +580,7 @@ class TFTA:
             for pthID in upid:
                 t = (pthID,)
                 res1 = self.tfdb.execute("SELECT DISTINCT genesymbol FROM pathway2Genes "
-                                        "WHERE pathwayID = ? ORDER BY genesymbol", t).fetchall()
+                                        "WHERE pathwayID = ? ", t).fetchall()
                 genes = [r[0] for r in res1]
                 overlap_genes = list(set(gene_names) & set(genes))
                 if len(overlap_genes) == len(gene_names):
