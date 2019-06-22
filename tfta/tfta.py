@@ -388,35 +388,25 @@ class TFTA:
             fpname,fdblink = list(zip(*sorted(zip(fpname,fdblink))))
         return fpname,fdblink
 
-    def find_genes_from_pathwayName(self, pathway_names):
+    def find_gene_pathway(self, pathway_names):
         """
         return genes related to pathway_name
         """
-        pathwayId = []
         pathwayName = dict()
         genelist = dict()
         pw_link = dict()
-        #query
         if self.tfdb is not None:
-            pn = []
-            pids = []
-            plink = []
             for pathway_name in pathway_names:
                 regstr = '%' + pathway_name + '%'
                 t = (regstr,)
-                #get pathwayId
                 res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
                                     "WHERE pathwayName LIKE ? ", t).fetchall()
                 if res:
-                    pids = pids + [r[0] for r in res]
-                    pn = pn + [r[1] for r in res]
-                    plink = plink + [r[2] for r in res]
-            if len(pids):
-                pathwayId = list(set(pids))
-                for i in range(len(pids)):
-                    pathwayName[pids[i]] = pn[i]
-                    pw_link[pids[i]] = plink[i]
-                for pthID in pathwayId:
+                    for r in res:
+                        pathwayName[r[0]] = r[1]
+                        pw_link[r[0]] = r[2]
+            if pathwayName:
+                for pthID in pathwayName:
                     t = (pthID,)
                     res1 = self.tfdb.execute("SELECT DISTINCT genesymbol FROM pathway2Genes "
                                            "WHERE pathwayID = ? ORDER BY genesymbol", t).fetchall()
