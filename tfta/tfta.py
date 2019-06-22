@@ -424,35 +424,27 @@ class TFTA:
         dblink = dict()
         tflist = dict()
         if self.tfdb is not None:
-            pids = []
-            pn = []
-            dl = []
+            tf_set = self.get_tf_set()
             for pathway_name in pathway_names:
                 regstr = '%' + pathway_name + '%'
                 t = (regstr,)
                 res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
                                         "WHERE pathwayName LIKE ? ", t).fetchall()
                 if res:
-                    pids += [r[0] for r in res]
-                    pn += [r[1] for r in res]
-                    dl += [r[2] for r in res]
-            if len(pids):
-                pathwayId = list(set(pids))
-                for i in range(len(pids)):
-                    pathwayName[pids[i]] = pn[i]
-                    dblink[pids[i]] = dl[i]
+                    for r in res:
+                        pathwayName[r[0]] = r[1]
+                        dblink[r[0]] = r[2]
+                
+            if pathwayName:
+                pathwayId = pathwayName.keys()
                 for pthID in pathwayId:
                     t = (pthID,)
                     res1 = self.tfdb.execute("SELECT DISTINCT genesymbol FROM pathway2Genes "
-                                             "WHERE pathwayID = ? AND isTF = 1 ORDER BY genesymbol", t).fetchall()
-                    if res1:
-                        tfs = [r[0] for r in res1]
+                                             "WHERE pathwayID = ? ", t).fetchall()
+                    tfs = tf_set.intersection(set([r[0] for r in res1]))
+                    if tfs:
                         tflist[pthID] = tfs
-                    else:
-                        del pathwayName[pthID]
-                        del dblink[pthID]
-                        #pathwayId.remove(pthID)
-            else:
+            if not len(tflist):
                 raise PathwayNotFoundException
         return pathwayName,tflist,dblink
         
