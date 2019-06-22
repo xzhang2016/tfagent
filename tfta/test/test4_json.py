@@ -15,7 +15,7 @@ from indra.sources import trips
 # FIND-PATHWAY
 # IS-PATHWAY-GENE
 # FIND-GENE-PATHWAY
-# 
+# FIND-KINASE-PATHWAY
 #
 #
 ######################################
@@ -513,7 +513,89 @@ class TestFindGenePathway4(_IntegrationTest):
         print("len(output.get('pathways'))=", len(output.get('pathways')))
         assert len(output.get('pathways')) == 4, output
 
+###################################################################################
+# FIND-KINASE-PATHWAY
+#What kinases are in the MAPK signaling pathway?
+class TestFindKinasePathway1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindKinasePathway1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        pathway = agent_clj_from_text('MAPK')
+        print(pathway)
+        
+        content = KQMLList('FIND-KINASE-PATHWAY')
+        content.set('pathway', pathway)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", len(output.get('pathways')))
+        assert len(output.get('pathways')) == 18, output
 
+#What kinases are in the immune system pathway?
+class TestFindKinasePathway2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindKinasePathway2, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        pathway = agent_clj_from_text('immune system')
+        print(pathway)
+        
+        content = KQMLList('FIND-KINASE-PATHWAY')
+        content.set('pathway', pathway)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", len(output.get('pathways')))
+        assert len(output.get('pathways')) == 4, output
+
+#subsequent query
+#Which of these kinases are also in the MAPK signaling pathway?
+class TestFindKinasePathway3(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindKinasePathway3, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        pathway = agent_clj_from_text('MAPK')
+        of_those = agents_clj_from_text('AKT1, FGFR1,CAMK2B,MAP2K1,RAF1,MAPK1,JAK1,MAP3K1')
+        #print(pathway)
+        content = KQMLList('FIND-KINASE-PATHWAY')
+        content.set('pathway', pathway)
+        content.set('of-those', of_those)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", len(output.get('pathways')))
+        assert len(output.get('pathways')) == 15, output
+        
+#What of these kinases are in the immune system pathway?
+class TestFindKinasePathway4(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindKinasePathway4, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        pathway = agent_clj_from_text('immune system')
+        of_those = agents_clj_from_text('AKT1, FGFR1,CAMK2B,MAP2K1,RAF1,MAPK1,JAK1,MAP3K1')
+        #print(pathway)
+        content = KQMLList('FIND-KINASE-PATHWAY')
+        content.set('pathway', pathway)
+        content.set('of-those', of_those)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", len(output.get('pathways')))
+        assert len(output.get('pathways')) == 4, output
+
+#################################################################################
+# 
 
 
 
