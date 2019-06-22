@@ -1018,7 +1018,7 @@ class TFTA_Module(Bioagent):
                                                gene_descr=':tfs', of_gene_names=of_those_names)
         return reply
 
-    def respond_find_common_tfs_genes(self, content):
+    def respond_find_common_tf_genes(self, content):
         """
         Response content to FIND-COMMON-TF-GENES request
         For a given target list, reply the tfs regulating these genes
@@ -1151,16 +1151,13 @@ class TFTA_Module(Bioagent):
         Respond to IS-PATHWAY-GENE request
         query like: Does the mTor pathway utilize SGK1? 
         """
-        pathway_arg = content.gets('pathway')
-        pathway_names = _get_pathway_name(pathway_arg)
-        pathway_names = trim_word(pathway_names, 'pathway')
-        if not len(pathway_names):
+        pathway_names = self._get_pathway_name(content)
+        if not pathway_names:
             reply = make_failure('NO_PATHWAY_NAME')
             return reply
             
-        gene_names,term_id = get_of_those_list(content, descr='gene')
-        if not len(gene_names):
-            #gene_arg = content.gets('gene')
+        gene_names,term_id = self._get_targets(content, descr='gene')
+        if not gene_names:
             reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
             return reply
         if term_id:
@@ -1168,8 +1165,7 @@ class TFTA_Module(Bioagent):
             return reply
             
         try:
-            pathwayName, dblink = \
-                self.tfta.Is_pathway_gene(pathway_names, gene_names)
+            pathwayName, dblink = self.tfta.Is_pathway_gene(pathway_names, gene_names)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
@@ -2086,7 +2082,7 @@ class TFTA_Module(Bioagent):
                  'FIND-MIRNA-COUNT-GENE':respond_find_miRNA_count_gene,
                  'FIND-GENE-COUNT-MIRNA':respond_find_gene_count_miRNA,
                  'IS-MIRNA-TARGET':respond_is_miRNA_target,
-                 'FIND-COMMON-TF-GENES':respond_find_common_tfs_genes,
+                 'FIND-COMMON-TF-GENES':respond_find_common_tf_genes,
                  'IS-PATHWAY-GENE':respond_is_pathway_gene,
                  'FIND-TARGET-MIRNA':respond_find_target_miRNA,
                  'FIND-MIRNA-TARGET':respond_find_miRNA_target,
@@ -2749,7 +2745,45 @@ class TFTA_Module(Bioagent):
             #mirna = [_get_mirna_name(agents.name)]
         return mirna
         
+    def _get_pathway_name(self, content, descr='pathway'):
+        pathways = set()
+        keyword = ['signaling pathway', 'pathway']
+        try:
+            pth_arg = content.get(descr)
+        except Exception:
+            return []
+        try:
+            agents = self.get_agent(pth_arg)
+        except Exception:
+            return []
+        if isinstance(agents, list):
+            for a in agents:
+                if a is not None:
+                    p = _filter_pathway_name(a.name, keyword)
+                    if p:
+                        pathways.add(p)
+                    p = _filter_pathway_name(a.db_refs['TEXT'], keyword)
+                    if p:
+                        pathways.add(p)
+        if isinstance(agents, Agent):
+            if agents is not None:
+                p = _filter_pathway_name(agents.name, keyword)
+                if p:
+                    pathways.add(p)
+                p = _filter_pathway_name(agents.db_refs['TEXT'], keyword)
+                if p:
+                    pathways.add(p)
+        return list(pathways)
 #------------------------------------------------------------------------#######
+
+def _filter_pathway_name(path_name, keyword):
+    p = ''
+    for k in keyword:
+        if path_name:
+            p = path_name.lower().replace('signaling pathway', '').strip()
+            p = p.replace('pathway', '').strip()
+    return p
+
 def _get_targets(target_arg):
    tp = TripsProcessor(target_arg)
    #agents: dict with term id as key, agent as value
