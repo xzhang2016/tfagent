@@ -16,7 +16,7 @@ from indra.sources import trips
 # IS-PATHWAY-GENE
 # FIND-GENE-PATHWAY
 # FIND-KINASE-PATHWAY
-#
+# FIND-TF-PATHWAY
 #
 ######################################
 
@@ -595,8 +595,63 @@ class TestFindKinasePathway4(_IntegrationTest):
         assert len(output.get('pathways')) == 4, output
 
 #################################################################################
-# 
+# FIND-TF-PATHWAY
+#What transcription factors are in the calcium regulated pathways? (subtask: find-tf-keyword)
+class TestFindTfPathway1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTfPathway1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        pathway = agent_clj_from_text('calcium regulated pathways')
+        print(pathway)
+        
+        content = KQMLList('FIND-TF-PATHWAY')
+        content.set('pathway', pathway)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", str(len(output.get('pathways'))))
+        assert len(output.get('pathways')) == 3, output
 
+#Which transcription factors are in the MAPK signaling pathway? (subtask: find-tf-pathway)
+class TestFindTfPathway2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTfPathway2, self).__init__(TFTA_Module)
+    
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        pathway = agent_clj_from_text('MAPK')
+        content = KQMLList('FIND-TF-PATHWAY')
+        content.set('pathway', pathway)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", str(len(output.get('pathways'))))
+        assert len(output.get('pathways')) == 12, output
+        
+#subsequent query
+#Which of those transcription factors are in the MAPK signaling pathway? (subtask: find-tf-pathway)
+class TestFindTfPathway3(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTfPathway3, self).__init__(TFTA_Module)
+    
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        pathway = agent_clj_from_text('MAPK')
+        of_those = agents_clj_from_text('STAT3,SRF,NFAT5,JAK1, smad2, jak2')
+        
+        content = KQMLList('FIND-TF-PATHWAY')
+        content.set('pathway', pathway)
+        content.set('of-those', of_those)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", str(len(output.get('pathways'))))
+        assert len(output.get('pathways')) == 3, output
 
 
 
