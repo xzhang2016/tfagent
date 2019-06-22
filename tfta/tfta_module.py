@@ -929,15 +929,13 @@ class TFTA_Module(Bioagent):
         Response content to FIND_KINASE_PATHWAY request
         For a given pathway name, reply the kinases within the pathway
         """
-        pathway_arg = content.gets('pathway')
-        pathway_names = _get_pathway_name(pathway_arg)
-        pathway_names = trim_word(pathway_names, 'pathway')
-        if not len(pathway_names):
+        pathway_names = self._get_pathway_name(content)
+        if not pathway_names:
             reply = make_failure('NO_PATHWAY_NAME')
             return reply
             
         #consider an optional parameter for subsequent query
-        of_those_names,nouse = get_of_those_list(content)
+        of_those_names,nouse = self._get_targets(content, descr='of-those')
         
         try:
             pathwayName, kinaselist, dblink = \
