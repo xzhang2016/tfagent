@@ -460,12 +460,10 @@ class TFTA:
         """
         Return kinases within the given pathway
         """
-        pathwayId = []
         pathwayName = dict()
         dblink = dict()
         kinaselist = dict()
         if self.tfdb is not None:
-            #get kinases
             t = ('kinase',)
             res = self.tfdb.execute("SELECT DISTINCT geneSymbol FROM go2Genes "
                                         "WHERE termId = ? ", t).fetchall()
@@ -479,15 +477,14 @@ class TFTA:
                     for r in res:
                         pathwayName[r[0]] = r[1]
                         dblink[r[0]] = r[2]
-            if len(pathwayName):
+            if pathwayName:
                 pathwayId = pathwayName.keys()
                 for pthID in pathwayId:
                     t = (pthID,)
                     res1 = self.tfdb.execute("SELECT DISTINCT genesymbol FROM pathway2Genes "
                                              "WHERE pathwayID = ? ", t).fetchall()
                     kins = list(kinases & set([r[0] for r in res1]))
-                    if len(kins):
-                        kins.sort()
+                    if kins:
                         kinaselist[pthID] = kins
             else:
                 raise PathwayNotFoundException
