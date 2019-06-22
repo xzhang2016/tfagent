@@ -896,7 +896,7 @@ class TFTA_Module(Bioagent):
                 reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
                 return reply
             
-            reply = self._wrap_pathway_genelist_message(pathwayName, dblink, genes, gene_descr=':gene-list')
+            reply = self._wrap_pathway_genelist_message(pathwayName, dblink, genes, gene_descr='gene-list')
             return reply
 
     def respond_find_tf_pathway(self, content):
@@ -947,7 +947,7 @@ class TFTA_Module(Bioagent):
             return reply
         
         reply = self._wrap_pathway_genelist_message(pathwayName, dblink, kinaselist, pathway_names=pathway_names,
-                                               gene_descr=':kinase', of_gene_names=of_those_names)
+                                               gene_descr='kinase', of_gene_names=of_those_names)
         return reply
 
     def respond_find_gene_pathway(self, content):
@@ -955,22 +955,20 @@ class TFTA_Module(Bioagent):
         Response content to FIND-GENE-PATHWAY request
         For a given pathway name, reply the genes within the pathway
         """
-        pathway_arg = content.gets('pathway')
-        pathway_names = _get_pathway_name(pathway_arg)
-        pathway_names = trim_word(pathway_names, 'pathway')
-        if not len(pathway_names):
+        pathway_names = self._get_pathway_name(content)
+        if not pathway_names:
             reply = make_failure('NO_PATHWAY_NAME')
             return reply
         try:
-            pathwayName,genelist,plink = self.tfta.find_genes_from_pathwayName(pathway_names)
+            pathwayName,genelist,plink = self.tfta.find_gene_pathway(pathway_names)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
         #consider an optional parameter for subsequent query
-        of_gene_names,nouse = get_of_those_list(content)
+        of_gene_names,nouse = self._get_targets(content, descr='of-those')
         
         reply = self._wrap_pathway_genelist_message(pathwayName, plink, genelist, pathway_names=pathway_names,
-                                       gene_descr=':genes', of_gene_names=of_gene_names)
+                                       gene_descr='genes', of_gene_names=of_gene_names)
         return reply
 
     def respond_find_pathway_keyword(self, content):
@@ -1015,7 +1013,7 @@ class TFTA_Module(Bioagent):
         of_those_names,nouse = get_of_those_list(content)
         
         reply = self._wrap_pathway_genelist_message(pathwayName, dblink, tflist, pathway_names=[keyword_name],
-                                               gene_descr=':tfs', of_gene_names=of_those_names)
+                                               gene_descr='tfs', of_gene_names=of_those_names)
         return reply
 
     def respond_find_common_tf_genes(self, content):
@@ -1082,7 +1080,7 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
             
-        reply = self._wrap_pathway_genelist_message(pathwayName, dblink, genes, gene_descr=':gene-list')
+        reply = self._wrap_pathway_genelist_message(pathwayName, dblink, genes, gene_descr='gene-list')
         return reply
 
     def respond_find_common_pathway_genes_keyword(self, content):
@@ -1114,7 +1112,7 @@ class TFTA_Module(Bioagent):
             return reply
             
         reply = self._wrap_pathway_genelist_message(pathwayName, dblink, genes, pathway_names=keyword_name,
-                                               gene_descr=':gene-list')
+                                               gene_descr='gene-list')
         return reply
         
     def respond_find_common_pathway_genes_db(self, content):
@@ -1143,7 +1141,7 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
             
-        reply = self._wrap_pathway_genelist_message(pathwayName, dblink, genes, gene_descr=':gene-list')
+        reply = self._wrap_pathway_genelist_message(pathwayName, dblink, genes, gene_descr='gene-list')
         return reply
 
     def respond_is_pathway_gene(self, content):
@@ -2746,6 +2744,7 @@ class TFTA_Module(Bioagent):
         return mirna
         
     def _get_pathway_name(self, content, descr='pathway'):
+        #JSON format
         pathways = set()
         keyword = ['signaling pathway', 'pathway']
         try:
@@ -2761,7 +2760,7 @@ class TFTA_Module(Bioagent):
                 if a is not None:
                     p = _filter_pathway_name(a.name, keyword)
                     if p:
-                        pathways.add(p)
+                        pathways.add(p.replace('-', ' '))
                     p = _filter_pathway_name(a.db_refs['TEXT'], keyword)
                     if p:
                         pathways.add(p)
@@ -2769,7 +2768,7 @@ class TFTA_Module(Bioagent):
             if agents is not None:
                 p = _filter_pathway_name(agents.name, keyword)
                 if p:
-                    pathways.add(p)
+                    pathways.add(p.replace('-', ' '))
                 p = _filter_pathway_name(agents.db_refs['TEXT'], keyword)
                 if p:
                     pathways.add(p)
