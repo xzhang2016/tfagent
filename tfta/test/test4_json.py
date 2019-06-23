@@ -17,7 +17,7 @@ from indra.sources import trips
 # FIND-GENE-PATHWAY
 # FIND-KINASE-PATHWAY
 # FIND-TF-PATHWAY
-#
+# find-common-pathway-genes
 ######################################
 
 def _get_targets(target_arg):
@@ -653,7 +653,147 @@ class TestFindTfPathway3(_IntegrationTest):
         print("len(output.get('pathways'))=", str(len(output.get('pathways'))))
         assert len(output.get('pathways')) == 3, output
 
+###############################################################################
+# find-common-pathway-genes
+#Which pathways are shared by STAT3, SOCS3, IFNG, FOXO3, and CREB5 genes? 
+#(subtask: find-common-pathway-genes)
+class TestFindCommonPathwayGene1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindCommonPathwayGene1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agents_clj_from_text('STAT3, SOCS3, IFNG, FOXO3, CREB5')
+        print('target=', target)
+       
+        content = KQMLList('find-common-pathway-genes')
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        print('len(output)=' + str(len(output.get('pathways'))))
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", str(len(output.get('pathways'))))
+        assert len(output.get('pathways')) == 30, output
 
+#What signaling pathways are shared by STAT3, AKT and SRF? (subtask: find-common-pathway-genes)
+class TestFindCommonPathwayGene2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindCommonPathwayGene2, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agents_clj_from_text('STAT3, AKT, SRF')
+        
+        content = KQMLList('FIND-COMMON-PATHWAY-GENES')
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", str(len(output.get('pathways'))))
+        assert len(output.get('pathways')) == 6, output
+        
+#which of those are in the immune pathways? 
+class TestFindCommonPathwayGene3(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindCommonPathwayGene3, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agents_clj_from_text('STAT3, MEK1, SRF, HRAS, KRAS, JAK2, JAK1')
+        keyword = 'immune'
+        content = KQMLList('FIND-COMMON-PATHWAY-GENES')
+        content.set('target', target)
+        content.set('keyword', keyword)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways')) = ", len(output.get('pathways')))
+        assert len(output.get('pathways')) == 4, output
+        
+#which of those have common pathways? 
+class TestFindCommonPathwayGene4(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindCommonPathwayGene4, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agents_clj_from_text('STAT3, MEK1, SRF, HRAS, KRAS, JAK2, JAK1')
+        content = KQMLList('FIND-COMMON-PATHWAY-GENES')
+        content.set('target', target)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways')) = ", len(output.get('pathways')))
+        assert len(output.get('pathways')) == 30, output
+        
+#Which immune pathways are shared by STAT3, SOCS3, and CREB5 genes?
+#(subtask: find-common-pathway-genes-keyword)
+class TestFindCommonPathwayGene5(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindCommonPathwayGene5, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agents_clj_from_text('STAT3, SOCS3, CREB5')
+        keyword = 'immune'
+       
+        content = KQMLList('FIND-COMMON-PATHWAY-GENES')
+        content.set('target', target)
+        content.set('keyword', keyword)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", str(len(output.get('pathways'))))
+        assert len(output.get('pathways')) == 2, output
+        
+##Which immune pathways are shared by AKT, STAT3, SOCS3, and CREB5 genes?
+#(subtask: find-common-pathway-genes-keyword)
+class TestFindCommonPathwayGene6(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindCommonPathwayGene6, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agents_clj_from_text('AKT, STAT3, SOCS3, CREB5')
+        keyword = 'immune'
+        content = KQMLList('FIND-COMMON-PATHWAY-GENES')
+        content.set('target', target)
+        content.set('keyword', keyword)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", str(len(output.get('pathways'))))
+        assert len(output.get('pathways')) == 2, output
+        
+#What KEGG pathways involve ERBB2, JUN, and MAPK8?
+#sub-task:find-common-pathway-genes-db
+class TestFindCommonPathwayGene7(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindCommonPathwayGene7, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agents_clj_from_text('ERBB2, JUN, MAPK8')
+        db = 'KEGG'
+        
+        content = KQMLList('FIND-COMMON-PATHWAY-GENES')
+        content.set('target', target)
+        content.set('database', db)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", str(len(output.get('pathways'))))
+        assert len(output.get('pathways')) == 4, output
+
+###################################################################################
+# 
 
 
 
