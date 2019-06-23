@@ -203,11 +203,11 @@ class TFTA_Module(Bioagent):
             else:
                 reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
         elif source_arg:
-            reply = self.respond_find_regulation_source(content)
+            reply = self.find_regulation_source(content)
         elif agent_arg:
-            reply = self.respond_find_regulation_agent(content)
+            reply = self.find_regulation_agent(content)
         else:
-            reply = self.respond_find_regulation_all(content)
+            reply = self.find_regulation_all(content)
         return reply
         
     def respond_is_gene_onto(self, content):
@@ -1636,7 +1636,7 @@ class TFTA_Module(Bioagent):
                 reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
         return reply
     
-    def respond_find_regulation_source(self, content):
+    def find_regulation_source(self, content):
         """
         Respond to find-regulation
         """
@@ -1700,7 +1700,7 @@ class TFTA_Module(Bioagent):
             reply = make_failure('INVALID_SOURCE')
         return reply
         
-    def respond_find_regulation_agent(self, content):
+    def find_regulation_agent(self, content):
         """
         Response to find-regulation request
         For example: Which kinases regulate the cfos gene?
@@ -1751,7 +1751,7 @@ class TFTA_Module(Bioagent):
             reply = make_failure('INVALID_REGULATOR')
         return reply
         
-    def respond_find_regulation_all(self, content):
+    def find_regulation_all(self, content):
         """
         Response to find-regulation request
         For example: what regulate MYC?
