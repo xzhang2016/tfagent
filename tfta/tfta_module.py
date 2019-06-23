@@ -38,11 +38,10 @@ class TFTA_Module(Bioagent):
     responses from and to other agents in the system."""
     name = 'TFTA'
     tasks = ['IS-TF-TARGET', 'FIND-TF-TARGET', 'FIND-TARGET-TF',
-             'FIND-PATHWAY-GENE', 'FIND-PATHWAY-DB-GENE',
              'FIND-TF-PATHWAY', 'FIND-GENE-PATHWAY',
              'FIND-PATHWAY-KEYWORD', 'FIND-TF-KEYWORD',
              'FIND-COMMON-TF-GENES', 'FIND-GENE-GO-TF',
-             'FIND-COMMON-PATHWAY-GENES','FIND-PATHWAY-GENE-KEYWORD',
+             'FIND-COMMON-PATHWAY-GENES',
              'IS-TF-TARGET-TISSUE', 'FIND-TF-TARGET-TISSUE',
              'FIND-TARGET-TF-TISSUE', 'IS-PATHWAY-GENE','IS-MIRNA-TARGET', 
              'FIND-MIRNA-TARGET', 'FIND-TARGET-MIRNA', 'FIND-EVIDENCE-MIRNA-TARGET',
@@ -129,17 +128,17 @@ class TFTA_Module(Bioagent):
         db_arg = content.get('database')
         keyword_arg = content.get('keyword')
         if all([keyword_arg,gene_arg]):
-            reply = self.respond_find_pathway_gene_keyword(content)
+            reply = self.find_pathway_gene_keyword(content)
         elif all([gene_arg,db_arg]):
-            reply = self.respond_find_pathway_db_gene(content)
+            reply = self.find_pathway_db_gene(content)
         elif all([keyword_arg,regulator_arg]):
-            reply = self.respond_find_pathway_keyword_regulator(content)
+            reply = self.find_pathway_keyword_regulator(content)
         elif all([regulator_arg,db_arg]):
-            reply = self.respond_find_pathway_db_regulator(content)
+            reply = self.find_pathway_db_regulator(content)
         elif gene_arg:
-            reply = self.respond_find_pathway_gene(content)
+            reply = self.find_pathway_gene(content)
         elif regulator_arg:
-            reply = self.respond_find_pathway_regulator(content)
+            reply = self.find_pathway_regulator(content)
         elif keyword_arg:
             reply = self.respond_find_pathway_keyword(content)
         else:
@@ -688,7 +687,7 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
         return reply
 
-    def respond_find_pathway_gene(self,content):
+    def find_pathway_gene(self,content):
         """
         Response content to find_pathway_gene request
         For a given gene list, reply the related pathways information
@@ -712,7 +711,7 @@ class TFTA_Module(Bioagent):
         reply = _wrap_pathway_message(pathwayName, dblink)
         return reply
         
-    def respond_find_pathway_regulator(self,content):
+    def find_pathway_regulator(self,content):
         """
         Response content to find_pathway_gene request
         For a given gene list, reply the related pathways information
@@ -753,7 +752,7 @@ class TFTA_Module(Bioagent):
             reply = self._wrap_pathway_genelist_message(pathwayName, dblink, genes, gene_descr='gene-list')
             return reply
 
-    def respond_find_pathway_gene_keyword(self,content):
+    def find_pathway_gene_keyword(self,content):
         """
         Response content to find_pathway_gene_name request
         For a given gene list and keyword, reply the related pathways information
@@ -781,7 +780,7 @@ class TFTA_Module(Bioagent):
         reply = _wrap_pathway_message(pathwayName, dblink, keyword=[keyword_name])
         return reply
         
-    def respond_find_pathway_keyword_regulator(self,content):
+    def find_pathway_keyword_regulator(self,content):
         """
         Response content to find_pathway_gene_name request
         For a given gene list and keyword, reply the related pathways information
@@ -828,7 +827,7 @@ class TFTA_Module(Bioagent):
                                                gene_descr='gene-list')
             return reply
 
-    def respond_find_pathway_db_gene(self, content):
+    def find_pathway_db_gene(self, content):
         """Response content to FIND-PATHWAY-DB-GENE request
         For a given gene list and certain db source, reply the related
         pathways information"""
@@ -853,7 +852,7 @@ class TFTA_Module(Bioagent):
         reply = _wrap_pathway_message(pathwayName, dblink)
         return reply
         
-    def respond_find_pathway_db_regulator(self, content):
+    def find_pathway_db_regulator(self, content):
         """Response content to FIND-PATHWAY-DB-GENE request
         For a given gene list and certain db source, reply the related
         pathways information"""
@@ -1501,8 +1500,7 @@ class TFTA_Module(Bioagent):
             pathway_names = trim_word([pathway_names], 'pathway')
         
         try:
-            pathwayName,dblink = \
-                    self.tfta.find_pathway_db_keyword(db_name, pathway_names)
+            pathwayName,dblink = self.tfta.find_pathway_db_keyword(db_name, pathway_names)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
@@ -2072,9 +2070,6 @@ class TFTA_Module(Bioagent):
                  'IS-TF-TARGET':respond_is_tf_target,
                  'FIND-TF-TARGET':respond_find_tf_targets,
                  'FIND-TARGET-TF':respond_find_target_tfs,
-                 'FIND-PATHWAY-GENE':respond_find_pathway_gene,
-                 'FIND-PATHWAY-GENE-KEYWORD':respond_find_pathway_gene_keyword,
-                 'FIND-PATHWAY-DB-GENE':respond_find_pathway_db_gene,
                  'FIND-TF-PATHWAY':respond_find_tf_pathway,
                  'FIND-GENE-PATHWAY':respond_find_gene_pathway,
                  'FIND-PATHWAY-KEYWORD':respond_find_pathway_keyword,
