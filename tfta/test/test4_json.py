@@ -18,6 +18,8 @@ from indra.sources import trips
 # FIND-KINASE-PATHWAY
 # FIND-TF-PATHWAY
 # find-common-pathway-genes
+# FIND-PATHWAY-DB-KEYWORD
+# FIND-PATHWAY-KEYWORD
 ######################################
 
 def _get_targets(target_arg):
@@ -141,7 +143,7 @@ class TestFindPathway5(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('pathways'))=", len(output.get('pathways')))
-        assert len(output.get('pathways')) == 13, output
+        assert len(output.get('pathways')) == 30, output
 
 #Which Reactome pathways utilize SRF? (subtask: find-pathway-db-gene)
 class TestFindPathway6(_IntegrationTest):
@@ -219,7 +221,7 @@ class TestFindPathway9(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('pathways'))=", len(output.get('pathways')))
-        assert len(output.get('pathways')) == 3, output
+        assert len(output.get('pathways')) == 30, output
         
 #What pathways involve calcium? (subtask: find-pathway-keyword)
 class TestFindPathwayKeyword10(_IntegrationTest):
@@ -793,8 +795,97 @@ class TestFindCommonPathwayGene7(_IntegrationTest):
         assert len(output.get('pathways')) == 4, output
 
 ###################################################################################
-# 
+# FIND-PATHWAY-DB-KEYWORD
+#What KEGG pathways involve immune signaling? (subtask: find-pathway-db-keyword)
+class TestFindPathwayDbKeyword1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindPathwayDbKeyword1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        database = 'KEGG'
+        keyword = 'immune'
+        content = KQMLList('FIND-PATHWAY-DB-KEYWORD')
+        content.set('database', database)
+        content.set('keyword', keyword)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 1, output
+        
+#What KEGG pathways involve immune system? (subtask: find-pathway-db-keyword)
+class TestFindPathwayDbKeyword2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindPathwayDbKeyword2, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        database = 'KEGG'
+        keyword = 'immune system'
+        content = KQMLList('FIND-PATHWAY-DB-KEYWORD')
+        content.set('database', database)
+        content.set('keyword', keyword)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert output.get('pathways') == 'NIL', output
+        
+#What reactome pathways involve immune system? (subtask: find-pathway-db-keyword)
+class TestFindPathwayDbKeyword3(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindPathwayDbKeyword3, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        database = 'reactome'
+        keyword = 'immune system'
+        content = KQMLList('FIND-PATHWAY-DB-KEYWORD')
+        content.set('database', database)
+        content.set('keyword', keyword)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 4, output
 
+################################################################################
+# FIND-PATHWAY-KEYWORD
+#What pathways involve calcium? (subtask: find-pathway-keyword)
+class TestFindPathwayKeyword3(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindPathwayKeyword3, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        keyword = 'calcium'
+        content = KQMLList('FIND-PATHWAY-KEYWORD')
+        content.set('keyword', keyword)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 9, output
+        
+#What pathways involve immune system?        
+class TestFindPathwayKeyword32(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindPathwayKeyword32, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        keyword = 'immune-system'
+        content = KQMLList('FIND-PATHWAY-KEYWORD')
+        content.set('keyword', keyword)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", str(len(output.get('pathways'))))
+        assert len(output.get('pathways')) == 4, output
+
+###################################################################################
 
 
 
