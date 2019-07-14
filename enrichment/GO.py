@@ -280,17 +280,11 @@ class GOEnrich:
         t = []
         num = 1
         for gene,entry in self.gaf_funcs.items():
-            go_terms = entry['GO_ID']
-            if isinstance(go_terms, str):
+            for en in entry:
+                go_terms = en['GO_ID']
                 #c.execute("INSERT INTO go2genes VALUES (?,?,?)", (num, go_terms, gene))
                 t.append((num, go_terms, gene))
                 num += 1
-            elif isinstance(go_terms, list):
-                logger.info("entry['GO_ID'] is a list")
-                for go in go_terms:
-                    t.append((num, go, gene))
-                    num += 1
-                #c.executemany('INSERT INTO go2genes VALUES (?,?,?)', t)
         c.executemany('INSERT INTO go2genes VALUES (?,?,?)', t)
         conn.commit()
         logger.info('Created go_gene.db. go2genes table has {} items.'.format(num))
@@ -305,13 +299,14 @@ class GOEnrich:
         num = 1
         fn = os.path.join(_resource_dir, 'go2genes_gaf.txt')
         with open(fn, 'w') as fw:
-            for gene,entry in self.gaf_funcs.items():
-                fw.write(str(num) + '\t' + str(entry['GO_ID']) + '\t' + gene + '\t')
-                name_space = self.go[entry['GO_ID']].namespace
-                #or
-                #name_space = entry['Aspect']
-                fw.write(name_space + '\n')
-                num += 1
+            for gene,entries in self.gaf_funcs.items():
+                for entry in entries:
+                    fw.write(str(num) + '\t' + str(entry['GO_ID']) + '\t' + gene + '\t')
+                    name_space = self.go[entry['GO_ID']].namespace
+                    #or
+                    #name_space = entry['Aspect']
+                    fw.write(name_space + '\n')
+                    num += 1
         print('write {} rows to file.'.format(num))
         return num
             
