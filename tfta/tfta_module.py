@@ -2046,7 +2046,10 @@ class TFTA_Module(Bioagent):
         results = self.go.get_annotations_keyword(keyword_name)
         if results:
             #return GO_ID, gene_name
-            agent = [Agent(key, db_refs={'GO':value['GO_ID']}) for key, value in results.items()]
+            agent = []
+            for key, value in results.items():
+                go_terms = ','.join([entry['GO_ID'] for entry in value])
+                agent.append(Agent(key, db_refs={'GO':go_terms}))
             a_json = self.make_cljson(agent)
             reply = KQMLList('SUCCESS')
             reply.set('genes', a_json)
