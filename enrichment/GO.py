@@ -40,12 +40,12 @@ class GOEnrich:
         self.assoc = self.get_assoc_gene_go()
         
         #load go_gene.db
-        db_file = os.path.join(_resource_dir, 'go_gene.db')
+        db_file = os.path.join(_resource_dir, 'go_gene1.db')
         if os.path.isfile(db_file):
             self.godb = sqlite3.connect(db_file, check_same_thread=False)
             logger.info('TFTA-GOEnrich loaded go_gene database.')
         else:
-            num = self.generate_go2gene_db()
+            num = self.generate_go2gene_db(db_file)
             if os.path.isfile(db_file):
                 self.godb = sqlite3.connect(db_file, check_same_thread=False)
             else:
@@ -266,13 +266,13 @@ class GOEnrich:
                 gaf_funcs[gene_symbol].append(entry)
         return gaf_funcs
         
-    def generate_go2gene_db(self):
+    def generate_go2gene_db(self, go_file_name):
         """
         Generate a sqlite db file which contains GO id and its associated genes
         It's too slow.
         """
         t0 = time.perf_counter()
-        db_file = os.path.join(_resource_dir, 'go_gene.db')
+        db_file = os.path.join(_resource_dir, go_file_name)
         conn = sqlite3.connect(db_file)
         c = conn.cursor()
         c.execute('''CREATE TABLE go2genes
@@ -292,7 +292,7 @@ class GOEnrich:
         c.close()
         conn.close()
         t1 = time.perf_counter()
-        logger.info('Used {} seconds to generate go_gene.db.'.format(t1-t0))
+        logger.info('Used {} seconds to generate go-gene db file.'.format(t1-t0))
         return num
         
     def generate_go2gene_file(self):
