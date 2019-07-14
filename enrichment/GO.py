@@ -43,20 +43,18 @@ class GOEnrich:
         db_file = os.path.join(_resource_dir, 'go_gene1.db')
         if os.path.isfile(db_file):
             self.godb = sqlite3.connect(db_file, check_same_thread=False)
-            logger.info('TFTA-GOEnrich loaded go_gene database.')
+            logger.info('GOEnrich loaded go_gene database.')
         else:
             num = self.generate_go2gene_db(db_file)
             if os.path.isfile(db_file):
                 self.godb = sqlite3.connect(db_file, check_same_thread=False)
             else:
-                logger.error('TFTA-GOEnrich could not load go_gene database.')
+                logger.error('GOEnrich could not load go_gene database.')
                 self.godb = None;
     
-    def read_go(self, go_obo_url=None, data_folder=None):
+    def read_go(self, go_obo_url=None, data_folder=_resource_dir):
         if not go_obo_url:
             go_obo_url = 'http://purl.obolibrary.org/obo/go/go-basic.obo'
-        if not data_folder:
-            data_folder = _resource_dir
         
         #read GO data as dictionary
         go_obo = self.download_file_http(go_obo_url, data_folder, 'go-basic.obo')
@@ -64,7 +62,7 @@ class GOEnrich:
             go = obo_parser.GODag(go_obo)
             return go
         else:
-            logger.error("The GO data file doesn't exist.")
+            logger.error("The GO data file doesn't exist. You can manually download it from: {}".format(go_obo_url))
             return None
             
     def read_gaf(self, gaf_uri=None, gaf_fn=None, data_folder=_resource_dir):
@@ -107,10 +105,13 @@ class GOEnrich:
         annots = dict()
         for g, entry in self.gaf_funcs.items():
             if keyword.lower() in entry[0]['DB_Object_Name'].lower():
-                annots[g] = entry[0]
+                annots[g] = entry
         return annots
         
     def get_annotations_genes(self, gene_list):
+        """
+        Return the annotations for each gene in the gene_list
+        """
         annots = {x: self.gaf_funcs[x] for x in gene_list}
         return annots
     
@@ -125,14 +126,14 @@ class GOEnrich:
             with open(fn, 'rb') as pickle_in:
                 go_name = pickle.load(pickle_in)
         else:
-            go_name = self._go_keyword(keyword)
+            go_name = self._go_keyword(keyword, data_folder)
         return go_name
     
-    def _go_keyword(self, keyword):
+    def _go_keyword(self, keyword, data_folder):
         """
         Generate a dict, its key is GO_id, value is GO name which contains the keyword
         """
-        data_folder = _resource_dir + '/go_files'
+        #data_folder = _resource_dir + '/go_files'
         if not os.path.isfile(data_folder):
             # Emulate mkdir -p (no error if folder exists)
             try:
@@ -147,8 +148,9 @@ class GOEnrich:
             return None
             
         go_name = dict()
+        keyword = keyword.lower()
         if self.go:
-            go_name = {go_id:self.go[go_id].name for go_id in self.go if keyword in self.go[go_id].name}
+            go_name = {go_id:self.go[go_id].name for go_id in self.go if keyword in self.go[go_id].name.lower()}
             #save to file
             fn = os.path.join(data_folder, keyword + ".pickle")
             with open(fn, 'wb') as pickle_out:
@@ -185,7 +187,7 @@ class GOEnrich:
         
         #only return results with pvalue < pvalue
         res = []
-        num = 0
+        num = 1
         for x in g_res:
             if num > limit:
                 break
@@ -203,7 +205,7 @@ class GOEnrich:
     
     def download_file_http(self, url, data_folder, file_name):
         # Check if we have the ./data directory already
-        if(not os.path.isfile(data_folder)):
+        if not os.path.isfile(data_folder):
             # Emulate mkdir -p (no error if folder exists)
             try:
                 os.mkdir(data_folder)
@@ -219,17 +221,14 @@ class GOEnrich:
         # Check if the file exists already
         if not os.path.isfile(os.path.join(data_folder, file_name)):
             downloaded_file = wget.download(url, os.path.join(data_folder, file_name))
-            
         else:
             downloaded_file = os.path.join(data_folder, file_name)
         return downloaded_file
         
-    def download_file_ftp(self, ftp_site, gaf_uri, gaf_fn, data_folder=None):
-        if not data_folder:
-            data_folder = _resource_dir
+    def download_file_ftp(self, ftp_site, gaf_uri, gaf_fn, data_folder=_resource_dir):
         # Check if the file exists already
         gaf = os.path.join(data_folder, gaf_fn)
-        if(not os.path.isfile(gaf)):
+        if not os.path.isfile(gaf):
             # Login to FTP server
             ebi_ftp = FTP(ftp_site)
             ebi_ftp.login() # Logs in anonymously
@@ -266,13 +265,13 @@ class GOEnrich:
                 gaf_funcs[gene_symbol].append(entry)
         return gaf_funcs
         
-    def generate_go2gene_db(self, go_file_name):
+    def generate_go2gene_db(self, go_file_name, data_folder=_resource_dir):
         """
-        Generate a sqlite db file which contains GO id and its associated genes
-        It's too slow.
+        Generate a sqlite db file which contains GO id and its associated genes.
         """
         t0 = time.perf_counter()
-        db_file = os.path.join(_resource_dir, go_file_name)
+        
+        db_file = os.path.join(data_folder, go_file_name)
         conn = sqlite3.connect(db_file)
         c = conn.cursor()
         c.execute('''CREATE TABLE go2genes
@@ -281,27 +280,28 @@ class GOEnrich:
         num = 1
         for gene,entry in self.gaf_funcs.items():
             for en in entry:
-                go_terms = en['GO_ID']
+                go_term = en['GO_ID']
                 #c.execute("INSERT INTO go2genes VALUES (?,?,?)", (num, go_terms, gene))
-                t.append((num, go_terms, gene))
+                t.append((num, go_term, gene))
                 num += 1
         c.executemany('INSERT INTO go2genes VALUES (?,?,?)', t)
         conn.commit()
-        logger.info('Created go_gene.db. go2genes table has {} items.'.format(num))
         time.sleep(0.1)
         c.close()
         conn.close()
+        
         t1 = time.perf_counter()
+        logger.info('Created go_gene.db. go2genes table has {} items.'.format(num))
         logger.info('Used {} seconds to generate go-gene db file.'.format(t1-t0))
         return num
         
-    def generate_go2gene_file(self):
+    def generate_go2gene_file(self, data_folder=_resource_dir):
         num = 1
-        fn = os.path.join(_resource_dir, 'go2genes_gaf.txt')
+        fn = os.path.join(data_folder, 'go2genes_gaf.txt')
         with open(fn, 'w') as fw:
             for gene,entries in self.gaf_funcs.items():
                 for entry in entries:
-                    fw.write(str(num) + '\t' + str(entry['GO_ID']) + '\t' + gene + '\t')
+                    fw.write(str(num) + '\t' + entry['GO_ID'] + '\t' + gene + '\t')
                     name_space = self.go[entry['GO_ID']].namespace
                     #or
                     #name_space = entry['Aspect']
