@@ -40,8 +40,10 @@ class GOEnrich:
         self.assoc = self.get_assoc_gene_go()
         
         #load go_gene.db
-        db_file = os.path.join(_resource_dir, 'go_gene1.db')
-        if os.path.isfile(db_file):
+        db_file = os.path.join(_resource_dir, 'go_gene.db')
+        #check file size to determine if it need regenerate
+        statinfo = os.stat(db_file)
+        if os.path.isfile(db_file) and statinfo.st_size > 13000000:
             self.godb = sqlite3.connect(db_file, check_same_thread=False)
             logger.info('GOEnrich loaded go_gene database.')
         else:
