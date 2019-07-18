@@ -12,3 +12,7 @@ Note that currently the TFTA has limited usage on its own. It's
 meant to be launched in the context of a communication system. 
 
 `pip install git+https://github.com/xzhang2016/tfagent.git`
+
+Note
+=======================
+The master branch is using EKB XML as input format, while the dev branch is using JSON as input and output format. Enrichment is only at dev branch.
