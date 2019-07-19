@@ -853,9 +853,9 @@ class TestFindPathwayDbKeyword3(_IntegrationTest):
 ################################################################################
 # FIND-PATHWAY-KEYWORD
 #What pathways involve calcium? (subtask: find-pathway-keyword)
-class TestFindPathwayKeyword3(_IntegrationTest):
+class TestFindPathwayKeyword1(_IntegrationTest):
     def __init__(self, *args):
-        super(TestFindPathwayKeyword3, self).__init__(TFTA_Module)
+        super(TestFindPathwayKeyword1, self).__init__(TFTA_Module)
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
@@ -869,9 +869,9 @@ class TestFindPathwayKeyword3(_IntegrationTest):
         assert len(output.get('pathways')) == 9, output
         
 #What pathways involve immune system?        
-class TestFindPathwayKeyword32(_IntegrationTest):
+class TestFindPathwayKeyword2(_IntegrationTest):
     def __init__(self, *args):
-        super(TestFindPathwayKeyword32, self).__init__(TFTA_Module)
+        super(TestFindPathwayKeyword2, self).__init__(TFTA_Module)
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
