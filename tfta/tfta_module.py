@@ -1003,10 +1003,10 @@ class TFTA_Module(Bioagent):
             return reply
         
         #consider an optional parameter for subsequent query
-        of_those_names,nouse = get_of_those_list(content)
+        of_gene_names,nouse = self._get_targets(content, descr='of-those')
         
         reply = self._wrap_pathway_genelist_message(pathwayName, dblink, tflist, pathway_names=[keyword_name],
-                                               gene_descr='tfs', of_gene_names=of_those_names)
+                                               gene_descr='tfs', of_gene_names=of_gene_names)
         return reply
 
     def respond_find_common_tf_genes(self, content):
@@ -1163,7 +1163,7 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_GO_NAME')
             return reply
             
-        tf_names,term_id = get_of_those_list(content, descr='tf')
+        tf_names,term_id = self._get_targets(content, descr='tf')
         if not tf_names:
             #tf_arg = content.gets('tf')
             reply = self.wrap_family_message(term_id, 'NO_TF_NAME')
@@ -1201,7 +1201,7 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_GO_ID')
             return reply
         
-        tf_names,term_id = get_of_those_list(content, descr='tf')
+        tf_names,term_id = self._get_targets(content, descr='tf')
         if not tf_names:
             #tf_arg = content.gets('tf')
             reply = self.wrap_family_message(term_id, 'NO_TF_NAME')
@@ -2765,80 +2765,6 @@ def _filter_pathway_name(path_name, keyword):
             p = p.replace('pathway', '').strip()
     return p
 
-def _get_targets(target_arg):
-   tp = TripsProcessor(target_arg)
-   #agents: dict with term id as key, agent as value
-   agents = tp.get_term_agents()
-   protein_agents = [a for k,a in agents.items() if a is not None and ('UP' in a.db_refs or 'HGNC' in a.db_refs)]
-   proteins = [a.name for k,a in agents.items() if a is not None and ('UP' in a.db_refs or 'HGNC' in a.db_refs)]
-   families = {k:a for k,a in agents.items() if a is not None and 'FPLX' in a.db_refs and a.name not in proteins}
-   #filter out the repeat family agents
-   f_family = dict()
-   temp = []
-   for k,a in families.items():
-       if a.name not in temp:
-           temp.append(a.name)
-           f_family[k] = a
-   return protein_agents, f_family
-    
-def _get_pathway_name(target_str):
-    #print('In _get_pathway_name')
-    #tree = ET.XML(xml_string, parser=UTB())
-    pathway_name = []
-    try:
-        #test the ekb xml format
-        f = open('TFTA-test-pathway-ekb.txt', 'a')
-        f.write(target_str + '\n')
-        f.write('===============================\n')
-        
-        root = ET.fromstring(target_str)
-    except Exception as e:
-        return pathway_name
-    try:
-        for term in root.findall('TERM'):
-            for t in term.find('drum-terms').findall('drum-term'):
-                s = t.get('matched-name')
-                if s and s not in ['PATHWAY', 'SIGNALING-PATHWAY']:
-                    pathway_name = pathway_name + [t.get('matched-name')]
-                s = t.get('name')
-                if s and s not in ['PATHWAY', 'SIGNALING-PATHWAY']:
-                    pathway_name = pathway_name + [t.get('name')]
-        pathway_name = list(set(pathway_name))
-    except Exception as e:
-        try:
-            for term in root.findall('TERM'):
-                s = term.find('name')
-                if s is not None:
-                    s1 = s.text
-                    if s1 not in ['PATHWAY', 'SIGNALING-PATHWAY']:
-                        pathway_name = pathway_name + [s1.replace('-', ' ').lower()]
-            pathway_name = list(set(pathway_name))
-        except Exception as e:
-            return pathway_name
-    f.write('Extracted pathwayName=' + ';;;'.join(pathway_name) + '\n')
-    f.write('===============================\n')
-    f.close()
-    return pathway_name
-
-def _get_miRNA_name(xml_string):
-    miRNA_names = dict()
-    try:
-        root = ET.fromstring(xml_string)
-    except Exception as e:
-        return miRNA_names
-    ont1 = ['ONT::RNA', 'ONT::GENE']
-    try:
-        for term in root.findall('TERM'):
-            if term.find('type').text in ont1:
-                s = term.find('name')
-                if s is not None:
-                    s1 = s.text
-                    s1 = _get_mirna_name(s1)
-                    miRNA_names[s1.upper()] = term.attrib['id']
-    except Exception as e:
-        return miRNA_names
-    return miRNA_names
-    
 def make_failure(reason):
     msg = KQMLList('FAILURE')
     msg.set('reason', reason)
@@ -2955,21 +2881,6 @@ def _combine_messages(mess_list):
         if mess:
             messages += mess
     return messages
-    
-def _wrap_mirna_clarification2(miRNA_mis, clari_mirna):
-    """
-    miRNA_mis: dict
-    clari_mirna: dict
-    """
-    mir_str = ''
-    for mir in clari_mirna.keys():
-        c_str = ''
-        for c in clari_mirna[mir]:
-            c_str += '(:name %s) ' % c
-        c_str = '(:term ' + miRNA_mis[mir] + ' :as (' + c_str + '))'
-        mir_str += c_str
-    mir_str = '(resolve (' + mir_str + '))'
-    return mir_str
 
 def _wrap_pathway_message(pathwayName, dblink, keyword=None):
     """
@@ -3027,41 +2938,6 @@ def _filter_subword(sentence, pattern_list):
             word = True
             break
     return word
-    
-def get_of_those_list(content, descr='of-those'):
-    """
-    return a list of genes by parsing of_those_arg
-    of_those_arg: str or EKB xml
-    """
-    #check if it's using ekb xml format
-    gene_names = []
-    family = dict()
-    gene_arg = content.gets(descr)
-    if gene_arg:
-        if '<ekb' in gene_arg or '<EKB' in gene_arg:
-            genes,family = _get_targets(gene_arg)
-            for gene in genes:
-                gene_names.append(gene.name)
-        else:
-            gene_arg = content.get(descr)
-            gene_arg_str = gene_arg.data
-            gene_arg_str = gene_arg_str.replace(' ', '')
-            gene_arg_str = gene_arg_str.upper()
-            gene_names = gene_arg_str.split(',')
-    return gene_names,family
-    
-def get_of_those_mirna(content, descr='of-those'):
-    mirna_names = []
-    mirna_arg = content.gets(descr)
-    if mirna_arg:
-        if '<ekb' in mirna_arg or '<EKB' in mirna_arg:
-            mirna_names = set(_get_miRNA_name(mirna_arg).keys())
-        else:
-            mirna_arg = content.get(descr)
-            mirna_str = mirna_arg.data
-            mirna_str = mirna_str.replace(' ', '')
-            mirna_names = mirna_str.split(',')
-    return mirna_names
     
 def _get_tissue_name(content):
     tissue_name = ''
