@@ -99,9 +99,32 @@ class TestGOEnrichment1(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("\nlen(output.get('results'))=", len(output.get('results')))
-        assert len(output.get('results')) == 14, output
+        assert len(output.get('results')) == 30, output
 
 
+#########################################################################################
+#test unit function in GOEnrich
+def test_go_keyword():
+    go = GOEnrich()
+    go_name = go.get_go_keyword('cell cycle')
+    print('len(go_name)=', len(go_name))
+    for go in go_name:
+        print(go + ': ' + go_name[go])
+    assert(len(go_name) == 208)
 
+def test_go_keyword2():
+    go = GOEnrich()
+    go_name = go.get_go_keyword('apoptosis')
+    print('len(go_name)=', len(go_name))
+    for go in go_name:
+        print(go + ': ' + go_name[go])
+    assert(len(go_name) == 11)
 
+"""
+def test_generate_go2gene_file():
+    go = GOEnrich()
+    num = go.generate_go2gene_file()
+    print(num)
+    assert(num == 481544)
+"""
 
