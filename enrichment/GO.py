@@ -80,13 +80,23 @@ class GOEnrich:
         gaf_file = self.download_file_http(gaf_uri, data_folder, gaf_fn)
         
         #read the annotations into a dictionary
-        # File is a gunzip file, so we need to open it in this way
-        with gzip.open(gaf_file, 'rt') as gaf_fp:
-            gaf_funcs = defaultdict(list)
-            # Iterate on each function using Bio.UniProt.GOA library.
-            for entry in GOA.gafiterator(gaf_fp):
-                gene_symbol = entry.pop('DB_Object_Symbol')
-                gaf_funcs[gene_symbol].append(entry)
+        fn = os.path.join(_resource_dir, 'gaf_funcs.pickle')
+        if os.path.isfile(fn):
+            with open(fn, 'rb') as pickle_in:
+                gaf_funcs = pickle.load(pickle_in)
+        else:
+            # File is a gunzip file, so we need to open it in this way
+            with gzip.open(gaf_file, 'rt') as gaf_fp:
+                gaf_funcs = defaultdict(list)
+                # Iterate on each function using Bio.UniProt.GOA library.
+                for entry in GOA.gafiterator(gaf_fp):
+                    gene_symbol = entry.pop('DB_Object_Symbol')
+                    gaf_funcs[gene_symbol].append(entry)
+        
+            #save gaf_funcs to file
+            with open(fn, 'wb') as pickle_out:
+                pickle.dump(gaf_funcs, pickle_out)
+        
         return gaf_funcs
     
     def get_population(self):
