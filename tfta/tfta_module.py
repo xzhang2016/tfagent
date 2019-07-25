@@ -2022,6 +2022,10 @@ class TFTA_Module(Bioagent):
                 mes.sets('GO-term', res.goterm.id)
                 mes.sets('GO-name', res.name)
                 mes.sets('p-bonferroni', str(res.p_bonferroni))
+                r1 = res.ratio_in_study
+                mes.sets('ratio_in_study', str(r1[0]) + '/' + str(r1[1]))
+                r1 = res.ratio_in_pop
+                mes.sets('ratio_in_pop', str(r1[0]) + '/' + str(r1[1]))
                 gene_agent = [Agent(g) for g in res.study_items]
                 gene_json = self.make_cljson(gene_agent)
                 mes.set('genes', gene_json)
