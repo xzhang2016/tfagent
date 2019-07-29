@@ -2106,8 +2106,9 @@ class TFTA_Module(Bioagent):
         try:
             reply_content = self.task_func[task_str](self, content)
         except KeyError:
-            self.error_reply(msg, 'unknown request task ' + task_str)
-            return
+            #self.error_reply(msg, 'unknown request task ' + task_str)
+            reply_content = make_failure2('NO-CAPABILITY', task_str)
+            #return
         reply_msg = KQMLPerformative('reply')
         reply_msg.set('content', reply_content)
         self.reply(msg, reply_msg)
@@ -2772,6 +2773,13 @@ def _filter_pathway_name(path_name, keyword):
 def make_failure(reason):
     msg = KQMLList('FAILURE')
     msg.set('reason', reason)
+    return msg
+    
+def make_failure2(reason, task_str):
+    msg1 = KQMLList(reason)
+    msg1.set('name', task_str)
+    msg = KQMLList('FAILURE')
+    msg.set('reason', msg1)
     return msg
 
 def make_failure_clarification(reason, clarification):
