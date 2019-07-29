@@ -887,6 +887,23 @@ class TestFindPathwayKeyword2(_IntegrationTest):
 
 ###################################################################################
 
+#test no-capability message
+class TestNoCapability(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestNoCapability, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        pathway = agent_clj_from_text('calcium regulated pathways')
+        
+        content = KQMLList('FIND-T-PATHWAY')
+        content.set('pathway', pathway)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason').head() == 'NO-CAPABILITY', output
+        assert output.get('reason').get('name') == 'FIND-T-PATHWAY', output
 
 
 
