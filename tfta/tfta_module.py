@@ -902,6 +902,7 @@ class TFTA_Module(Bioagent):
         Response content to FIND_TF_PATHWAY request
         For a given pathway name, reply the tfs within the pathway
         """
+        logger.info('TFTA is processing the task: FIND-TF-PATHWAY.')
         pathway_names = self._get_pathway_name(content)
         if not pathway_names:
             reply = make_failure('NO_PATHWAY_NAME')
@@ -915,6 +916,8 @@ class TFTA_Module(Bioagent):
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
+            
+        logger.info('FIND-TF-PATHWAY: wrapping message...')
         reply = self._wrap_pathway_genelist_message(pathwayName, dblink, tflist, pathway_names=pathway_names,
                                                gene_descr='tfs', of_gene_names=of_gene_names)
         return reply
@@ -948,6 +951,7 @@ class TFTA_Module(Bioagent):
         Response content to FIND-GENE-PATHWAY request
         For a given pathway name, reply the genes within the pathway
         """
+        logger.info('TFTA is processing the task: FIND-GENE-PATHWAY.')
         pathway_names = self._get_pathway_name(content)
         if not pathway_names:
             reply = make_failure('NO_PATHWAY_NAME')
@@ -960,6 +964,7 @@ class TFTA_Module(Bioagent):
         #consider an optional parameter for subsequent query
         of_gene_names,nouse = self._get_targets(content, descr='of-those')
         
+        logger.info('FIND-GENE-PATHWAY: wrapping message...')
         reply = self._wrap_pathway_genelist_message(pathwayName, plink, genelist, pathway_names=pathway_names,
                                        gene_descr='genes', of_gene_names=of_gene_names)
         return reply
@@ -1062,7 +1067,7 @@ class TFTA_Module(Bioagent):
             reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
             return reply
         #For debug
-        logger.info('FIND-COMMON-PATHWAY-GENES: got gene list:' + ','.join(gene_names))
+        #logger.info('FIND-COMMON-PATHWAY-GENES: got gene list:' + ','.join(gene_names))
         try:
             pathwayName, dblink, genes = self.tfta.find_common_pathway_genes(gene_names)
         except PathwayNotFoundException:
@@ -1131,6 +1136,7 @@ class TFTA_Module(Bioagent):
         Respond to IS-PATHWAY-GENE request
         query like: Does the mTor pathway utilize SGK1? 
         """
+        logger.info('TFTA is processing the task: IS-PATHWAY-GENE.')
         pathway_names = self._get_pathway_name(content)
         if not pathway_names:
             reply = make_failure('NO_PATHWAY_NAME')
@@ -1150,6 +1156,7 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
             
+        logger.info('IS-PATHWAY-GENE: wrapping message...')
         reply = _wrap_pathway_message(pathwayName, dblink, keyword=pathway_names)
         return reply
 
@@ -2105,8 +2112,10 @@ class TFTA_Module(Bioagent):
         task_str = content.head().upper()
         try:
             reply_content = self.task_func[task_str](self, content)
+            logger.info('In receive_request: TFTA received the task: {}.'.format(task_str))
         except KeyError:
             #self.error_reply(msg, 'unknown request task ' + task_str)
+            logger.info('In receive_request: TFTA received the unkonwn task: {}.'.format(task_str))
             reply_content = make_failure2('NO-CAPABILITY', task_str)
             #return
         reply_msg = KQMLPerformative('reply')
