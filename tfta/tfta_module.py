@@ -2110,16 +2110,18 @@ class TFTA_Module(Bioagent):
         response. A reply message is then sent back.
         """
         task_str = content.head().upper()
-        try:
-            reply_content = self.task_func[task_str](self, content)
-            logger.info('In receive_request: TFTA received the task: {}.'.format(task_str))
-        except KeyError:
-            #self.error_reply(msg, 'unknown request task ' + task_str)
+        if task_str not in self.task_func:
             logger.info('In receive_request: TFTA received the unkonwn task: {}.'.format(task_str))
             reply_content = make_failure2('NO-CAPABILITY', task_str)
-            #return
+        else:
+            reply_content = self.task_func[task_str](self, content)
+            logger.info('In receive_request: TFTA received the task: {}.'.format(task_str))
+        
         reply_msg = KQMLPerformative('reply')
         reply_msg.set('content', reply_content)
+        
+        logger.info('In receive_request: {} is sending message...'.format(task_str))
+        
         self.reply(msg, reply_msg)
         
     def get_regulator_indra(self, target_names, stmt_types, keyword_name):
@@ -2757,17 +2759,19 @@ class TFTA_Module(Bioagent):
                     p = _filter_pathway_name(a.name, keyword)
                     if p:
                         pathways.add(p.replace('-', ' '))
-                    p = _filter_pathway_name(a.db_refs['TEXT'], keyword)
-                    if p:
-                        pathways.add(p)
+                    if a.db_refs.get('TEXT'):
+                        p = _filter_pathway_name(a.db_refs.get('TEXT'), keyword)
+                        if p:
+                            pathways.add(p)
         elif isinstance(agents, Agent):
             if agents is not None:
                 p = _filter_pathway_name(agents.name, keyword)
                 if p:
                     pathways.add(p.replace('-', ' '))
-                p = _filter_pathway_name(agents.db_refs['TEXT'], keyword)
-                if p:
-                    pathways.add(p)
+                if agents.db_refs.get('TEXT'):
+                    p = _filter_pathway_name(agents.db_refs['TEXT'], keyword)
+                    if p:
+                        pathways.add(p)
         return list(pathways)
 #------------------------------------------------------------------------#######
 
