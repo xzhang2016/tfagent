@@ -667,13 +667,13 @@ class TFTA:
             raise PathwayNotFoundException
         return newpathwayName,tflist,newdblink
 
-    def find_common_pathway_genes(self, gene_names):
+    def find_common_pathway_genes(self, gene_names, limit=30):
         """
         For a given gene list, find the pathways containing some of the genes,
         and the corresponding genes contained in each of the pathways 
         """
         #set limit to reduce response time
-        limit = 30
+        #limit = 30
         num = 0
         pathwayName = dict()
         dblink = dict()
