@@ -89,10 +89,9 @@ class TFTA_Module(Bioagent):
                 reply = self.respond_is_tf_target_literature(content)
             else:
                 reply = self.respond_is_tf_target(content)
-        elif all([tf_arg,target_arg]):
-            reply = self.respond_is_tf_target(content)
         else:
-            reply = make_failure('UNKNOW_TASK')
+            reply = self.respond_is_tf_target(content)
+        
         return reply
     
     def respond_find_tf(self, content):
@@ -111,10 +110,9 @@ class TFTA_Module(Bioagent):
                 reply = self.respond_find_tf_literature(content)
             else:
                 reply = self.respond_find_target_tfs(content)
-        elif target_arg:
-            reply = self.respond_find_target_tfs(content)
         else:
-            reply = make_failure('UNKNOW_TASK')
+            reply = self.respond_find_target_tfs(content)
+        
         return reply
     
     def respond_find_pathway(self, content):
@@ -135,14 +133,12 @@ class TFTA_Module(Bioagent):
             reply = self.find_pathway_keyword_regulator(content)
         elif all([regulator_arg,db_arg]):
             reply = self.find_pathway_db_regulator(content)
-        elif gene_arg:
-            reply = self.find_pathway_gene(content)
         elif regulator_arg:
             reply = self.find_pathway_regulator(content)
         elif keyword_arg:
             reply = self.respond_find_pathway_keyword(content)
         else:
-            reply = make_failure('UNKNOWN_TASK')
+            reply = self.find_pathway_gene(content)
         return reply
     
     def respond_find_target(self, content):
@@ -161,10 +157,9 @@ class TFTA_Module(Bioagent):
                 reply = self.respond_find_target_literature(content)
             else:
                 reply = self.respond_find_tf_targets(content)
-        elif tf_arg:
-            reply = self.respond_find_tf_targets(content)
         else:
-            reply = make_failure('UNKNOWN_TASK')
+            reply = self.respond_find_tf_targets(content)
+        
         return reply
         
     def respond_find_common_pathway_genes(self, content):
@@ -180,10 +175,9 @@ class TFTA_Module(Bioagent):
             reply = self.get_common_pathway_genes_keyword(content)
         elif all([target_arg, db_arg]):
             reply = self.get_common_pathway_genes_db(content)
-        elif target_arg:
-            reply = self.get_common_pathway_genes(content)
         else:
-            reply = make_failure('UNKNOWN_TASK')
+            reply = self.get_common_pathway_genes(content)
+        
         return reply
         
     def respond_find_regulation(self, content):
@@ -246,13 +240,12 @@ class TFTA_Module(Bioagent):
         Respond to find-gene-onto
         """
         regulator_arg = content.get('regulator')
-        gene_arg = content.get('gene')
+        #gene_arg = content.get('gene')
         if regulator_arg:
             reply = self.respond_find_gene_onto_regulator(content)
-        elif gene_arg:
-            reply = self.respond_find_gene_onto_gene(content)
         else:
-            reply = make_failure('UNKNOWN_TASK')
+            reply = self.respond_find_gene_onto_gene(content)
+        
         return reply
         
     def respond_find_gene_onto_gene(self, content):
@@ -1612,10 +1605,9 @@ class TFTA_Module(Bioagent):
         keyword_arg = content.get('keyword')
         if all([target_arg, keyword_arg]):
             reply = self.respond_find_kinase_target_keyword(content)
-        elif target_arg:
-            reply = self.respond_find_kinase_target(content)
         else:
-            reply = make_failure('UNKNOW_TASK')
+            reply = self.respond_find_kinase_target(content)
+        
         return reply
         
     def respond_find_tf_miRNA(self, content):
@@ -2671,9 +2663,9 @@ class TFTA_Module(Bioagent):
         #parse json message format
         proteins = []
         family = dict()
-        try:
-            target_arg = content.get(descr)
-        except Exception:
+        
+        target_arg = content.get(descr)
+        if not target_arg:
             return None,None
         try:
             agents = self.get_agent(target_arg)
