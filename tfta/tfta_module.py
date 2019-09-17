@@ -13,6 +13,7 @@ from kqml import KQMLModule, KQMLPerformative, KQMLList
 from .tfta import TFTA, TFNotFoundException, TargetNotFoundException, PathwayNotFoundException 
 from .tfta import GONotFoundException, miRNANotFoundException, TissueNotFoundException
 from .tfta import KinaseNotFoundException
+from .mirDisease import mirDisease
 from enrichment.GO import GOEnrich
 from indra.sources.trips.processor import TripsProcessor
 from collections import defaultdict
@@ -50,7 +51,8 @@ class TFTA_Module(Bioagent):
              'FIND-TF', 'FIND-PATHWAY', 'FIND-TARGET', 'FIND-GENE', 'FIND-MIRNA',
              'IS-GENE-ONTO', 'FIND-GENE-ONTO', 'FIND-KINASE-REGULATION',
              'FIND-TF-MIRNA', 'FIND-REGULATION', 'FIND-EVIDENCE', 'FIND-GENE-TISSUE',
-             'IS-GENE-TISSUE', 'FIND-KINASE-PATHWAY', 'GO-ENRICHMENT', 'GO-ANNOTATION']
+             'IS-GENE-TISSUE', 'FIND-KINASE-PATHWAY', 'GO-ENRICHMENT', 'GO-ANNOTATION',
+             'IS-MIRNA-DISEASE', 'FIND-MIRNA-DISEASE', 'FIND-DISEASE-MIRNA']
     #keep the genes from the most recent previous call, which are used to input 
     #find-gene-onto if there's no gene input 
     #gene_list = ['STAT3', 'JAK1', 'JAK2', 'ELK1', 'FOS', 'SMAD2', 'KDM4B']
@@ -60,6 +62,7 @@ class TFTA_Module(Bioagent):
         #Instantiate a singleton TFTA agent
         self.tfta = TFTA()
         self.go = GOEnrich()
+        self.md = mirDisease()
         self.stmts_indra = dict()
         #self.hgnc_info = dict()
     
@@ -1482,6 +1485,76 @@ class TFTA_Module(Bioagent):
         else:
             reply = KQMLList.from_string('(SUCCESS :miRNAs NIL)')
         return reply
+        
+    def respond_is_mirna_disease(self, content):
+        """
+        Respond to IS-MIRNA-DISEASE request
+        """
+        miRNA_name = self._get_mirnas(content)
+        if not miRNA_name:
+            reply = make_failure('NO_MIRNA_NAME')
+            return reply
+        
+        disease = _get_keyword_name(content, descr='disease', hyphen=True)
+        if not disease:
+            reply = self.wrap_family_message(term_id, 'NO_DISEASE_NAME')
+            return reply
+        
+        res = self.md.is_mirna_disease(miRNA_name, disease)
+        
+        reply = KQMLList('SUCCESS')
+        res_str = 'TRUE' if res else 'FALSE'
+        reply.set('result', res_str)
+        return reply
+        
+    def respond_find_mirna_disease(self, content):
+        """
+        Respond to find-mirna-disease request
+        """
+        disease = _get_keyword_name(content, descr='disease', hyphen=True)
+        if not disease:
+            reply = self.wrap_family_message(term_id, 'NO_DISEASE_NAME')
+            return reply
+            
+        mirnas = self.md.find_mirna_disease(disease)
+        
+        ##consider another parameter for subsequent query
+        of_those_names = self._get_mirnas(content, descr='of-those')
+        
+        if of_those_names:
+            res_db = set(','.join(mirnas).upper().split(','))
+            res_of = set(','.join(of_those_names).upper().split(','))
+            mirnas = res_db & res_of
+            
+        if len(mirnas):
+            #mir_agent = [Agent(mir, db_refs={'type':'MIRNA'}) for mir in miRNA_names]
+            #mir_json = self.make_cljson(mir_agent)
+            mir_json = self._to_json_mirna(mirnas)
+            reply = KQMLList('SUCCESS')
+            reply.set('miRNAs', mir_json)
+        else:
+            reply = KQMLList.from_string('(SUCCESS :miRNAs NIL)')
+        return reply
+        
+    def respond_find_disease_mirna(self, content):
+        """
+        Respond to fidn-disease-mirna request.
+        """
+        miRNA_names = self._get_mirnas(content)
+        if not miRNA_names:
+            #return all the diseases
+            diseases = self.md.find_disease()
+        else:
+            diseases = self.md.find_disease_mirna(miRNA_names)
+            
+        if diseases:
+            dagent = [Agent(d, db_refs={'type':'disease'}) for d in diseases]
+            djson = self.make_cljson(dagent)
+            reply = KQMLList('SUCCESS')
+            reply.set('disease', djson)
+        else:
+            reply = KQMLList.from_string('(SUCCESS :disease NIL)')
+        return reply
 
     def respond_find_pathway_db_keyword(self, content):
         """
@@ -2094,7 +2167,10 @@ class TFTA_Module(Bioagent):
                  'FIND-GENE-TISSUE':respond_find_gene_tissue,
                  'IS-GENE-TISSUE':respond_is_gene_tissue,
                  'FIND-KINASE-PATHWAY':respond_find_kinase_pathway,
-                 'GO-ENRICHMENT':respond_go_enrichment, 'GO-ANNOTATION':respond_go_annotation}
+                 'GO-ENRICHMENT':respond_go_enrichment, 'GO-ANNOTATION':respond_go_annotation,
+                 'IS-MIRNA-DISEASE':respond_is_mirna_disease,
+                 'FIND-MIRNA-DISEASE':respond_find_mirna_disease,
+                 'FIND-DISEASE-MIRNA':respond_find_disease_mirna}
     
     def receive_request(self, msg, content):
         """If a "request" message is received, decode the task and
@@ -2704,7 +2780,7 @@ class TFTA_Module(Bioagent):
     
     def _get_mirnas(self, content, descr='miRNA'):
         #JSON format
-        #consider +trips+ if it exist
+        #consider +trips+ if it exists
         mirna = {}
         try:
             mir_arg = content.get(descr)
@@ -2717,20 +2793,18 @@ class TFTA_Module(Bioagent):
         if isinstance(agents, list):
             for a in agents:
                 if a is not None:
+                    mname = _get_mirna_name(a.name.upper())
                     if 'TRIPS' in a.db_refs:
-                        mirna[_get_mirna_name(a.name)] = a.db_refs['TRIPS']
+                        mirna[mname] = a.db_refs['TRIPS']
                     else:
-                        mname = _get_mirna_name(a.name)
                         mirna[mname] = mname
-            #mirna = [_get_mirna_name(a.name) for a in agents if a is not None]
         elif isinstance(agents, Agent):
             if agents is not None:
+                mname = _get_mirna_name(agents.name.upper())
                 if 'TRIPS' in agents.db_refs:
-                    mirna[_get_mirna_name(agents.name)] = agents.db_refs['TRIPS']
+                    mirna[mname] = agents.db_refs['TRIPS']
                 else:
-                    mname = _get_mirna_name(agents.name)
                     mirna[mname] = mname
-            #mirna = [_get_mirna_name(agents.name)]
         return mirna
         
     def _get_pathway_name(self, content, descr='pathway'):
@@ -2765,6 +2839,12 @@ class TFTA_Module(Bioagent):
                     if p:
                         pathways.add(p)
         return list(pathways)
+        
+    def _to_json_mirna(self, mirnas):
+        mir_agent = [Agent(mir, db_refs={'type':'MIRNA'}) for mir in mirnas]
+        mir_json = self.make_cljson(mir_agent)
+        return mir_json
+        
 #------------------------------------------------------------------------#######
 
 def _filter_pathway_name(path_name, keyword):
