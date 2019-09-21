@@ -1445,9 +1445,9 @@ class TFTA_Module(Bioagent):
         if target_count:
             for t,c in target_count.items():
                 mes = KQMLList()
-                mes.set('target', self.make_cljson(Agent(t)))
+                mes.set('target', self.make_cljson(Agent(t, db_refs={'TYPE':'ONT::GENE-PROTEIN'})))
                 mes.set('count', str(c))
-                mes.set('miRNA', self.make_cljson([Agent(mir) for mir in target_mirna[t]]))
+                mes.set('miRNA', self.make_cljson([Agent(mir, db_refs={'TYPE':'MIRNA'}) for mir in target_mirna[t]]))
                 target_mir_mes.append(mes.to_string())
         if target_mir_mes:
             mes_str = '(' + ' '.join(target_mir_mes) + ')'
@@ -1476,7 +1476,7 @@ class TFTA_Module(Bioagent):
                 mes = KQMLList()
                 mes.set('miRNA', self.make_cljson(Agent(mir, db_refs={'type': 'MIRNA'})))
                 mes.set('count', str(count))
-                mes.set('target', self.make_cljson([Agent(t) for t in mir_targets[mir]]))
+                mes.set('target', self.make_cljson([Agent(t, db_refs={'TYPE':'ONT::GENE-PROTEIN'}) for t in mir_targets[mir]]))
                 mir_target_mes.append(mes.to_string())
         if mir_target_mes:
             mes_str = '(' + ' '.join(mir_target_mes) + ')'
@@ -1606,7 +1606,7 @@ class TFTA_Module(Bioagent):
             return reply
             
         if tissues:
-            tissue_agent = [Agent(ts) for ts in tissues]
+            tissue_agent = [Agent(ts, db_refs={'TYPE':'tissue'}) for ts in tissues]
             tissue_json = self.make_cljson(tissue_agent)
             reply = KQMLList('SUCCESS')
             reply.set('tissue', tissue_json)
@@ -2098,7 +2098,7 @@ class TFTA_Module(Bioagent):
                 mes.sets('ratio_in_study', str(r1[0]) + '/' + str(r1[1]))
                 r1 = res.ratio_in_pop
                 mes.sets('ratio_in_pop', str(r1[0]) + '/' + str(r1[1]))
-                gene_agent = [Agent(g) for g in res.study_items]
+                gene_agent = [Agent(g, db_refs={'TYPE':'ONT::GENE-PROTEIN'}) for g in res.study_items]
                 gene_json = self.make_cljson(gene_agent)
                 mes.set('genes', gene_json)
                 mes_json.append(mes.to_string())
@@ -2230,7 +2230,7 @@ class TFTA_Module(Bioagent):
             gene_json = self._get_genes_json(genes)
             #lit_messages.set('gene-literature', gene_json)
         if len(mirnas):
-            mirna_agent = [Agent(mir) for mir in mirnas]
+            mirna_agent = [Agent(mir, db_refs={'TYPE':'MIRNA'}) for mir in mirnas]
             mirna_json = self.make_cljson(mirna_agent)
             #lit_messages.set('miRNA-literature', mirna_json)
         if len(others):
@@ -2309,7 +2309,7 @@ class TFTA_Module(Bioagent):
         genes, stmt_f = self.tfta.find_target_indra_regulators(stmts_d, of_those=of_those, target_type=target_type)
         
         if len(genes):
-            target_list = [Agent(target) for target in genes]
+            target_list = [Agent(target, db_refs={'TYPE':'ONT::GENE-PROTEIN'}) for target in genes]
             lit_messages = self.make_cljson(target_list)
              
         #provenance support
@@ -2347,7 +2347,7 @@ class TFTA_Module(Bioagent):
         tfs, stmt_f = self.tfta.find_tfs_indra(stmts_d)
         
         if len(tfs):
-            tf_list = [Agent(tf) for tf in tfs]
+            tf_list = [Agent(tf, db_refs={'TYPE':'ONT::GENE-PROTEIN'}) for tf in tfs]
             lit_messages = self.make_cljson(tf_list)
             
         #provenance support
@@ -2576,9 +2576,9 @@ class TFTA_Module(Bioagent):
         for gene in gene_names:
             hgnc_id = hgnc_client.get_hgnc_id(gene)
             if hgnc_id:
-                gene_list.append(Agent(gene, db_refs={'HGNC': hgnc_id}))
+                gene_list.append(Agent(gene, db_refs={'HGNC': hgnc_id, 'TYPE':'ONT::GENE-PROTEIN'}))
             else:
-                gene_list.append(Agent(gene))
+                gene_list.append(Agent(gene, db_refs={'TYPE':'ONT::GENE-PROTEIN'}))
         gene_json = self.make_cljson(gene_list)
         reply = KQMLList('SUCCESS')
         reply.set(descr, gene_json)
@@ -2590,9 +2590,9 @@ class TFTA_Module(Bioagent):
         for gene in gene_names:
             hgnc_id = hgnc_client.get_hgnc_id(gene)
             if hgnc_id:
-                gene_list.append(Agent(gene, db_refs={'HGNC': hgnc_id}))
+                gene_list.append(Agent(gene, db_refs={'HGNC': hgnc_id, 'TYPE':'ONT::GENE-PROTEIN'}))
             else:
-                gene_list.append(Agent(gene))
+                gene_list.append(Agent(gene, db_refs={'TYPE':'ONT::GENE-PROTEIN'}))
         gene_json = self.make_cljson(gene_list)
         return gene_json
     
@@ -2622,9 +2622,12 @@ class TFTA_Module(Bioagent):
         else:
             reply = make_failure(msg)
         if members:
+            #add +type+ to db_refs{}
+            for a in members:
+                a.db_refs.update({'TYPE':'ONT::GENE-PROTEIN'})
             mbj = self.make_cljson(members)
             res_str = KQMLList('resolve')
-            res_str.set('term', term)
+            res_str.set('term', Agent(term, db_refs={'TYPE':'ONT::PROTEIN-FAMILY'})
             res_str.set('as', mbj)
             reply = make_failure_clarification('FAMILY_NAME', res_str)
         else:
@@ -2634,12 +2637,16 @@ class TFTA_Module(Bioagent):
     def wrap_family_message_pathway(self, term_id, descr='pathways', msg="PATHWAY_NOT_FOUND"):
         #term_id = _get_term_id(target_arg)
         if term_id:
-            members = self.tfta.find_members(term_id)
+            term = list(term_id.keys())[0]
+            members = self.tfta.find_member(term_id[term])
             if members:
-                id = list(members.keys())[0]
-                mbj = self.make_cljson(members[id])
+                #id = list(members.keys())[0]
+                #add +type+ to db_refs{}
+                for a in members:
+                    a.db_refs.update({'TYPE':'ONT::GENE-PROTEIN'})
+                mbj = self.make_cljson(members)
                 res_str = KQMLList('resolve')
-                res_str.set('family', id)
+                res_str.set('family', Agent(term, db_refs={'TYPE':'ONT::PROTEIN-FAMILY'})
                 res_str.set('as', mbj)
                 reply = make_failure_clarification('FAMILY_NAME', res_str)
             else:
@@ -2680,7 +2687,7 @@ class TFTA_Module(Bioagent):
                             num += 1
                             if num > limit:
                                 break
-                            gene_agent = [Agent(g) for g in genes]
+                            gene_agent = [Agent(g, db_refs={'TYPE':'ONT::GENE-PROTEIN'}) for g in genes]
                             gene_json = self.make_cljson(gene_agent)
                             mes = KQMLList()
                             mes.sets('name', pathwayName[key])
@@ -2700,7 +2707,7 @@ class TFTA_Module(Bioagent):
                         num += 1
                         if num > limit:
                             break
-                        gene_agent = [Agent(g) for g in genes]
+                        gene_agent = [Agent(g, db_refs={'TYPE':'ONT::GENE-PROTEIN'}) for g in genes]
                         gene_json = self.make_cljson(gene_agent)
                         mes = KQMLList()
                         mes.sets('name', pathwayName[key])
@@ -2725,7 +2732,7 @@ class TFTA_Module(Bioagent):
         mirna = list(miRNA_mis.keys())[0]
         clari_mirna = self.tfta.get_similar_miRNAs(mirna)
         if clari_mirna:
-            mir_agent = [Agent(mir) for mir in clari_mirna]
+            mir_agent = [Agent(mir, db_refs={'TYPE':'MIRNA'}) for mir in clari_mirna]
             mir_json = self.make_cljson(mir_agent)
             res = KQMLList('resolve')
             res.set('term', miRNA_mis[mirna])
