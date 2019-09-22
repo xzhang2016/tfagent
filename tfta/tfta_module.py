@@ -15,6 +15,7 @@ from .tfta import GONotFoundException, miRNANotFoundException, TissueNotFoundExc
 from .tfta import KinaseNotFoundException
 from .mirDisease import mirDisease
 from enrichment.GO import GOEnrich
+from utils.heatmap import generate_heatmap
 from indra.sources.trips.processor import TripsProcessor
 from collections import defaultdict
 from bioagents import Bioagent
@@ -52,7 +53,8 @@ class TFTA_Module(Bioagent):
              'IS-GENE-ONTO', 'FIND-GENE-ONTO', 'FIND-KINASE-REGULATION',
              'FIND-TF-MIRNA', 'FIND-REGULATION', 'FIND-EVIDENCE', 'FIND-GENE-TISSUE',
              'IS-GENE-TISSUE', 'FIND-KINASE-PATHWAY', 'GO-ENRICHMENT', 'GO-ANNOTATION',
-             'IS-MIRNA-DISEASE', 'FIND-MIRNA-DISEASE', 'FIND-DISEASE-MIRNA']
+             'IS-MIRNA-DISEASE', 'FIND-MIRNA-DISEASE', 'FIND-DISEASE-MIRNA',
+             'MAKE-HEATMAP']
     #keep the genes from the most recent previous call, which are used to input 
     #find-gene-onto if there's no gene input 
     #gene_list = ['STAT3', 'JAK1', 'JAK2', 'ELK1', 'FOS', 'SMAD2', 'KDM4B']
@@ -2112,7 +2114,7 @@ class TFTA_Module(Bioagent):
     
     def respond_go_annotation(self, content):
         """
-        Respond to GO-ANNOTATION
+        Respond to GO-ANNOTATION request
         """
         keyword_name = _get_keyword_name(content, hyphen=True)
         if not keyword_name:
@@ -2133,6 +2135,23 @@ class TFTA_Module(Bioagent):
         else:
             reply = KQMLList.from_string('(SUCCESS :genes NIL)')
             return reply
+            
+    def respond_make_heatmap(self, content):
+        """
+        Respond to make-heatmap request
+        """
+        path = _get_keyword_name(content, descr='filepath')
+        if not path:
+            reply = make_failure('NO_FILE_NAME')
+            return reply
+            
+        heatmap_file = generate_heatmap(path)
+        if heatmap_file:
+            reply = KQMLList('SUCCESS')
+            reply.sets('heatmap-file', heatmap_file)
+        else:
+            reply = make_failure('INVALID_DATA_FORMAT')
+        return reply
         
     task_func = {'IS-REGULATION':respond_is_regulation, 'FIND-TF':respond_find_tf,
                  'FIND-PATHWAY':respond_find_pathway, 'FIND-TARGET':respond_find_target,
@@ -2170,7 +2189,8 @@ class TFTA_Module(Bioagent):
                  'GO-ENRICHMENT':respond_go_enrichment, 'GO-ANNOTATION':respond_go_annotation,
                  'IS-MIRNA-DISEASE':respond_is_mirna_disease,
                  'FIND-MIRNA-DISEASE':respond_find_mirna_disease,
-                 'FIND-DISEASE-MIRNA':respond_find_disease_mirna}
+                 'FIND-DISEASE-MIRNA':respond_find_disease_mirna,
+                 'MAKE-HEATMAP':respond_make_heatmap}
     
     def receive_request(self, msg, content):
         """If a "request" message is received, decode the task and
@@ -2627,7 +2647,7 @@ class TFTA_Module(Bioagent):
                 a.db_refs.update({'TYPE':'ONT::GENE-PROTEIN'})
             mbj = self.make_cljson(members)
             res_str = KQMLList('resolve')
-            res_str.set('term', Agent(term, db_refs={'TYPE':'ONT::PROTEIN-FAMILY'})
+            res_str.set('term', Agent(term, db_refs={'TYPE':'ONT::PROTEIN-FAMILY'}))
             res_str.set('as', mbj)
             reply = make_failure_clarification('FAMILY_NAME', res_str)
         else:
@@ -2646,7 +2666,7 @@ class TFTA_Module(Bioagent):
                     a.db_refs.update({'TYPE':'ONT::GENE-PROTEIN'})
                 mbj = self.make_cljson(members)
                 res_str = KQMLList('resolve')
-                res_str.set('family', Agent(term, db_refs={'TYPE':'ONT::PROTEIN-FAMILY'})
+                res_str.set('family', Agent(term, db_refs={'TYPE':'ONT::PROTEIN-FAMILY'}))
                 res_str.set('as', mbj)
                 reply = make_failure_clarification('FAMILY_NAME', res_str)
             else:
