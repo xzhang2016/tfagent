@@ -2145,7 +2145,7 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_FILE_NAME')
             return reply
             
-        heatmap_file = generate_heatmap(path)
+        heatmap_file = generate_heatmap(path.lower())
         if heatmap_file:
             reply = KQMLList('SUCCESS')
             reply.sets('heatmap-file', heatmap_file)
