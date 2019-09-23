@@ -688,23 +688,18 @@ class TFTA_Module(Bioagent):
     def find_pathway_gene(self,content):
         """
         Response content to find_pathway_gene request
-        For a given gene list, reply the related pathways information
+        For a given gene list, return the related pathways information
         """
-        gene_names,term_id = self._get_targets(content, descr='gene')
-        if not gene_names:
-            reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
-            return reply
-        if term_id:
-            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
+        gene_names,fmembers = self._get_targets2(content, descr='gene')
+        if not gene_names and not fmembers:
+            reply = self.make_failure('NO_GENE_NAME')
             return reply
             
         try:
-            pathwayName, dblink = \
-                self.tfta.find_pathways_from_genelist(gene_names)
+            pathwayName,dblink = self.tfta.find_pathway_genes(gene_names, fmembers)
         except PathwayNotFoundException:
-            #reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
-            #gene_arg = content.gets('gene')
-            reply = self.wrap_family_message_pathway(term_id, descr='pathways', msg="PATHWAY_NOT_FOUND")
+            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+            #reply = self.wrap_family_message_pathway(term_id, descr='pathways', msg="PATHWAY_NOT_FOUND")
             return reply
         reply = _wrap_pathway_message(pathwayName, dblink)
         return reply
@@ -2794,6 +2789,34 @@ class TFTA_Module(Bioagent):
                 else:
                     family[agents.name] = agents
         return proteins,family
+        
+    def _get_targets2(self, content, descr='target'):
+        #parse json message format
+        #expand members for family name
+        proteins = []
+        family = []
+        fmembers = dict()
+        
+        target_arg = content.get(descr)
+        if not target_arg:
+            return None,None
+        try:
+            agents = self.get_agent(target_arg)
+        except Exception:
+            return None,None
+        if isinstance(agents, list):
+            proteins = [a.name for a in agents if a is not None and ('UP' in a.db_refs or 'HGNC' in a.db_refs or len(a.db_refs)==0)]
+            #expand family name to members
+            for a in agents:
+                if a is not None and 'FPLX' in a.db_refs and a.name not in proteins:
+                    family.append(a)
+            fmembers = self.tfta.find_members(family)
+        elif isinstance(agents, Agent):
+            if 'UP' in agents.db_refs or 'HGNC' in agents.db_refs or len(agents.db_refs)==0:
+                proteins = [agents.name]
+            if not proteins and 'FPLX' in agents.db_refs:
+                fmembers[agents.name] = self.tfta.find_member(agents)
+        return proteins,fmembers
                 
     def _combine_json_list(self, descr_list, json_list):
         if any(json_list):
