@@ -484,13 +484,18 @@ class TFTA:
                 raise PathwayNotFoundException
         return pathwayName, kinaselist, dblink
 
-    def find_pathways_from_genelist(self,gene_names):
+    def find_pathway_genes(self,gene_names, fmembers):
         """
         return pathways having given genes
+        
+        parameter
+        -----------
+        gene_names: list of gene symbols
+        fmembers: dict, family name as key and list of Agent for members as value
         """
-        pathwayId=[]
-        pathwayName=[]
-        dblink=[]
+        pathwayName = []
+        dblink = []
+        fnum = 0
         if self.tfdb is not None:
             pathlist=[]
             for gene_name in gene_names:
@@ -498,32 +503,36 @@ class TFTA:
                 res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
                                          "WHERE genesymbol = ? ", t).fetchall()
                 if res1:
-                    pathlist = pathlist+[r[0] for r in res1]
+                    pathlist = pathlist + [r[0] for r in res1]
                 else:
                     raise PathwayNotFoundException
-             #intersection
-            if len(gene_names)>1:
-                pathIDs=[]
-                for pth in set(pathlist):
-                    if pathlist.count(pth) == len(gene_names):
-                        pathIDs.append(pth)
-            else:
-                pathIDs = pathlist
-            if len(pathIDs):
-                for pth in pathIDs:
-                    t = (pth,)
+            #Take OR operation on family members
+            if fmembers:
+                fnum = len(fmembers)
+                for f in fmembers:
+                    fid = set()
+                    for m in fmembers[f]:
+                        t = (m.name, )
+                        res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
+                                                 "WHERE genesymbol = ? ", t).fetchall()
+                        fid = fid.union(set([r[0] for r in res1]))
+                    if fid:
+                        pathlist = pathlist + list(fid)
+                    else:
+                        raise PathwayNotFoundException
+            #Take intersection
+            id_count = Counter(pathlist)
+            for id in id_count:
+                if id_count[id] == (len(gene_names) + fnum):
+                    t = (id,)
                     res = self.tfdb.execute("SELECT pathwayName,dblink FROM pathwayInfo "
                                             "WHERE Id = ? ", t).fetchall()
-                    #pathwayId = pathwayId + [r[0] for r in res]
                     pathwayName = pathwayName + [r[0] for r in res]
-                    #externalId = externalId + [r[2] for r in res]
-                    #source = source + [r[3] for r in res]
                     dblink = dblink + [r[1] for r in res]
-                #sort
-                pathwayName,dblink = \
-                    list(zip(*sorted(zip(pathwayName,dblink))))
+            if pathwayName:
+                pathwayName,dblink = list(zip(*sorted(zip(pathwayName,dblink))))
             else:
-                raise PathwayNotFoundException	
+                raise PathwayNotFoundException
         return pathwayName,dblink
 
     def Is_pathway_gene(self, pathway_names, gene_names):
@@ -1912,9 +1921,7 @@ class TFTA:
 
         Returns
         ------------
-        members: dict
-        Its key is TRIPS term_id
-        Value is list[indra.statements.Agent]
+        magents: list of Agent
         """
         magents = _get_members(agent)
         return magents
