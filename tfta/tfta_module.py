@@ -774,17 +774,14 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_KEYWORD')
             return reply
             
-        regulator_names,term_id = self._get_targets(content, descr='regulator')
-        if not regulator_names:
-            reply = self.wrap_family_message(term_id, 'NO_REGULATOR_NAME')
-            return reply
-        if term_id:
-            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
+        regulator_names,fmembers = self._get_targets2(content, descr='regulator')
+        if not regulator_names and not fmembers:
+            reply = self.make_failure('NO_REGULATOR_NAME')
             return reply
             
         #get genes regulated by regulators in regulator_names
         try:
-            gene_names,dbname = self.tfta.find_targets(regulator_names)
+            gene_names,dbname = self.tfta.find_targets(regulator_names, fmembers)
         except TFNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
@@ -794,7 +791,7 @@ class TFTA_Module(Bioagent):
                 pathwayName, dblink = \
                     self.tfta.find_pathway_gene_keyword(gene_names, keyword_name)
             except PathwayNotFoundException:
-                reply = self.wrap_family_message_pathway(term_id, descr='pathways', msg="PATHWAY_NOT_FOUND")
+                reply = self.KQMLList.from_string('(SUCCESS :pathways NIL)')
                 return reply
             reply = _wrap_pathway_message(pathwayName, dblink, keyword=[keyword_name])
             return reply
@@ -812,9 +809,11 @@ class TFTA_Module(Bioagent):
             return reply
 
     def find_pathway_db_gene(self, content):
-        """Response content to FIND-PATHWAY-DB-GENE request
+        """
+        Response content to FIND-PATHWAY-DB-GENE request
         For a given gene list and certain db source, reply the related
-        pathways information"""
+        pathways information
+        """
         db_name = _get_keyword_name(content, descr='database', low_case=False)
         if not db_name:
             reply = make_failure('NO_DB_NAME')
