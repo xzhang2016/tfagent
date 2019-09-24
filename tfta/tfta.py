@@ -324,69 +324,45 @@ class TFTA:
                         return []
         return tf_names
 
-    def find_pathways_from_name(self, pathway_name):
-        """
-        return pathway information related to pathway_name
-        """
-        #query
-        if self.tfdb is not None:
-            regstr = '%' + pathway_name + ' %'
-            t = (regstr,)
-            #get pathwayId
-            res = self.tfdb.execute("SELECT * FROM pathwayInfo "
-                                    "WHERE pathwayName LIKE ? ORDER BY pathwayName", t).fetchall()
-            if res:
-                pathwayId = [r[0] for r in res]
-                pathwayName = [r[1] for r in res]
-                externalId = [r[2] for r in res]
-                source = [r[3] for r in res]
-                dblink = [r[4] for r in res]
-            else:
-                raise PathwayNotFoundException
-        else:
-            pathwayId = []
-            pathwayName = []
-            externalId = []
-            source = []
-            dblink = []
-        return pathwayId,pathwayName,externalId,source,dblink
-
-    def find_pathways_from_dbsource_geneName(self, dbsource,gene_names):
+    def find_pathway_db_gene(self, dbsource, gene_names, fmembers=None):
         """
         return pathway information for given dbsource and gene_names
         """
-        #query
         pathwayName = []
         dblink = []
-        fpname = []
-        fdblink = []
+        fnum = 0
         if self.tfdb is not None:
             pathlist = []
-            for gene_name in gene_names:
-                t = (gene_name,dbsource)
-                print(t)
-                res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
-                                   "WHERE Id in (SELECT DISTINCT pathwayID FROM pathway2Genes "
-                                   "WHERE genesymbol = ?) AND source LIKE ? ", t).fetchall()
-                if res:
-                    pathlist = pathlist + [r[0] for r in res]
-                    pathwayName += [r[1] for r in res]
-                    dblink += [r[2] for r in res]
+            if gene_names:
+                ids = self.find_pathwayID_genes(gene_names)
+                if ids:
+                    pathlist += ids
                 else:
                     raise PathwayNotFoundException
-            #interaction
-            pids = set(pathlist)
-            if pids:
-                for pth in pids:
-                    if pathlist.count(pth) == len(gene_names):
-                        ind = pathlist.index(pth)
-                        fpname.append(pathwayName[ind])
-                        fdblink.append(dblink[ind])
+                
+            if fmembers:
+                fnum = len(fmembers)
+                ids = self.find_pathwayID_family(fmembers)
+                if ids:
+                    pathlist += ids
+                else:
+                    raise PathwayNotFoundException
+            
+            #Take intersection
+            id_count = Counter(pathlist)
+            for id in id_count:
+                if id_count[id] == (len(gene_names) + fnum):
+                    t = (id, dbsource)
+                    res = self.tfdb.execute("SELECT pathwayName,dblink FROM pathwayInfo "
+                                            "WHERE Id = ? AND source LIKE ?", t).fetchone()
+                    if res:
+                        pathwayName.append(res['pathwayName'])
+                        dblink.append(res['dblink'])
+            if pathwayName:
+                pathwayName,dblink = list(zip(*sorted(zip(pathwayName,dblink))))
             else:
-                raise PathwayNotFoundException    
-            #sort
-            fpname,fdblink = list(zip(*sorted(zip(fpname,fdblink))))
-        return fpname,fdblink
+                raise PathwayNotFoundException
+        return pathwayName,dblink
 
     def find_gene_pathway(self, pathway_names):
         """
@@ -499,20 +475,17 @@ class TFTA:
         if self.tfdb is not None:
             pathlist=[]
             if gene_names:
-                for gene_name in gene_names:
-                    t = (gene_name,)
-                    res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
-                                             "WHERE genesymbol = ? ", t).fetchall()
-                    if res1:
-                        pathlist = pathlist + [r[0] for r in res1]
-                    else:
-                        raise PathwayNotFoundException
+                ids = self.find_pathwayID_genes(gene_names)
+                if ids:
+                    pathlist += ids
+                else:
+                    raise PathwayNotFoundException
             #Take OR operation on family members
             if fmembers:
                 fnum = len(fmembers)
                 ids = self.find_pathwayID_family(fmembers)
                 if ids:
-                    pathlist = pathlist + ids
+                    pathlist += ids
                 else:
                     raise PathwayNotFoundException
             #Take intersection
@@ -529,7 +502,19 @@ class TFTA:
             else:
                 raise PathwayNotFoundException
         return pathwayName,dblink
-        
+    
+    def find_pathwayID_genes(self, gene_names):
+        ids = []
+        for gene_name in gene_names:
+            t = (gene_name,)
+            res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
+                                     "WHERE genesymbol = ? ", t).fetchall()
+            if res1:
+                ids += [r[0] for r in res1]
+            else:
+                return None
+        return ids
+    
     def find_pathwayID_family(self, fmembers):
         """
         Take OR operation for family members.
@@ -607,14 +592,12 @@ class TFTA:
         if self.tfdb is not None:
             pathlist = []
             if gene_names:
-                for gene_name in gene_names:
-                    t = (gene_name,)
-                    res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
-                                             "WHERE genesymbol = ? ", t).fetchall()
-                    if res1:
-                        pathlist = pathlist + [r[0] for r in res1]
-                    else:
-                        raise PathwayNotFoundException
+                ids = self.find_pathwayID_genes(gene_names)
+                if ids:
+                    pathlist += ids
+                else:
+                    raise PathwayNotFoundException
+                
             #Take OR operation on family members
             if fmembers:
                 fnum = len(fmembers)
