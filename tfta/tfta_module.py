@@ -841,28 +841,23 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_DB_NAME')
             return reply
             
-        regulator_names,term_id = self._get_targets(content, descr='regulator')
-        if not regulator_names:
-            reply = self.wrap_family_message(term_id, 'NO_REGULATOR_NAME')
-            return reply
-        if term_id:
-            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
+        regulator_names,fmembers = self._get_targets2(content, descr='regulator')
+        if not regulator_names and not fmembers:
+            reply = self.make_failure('NO_REGULATOR_NAME')
             return reply
         
         #get genes regulated by regulators in regulator_names
         try:
-            gene_names,dbname = self.tfta.find_targets(regulator_names)
+            gene_names,dbname = self.tfta.find_targets(regulator_names, fmembers)
         except TFNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
             
         if len(gene_names) < 3:
             try:
-                pathwayName,dblink = self.tfta.find_pathways_from_dbsource_geneName(db_name,gene_names)
+                pathwayName,dblink = self.tfta.find_pathway_db_gene(db_name,gene_names)
             except PathwayNotFoundException:
                 reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
-                #gene_arg = content.gets('gene')
-                #reply = self.wrap_family_message_pathway(term_id, descr='pathways', msg="PATHWAY_NOT_FOUND")
                 return reply
             reply = _wrap_pathway_message(pathwayName, dblink)
             return reply
