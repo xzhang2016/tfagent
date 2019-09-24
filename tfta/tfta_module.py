@@ -819,18 +819,15 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_DB_NAME')
             return reply
             
-        gene_names,term_id = self._get_targets(content, descr='gene')
-        if not gene_names:
-            reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
-            return reply
-        if term_id:
-            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
+        gene_names,fmembers = self._get_targets2(content, descr='gene')
+        if not gene_names and not fmembers:
+            reply = self.make_failure('NO_GENE_NAME')
             return reply
             
         try:
-            pathwayName,dblink = self.tfta.find_pathways_from_dbsource_geneName(db_name,gene_names)
+            pathwayName,dblink = self.tfta.find_pathway_db_gene(db_name,gene_names,fmembers)
         except PathwayNotFoundException:
-            reply = self.wrap_family_message_pathway(term_id, descr='pathways', msg="PATHWAY_NOT_FOUND")
+            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
         reply = _wrap_pathway_message(pathwayName, dblink)
         return reply
