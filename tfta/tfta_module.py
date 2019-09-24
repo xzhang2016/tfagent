@@ -692,7 +692,7 @@ class TFTA_Module(Bioagent):
         """
         gene_names,fmembers = self._get_targets2(content, descr='gene')
         if not gene_names and not fmembers:
-            reply = self.make_failure('NO_GENE_NAME')
+            reply = make_failure('NO_GENE_NAME')
             return reply
             
         try:
@@ -711,7 +711,7 @@ class TFTA_Module(Bioagent):
         """
         regulator_names,fmembers = self._get_targets2(content, descr='regulator')
         if not regulator_names and not fmembers:
-            reply = self.make_failure('NO_REGULATOR_NAME')
+            reply = make_failure('NO_REGULATOR_NAME')
             return reply
         
         #get genes regulated by regulators in regulator_names and fmembers
@@ -751,7 +751,7 @@ class TFTA_Module(Bioagent):
             
         gene_names,fmembers = self._get_targets2(content, descr='gene')
         if not gene_names and not fmembers:
-            reply = self.make_failure('NO_GENE_NAME')
+            reply = make_failure('NO_GENE_NAME')
             return reply
             
         try:
@@ -776,7 +776,7 @@ class TFTA_Module(Bioagent):
             
         regulator_names,fmembers = self._get_targets2(content, descr='regulator')
         if not regulator_names and not fmembers:
-            reply = self.make_failure('NO_REGULATOR_NAME')
+            reply = make_failure('NO_REGULATOR_NAME')
             return reply
             
         #get genes regulated by regulators in regulator_names
@@ -821,7 +821,7 @@ class TFTA_Module(Bioagent):
             
         gene_names,fmembers = self._get_targets2(content, descr='gene')
         if not gene_names and not fmembers:
-            reply = self.make_failure('NO_GENE_NAME')
+            reply = make_failure('NO_GENE_NAME')
             return reply
             
         try:
@@ -843,7 +843,7 @@ class TFTA_Module(Bioagent):
             
         regulator_names,fmembers = self._get_targets2(content, descr='regulator')
         if not regulator_names and not fmembers:
-            reply = self.make_failure('NO_REGULATOR_NAME')
+            reply = make_failure('NO_REGULATOR_NAME')
             return reply
         
         #get genes regulated by regulators in regulator_names
@@ -1037,23 +1037,25 @@ class TFTA_Module(Bioagent):
         """
         response content to FIND-COMMON-PATHWAY-GENES request
         """
-        gene_names,term_id = self._get_targets(content, descr='target')
-        if len(gene_names) < 2:
-            reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
+        gene_names,fmembers = self._get_targets2(content, descr='target')
+        if not gene_names and not fmembers:
+            reply = make_failure('NO_GENE_NAME')
             return reply
-        #For debug
-        #logger.info('FIND-COMMON-PATHWAY-GENES: got gene list:' + ','.join(gene_names))
+            
+        #logger.info('FIND-COMMON-PATHWAY-GENES:genes=' + str(gene_names))
+        #logger.info('FIND-COMMON-PATHWAY-GENES:fmembers=' + str(fmembers))
+        
         try:
-            pathwayName, dblink, genes = self.tfta.find_common_pathway_genes(gene_names)
+            pathwayName, dblink, genes = self.tfta.find_common_pathway_genes(gene_names, fmembers)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
-        #logger.info('FIND-COMMON-PATHWAY-GENES: len(genes)= {}'.format(len(genes)))
-        logger.info('FIND-COMMON-PATHWAY-GENES: starting wrapping message.')
+        
+        #logger.debug('FIND-COMMON-PATHWAY-GENES: starting wrapping message.')
         
         reply = self._wrap_pathway_genelist_message(pathwayName, dblink, genes, gene_descr='gene-list')
         
-        logger.info('FIND-COMMON-PATHWAY-GENES: sending message...')
+        logger.debug('FIND-COMMON-PATHWAY-GENES: sending message...')
         return reply
 
     def get_common_pathway_genes_keyword(self, content):
@@ -1067,13 +1069,13 @@ class TFTA_Module(Bioagent):
         else:
             keyword_name = trim_word([keyword_name], 'pathway')
         
-        gene_names,term_id = self._get_targets(content, descr='target')
-        if len(gene_names) <  2:
-            reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
+        gene_names,fmembers = self._get_targets2(content, descr='target')
+        if not gene_names and not fmembers:
+            reply = make_failure('NO_GENE_NAME')
             return reply
             
         try:
-            pathwayName,dblink,genes = self.tfta.find_common_pathway_genes_keyword(gene_names, keyword_name[0])
+            pathwayName,dblink,genes = self.tfta.find_common_pathway_genes_keyword(gene_names, keyword_name[0], fmembers)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
@@ -1091,14 +1093,14 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_DB_NAME')
             return reply
             
-        gene_names,term_id = self._get_targets(content, descr='target')
-        if len(gene_names) < 2:
-            reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
+        gene_names,fmembers = self._get_targets2(content, descr='target')
+        if not gene_names and not fmembers:
+            reply = make_failure('NO_GENE_NAME')
             return reply
             
         try:
             pathwayName,dblink,genes = \
-               self.tfta.find_common_pathway_genes_db(gene_names, db_name)
+               self.tfta.find_common_pathway_genes_db(gene_names, db_name, fmembers)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
