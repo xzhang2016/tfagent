@@ -687,7 +687,7 @@ class TFTA_Module(Bioagent):
 
     def find_pathway_gene(self,content):
         """
-        Response content to find_pathway_gene request
+        Response content to find-pathway request
         For a given gene list, return the related pathways information
         """
         gene_names,fmembers = self._get_targets2(content, descr='gene')
@@ -706,32 +706,26 @@ class TFTA_Module(Bioagent):
         
     def find_pathway_regulator(self,content):
         """
-        Response content to find_pathway_gene request
-        For a given gene list, reply the related pathways information
+        Response content to find-pathway request
+        For a given regulator list, reply the pathways containing their targets
         """
-        regulator_names,term_id = self._get_targets(content, descr='regulator')
-        if not regulator_names:
-            reply = self.wrap_family_message(term_id, 'NO_REGULATOR_NAME')
-            return reply
-        if term_id:
-            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
+        regulator_names,fmembers = self._get_targets2(content, descr='regulator')
+        if not regulator_names and not fmembers:
+            reply = self.make_failure('NO_REGULATOR_NAME')
             return reply
         
-        #get genes regulated by regulators in regulator_names
+        #get genes regulated by regulators in regulator_names and fmembers
         try:
-            gene_names,dbname = self.tfta.find_targets(regulator_names)
+            gene_names,dbname = self.tfta.find_targets(regulator_names, fmembers)
         except TFNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
         
         if len(gene_names) < 3:
             try:
-                pathwayName, dblink = \
-                    self.tfta.find_pathways_from_genelist(gene_names)
+                pathwayName, dblink = self.tfta.find_pathway_genes(gene_names)
             except PathwayNotFoundException:
                 reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
-                #gene_arg = content.gets('gene')
-                #reply = self.wrap_family_message_pathway(term_id, descr='pathways', msg="PATHWAY_NOT_FOUND")
                 return reply
             reply = _wrap_pathway_message(pathwayName, dblink)
             return reply
