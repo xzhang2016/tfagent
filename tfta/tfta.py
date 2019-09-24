@@ -498,14 +498,15 @@ class TFTA:
         fnum = 0
         if self.tfdb is not None:
             pathlist=[]
-            for gene_name in gene_names:
-                t = (gene_name,)
-                res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
-                                         "WHERE genesymbol = ? ", t).fetchall()
-                if res1:
-                    pathlist = pathlist + [r[0] for r in res1]
-                else:
-                    raise PathwayNotFoundException
+            if gene_names:
+                for gene_name in gene_names:
+                    t = (gene_name,)
+                    res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
+                                             "WHERE genesymbol = ? ", t).fetchall()
+                    if res1:
+                        pathlist = pathlist + [r[0] for r in res1]
+                    else:
+                        raise PathwayNotFoundException
             #Take OR operation on family members
             if fmembers:
                 fnum = len(fmembers)
