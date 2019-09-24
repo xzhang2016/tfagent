@@ -484,7 +484,7 @@ class TFTA:
                 raise PathwayNotFoundException
         return pathwayName, kinaselist, dblink
 
-    def find_pathway_genes(self,gene_names, fmembers):
+    def find_pathway_genes(self,gene_names, fmembers=None):
         """
         return pathways having given genes
         
@@ -676,13 +676,16 @@ class TFTA:
             raise PathwayNotFoundException
         return newpathwayName,tflist,newdblink
 
-    def find_common_pathway_genes(self, gene_names, limit=30):
+    def find_common_pathway_genes(self, gene_names, fmembers=None, limit=30):
         """
         For a given gene list, find the pathways containing some of the genes,
-        and the corresponding genes contained in each of the pathways 
+        and the corresponding genes contained in each of the pathways
+        
+        parameter
+        -----------
+        gene_names: list of genes
+        fmembers: dict, family name as key, the list of Agent for members as value
         """
-        #set limit to reduce response time
-        #limit = 30
         num = 0
         pathwayName = dict()
         dblink = dict()
@@ -708,12 +711,14 @@ class TFTA:
                 sorted_counts = sorted(counts.items(),key=lambda kv: kv[1], reverse=True)
                 if max_count >= 2:
                     for pth, ct in sorted_counts:
-                        num += 1
-                        if num > limit:
-                            break
                         if ct >= 2:
+                            num += 1
+                            if num > limit:
+                                break
                             fgenes[pth] = genes[pth]
                             pathwayId.append(pth)
+                        else:
+                            break
                 else:
                     raise PathwayNotFoundException
             else:
@@ -893,32 +898,46 @@ class TFTA:
                 raise PathwayNotFoundException
         return pathwayName,externalId,source,dblink,counts
 
-    def find_targets(self,tf_names):
+    def find_targets(self,tf_names, fmembers=None):
         """
         Return Targets regulated by the tf or tf list
         """
         dbname = dict()
         target_names = []
         if self.tfdb is not None:
-            t = (tf_names[0],)
-            res = self.tfdb.execute("SELECT DISTINCT Target,dbnames FROM CombinedDB "
-                                    "WHERE TF = ? ", t).fetchall()
-            if res:
-                target_names = [r[0] for r in res]
-                for r in res:
-                    dbname[(tf_names[0],r[0])] = r[1]
-            else:
-                raise TFNotFoundException
-                
-            if len(tf_names) > 1:
-                for i in range(1,len(tf_names)):
-                    t = (tf_names[i],)
-                    res = self.tfdb.execute("SELECT DISTINCT Target,dbnames FROM CombinedDB "
-                                            "WHERE TF = ? ", t).fetchall()
-                    if res:
-                        target_names = list(set(target_names) & set([r[0] for r in res]))
-                        for r in res:
-                            dbname[(tf_names[i],r[0])] = r[1]
+            if tf_names:
+                t = (tf_names[0],)
+                res = self.tfdb.execute("SELECT DISTINCT Target,dbnames FROM CombinedDB "
+                                        "WHERE TF = ? ", t).fetchall()
+                if res:
+                    target_names = [r[0] for r in res]
+                    for r in res:
+                        dbname[(tf_names[0],r[0])] = r[1]
+                else:
+                    raise TFNotFoundException
+                if len(tf_names) > 1:
+                    for i in range(1,len(tf_names)):
+                        t = (tf_names[i],)
+                        res = self.tfdb.execute("SELECT DISTINCT Target,dbnames FROM CombinedDB "
+                                                "WHERE TF = ? ", t).fetchall()
+                        if res:
+                            target_names = list(set(target_names) & set([r[0] for r in res]))
+                            for r in res:
+                                dbname[(tf_names[i],r[0])] = r[1]
+                        else:
+                            raise TFNotFoundException
+            #For families, not consider dbname for now
+            if fmembers:
+                for f in fmembers:
+                    ftarget = set()
+                    for m in fmembers[f]:
+                        t = (m.name,)
+                        res = self.tfdb.execute("SELECT DISTINCT Target FROM CombinedDB "
+                                                "WHERE TF = ? ", t).fetchall()
+                        if res:
+                            ftarget = ftarget.union(set([r[0] for r in res]))
+                    if ftarget:
+                        target_names = list(set(target_names) & ftarget)
                     else:
                         raise TFNotFoundException
         return target_names,dbname
