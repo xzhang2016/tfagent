@@ -1,5 +1,5 @@
 import seaborn as sns
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 from datetime import datetime
 import os
 import pandas as pd
@@ -21,7 +21,7 @@ def generate_heatmap(filepath):
     --------------
     filepath: absolute path to the data
     """
-    colors = ['pink', 'blue', 'purple', 'red', 'cyan', 'magenta', 'yellow', 'navy', 'green', 'lime']
+    colors = ['pink', 'blue', 'purple', 'red', 'cyan', 'magenta', 'yellow', 'navy', 'green', 'lime', 'orange']
     try:
         df = pd.read_csv(filepath, sep='\t')
         #check if there's sample type info
@@ -49,6 +49,9 @@ def generate_heatmap(filepath):
         logger.info('Creating the heatmap...')
         g = sns.clustermap(df, method='average', metric='correlation', col_colors=col_colors, \
                            cmap=get_cmap())
+        #change the rotation of ytick label
+        plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0)
+        
         logger.info('Created heatmap, now try to save to file...')
         filename = save_to_svg(g)
         return filename
@@ -84,8 +87,9 @@ def get_zscore(df, axis=0):
     return df_z
     
 def get_cmap():
-    #cmap = LinearSegmentedColormap.from_list('gr',["g", "k", "r"], N=256)
+    #cmap = LinearSegmentedColormap.from_list('gkr',["lime", "black", "orangered"], N=256)
     #or
+    #c = ['lime', 'limegreen', 'forestgreen', 'green', 'darkgreen', 'black', 'darkred', 'brown', 'firebrick', 'red', 'orangered']
     c = ['lime', 'limegreen', 'green', 'darkgreen', 'black', 'darkred', 'firebrick', 'red', 'orangered']
     v = [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0]
     l = list(zip(v,c))
