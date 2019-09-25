@@ -540,45 +540,41 @@ class TFTA:
         return ids
         
 
-    def Is_pathway_gene(self, pathway_names, gene_names):
+    def Is_pathway_gene(self, pathway_names, gene_names, fmembers=None):
         """
         Return pathways which contain the given genes and whose name contain substring of pathway_name
         """
-        pname = dict()
-        plink = dict()
         fpname = []
         fdblink = []
         if self.tfdb is not None:
-            pids = []
-            pn = []
-            dl = []
+            pn = dict()
+            dl = dict()
             for pathway_name in pathway_names:
                 regstr = '%' + pathway_name + '%'
                 t = (regstr,)
                 res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
                                     "WHERE pathwayName LIKE ? ", t).fetchall()
                 if res:
-                    pids = pids + [r[0] for r in res]
-                    pn = pn + [r[1] for r in res]
-                    dl = dl + [r[2] for r in res]
+                    for r in res:
+                        pn[r[0]] = r[1]
+                        dl[r[0]] = r[2]
                     
-            if len(pids):
-                for id,n,l in zip(pids,pn,dl):
-                    pname[id] = n
-                    plink[id] = l
-            else:
-                raise PathwayNotFoundException
-                    
-            upid = list(set(pids))
-            for pthID in upid:
-                t = (pthID,)
-                res1 = self.tfdb.execute("SELECT DISTINCT genesymbol FROM pathway2Genes "
-                                        "WHERE pathwayID = ? ", t).fetchall()
-                genes = [r[0] for r in res1]
-                overlap_genes = list(set(gene_names) & set(genes))
-                if len(overlap_genes) == len(gene_names):
-                    fpname.append(pname[pthID])
-                    fdblink.append(plink[pthID])
+            if pn:
+                for pthID in pn:
+                    t = (pthID,)
+                    res1 = self.tfdb.execute("SELECT DISTINCT genesymbol FROM pathway2Genes "
+                                             "WHERE pathwayID = ? ", t).fetchall()
+                    genes = [r[0] for r in res1]
+                    #check if genes overlap with all gene_names and any member in each family
+                    num = len(set(gene_names) & set(genes))
+                    if fmembers:
+                        if all([num == len(gene_names), _check_overlap(set(genes), fmembers)]):
+                            fpname.append(pn[pthID])
+                            fdblink.append(dl[pthID])
+                    elif num == len(gene_names):
+                        fpname.append(pn[pthID])
+                        fdblink.append(dl[pthID])
+    
             if not len(fpname):
                 raise PathwayNotFoundException
         return fpname, fdblink
@@ -1929,6 +1925,23 @@ def _get_members(agent):
     children_agents = [expand_families._agent_from_uri(uri)
                         for uri in children_uris]
     return children_agents
+    
+def _check_overlap(genes, fmembers):
+    """
+    If genes overlap with any member of each family in fmembers, return True, otherwise False
+        
+    parameter
+    --------------
+    genes: set
+    fmembers: defaultdict(list)
+    """
+    ind = []
+    for f in fmembers:
+        fg = set()
+        for m in fmembers[f]:
+            fg.add(m.name)
+        ind.append(len(genes.intersection(fg)))
+    return all(ind)
         
 #test functions
 #if __name__ == "__main__":
