@@ -1113,22 +1113,18 @@ class TFTA_Module(Bioagent):
         Respond to IS-PATHWAY-GENE request
         query like: Does the mTor pathway utilize SGK1? 
         """
-        logger.info('TFTA is processing the task: IS-PATHWAY-GENE.')
         pathway_names = self._get_pathway_name(content)
         if not pathway_names:
             reply = make_failure('NO_PATHWAY_NAME')
             return reply
             
-        gene_names,term_id = self._get_targets(content, descr='gene')
-        if not gene_names:
-            reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
-            return reply
-        if term_id:
-            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
+        gene_names,fmembers = self._get_targets2(content, descr='gene')
+        if not gene_names and not fmembers:
+            reply = make_failure('NO_GENE_NAME')
             return reply
             
         try:
-            pathwayName, dblink = self.tfta.Is_pathway_gene(pathway_names, gene_names)
+            pathwayName, dblink = self.tfta.Is_pathway_gene(pathway_names, gene_names, fmembers)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
