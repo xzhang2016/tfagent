@@ -2120,10 +2120,12 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_FILE_NAME')
             return reply
             
-        heatmap_file = generate_heatmap(path.lower())
+        heatmap_file, row_index, col_index = generate_heatmap(path.lower())
         if heatmap_file:
             reply = KQMLList('SUCCESS')
             reply.sets('heatmap-file', heatmap_file)
+            reply.sets('row-reordered-ind', ','.join([str(r) for r in row_index]))
+            reply.sets('col-reordered-ind', ','.join([str(r) for r in col_index]))
         else:
             reply = make_failure('INVALID_DATA_FORMAT')
         return reply
