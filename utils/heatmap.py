@@ -5,6 +5,7 @@ import os
 import pandas as pd
 from  matplotlib.colors import LinearSegmentedColormap
 import logging
+import math
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger('TFTA-heatmap')
@@ -21,6 +22,7 @@ def generate_heatmap(filepath):
     --------------
     filepath: absolute path to the data
     """
+    #sns.set(font_scale=1)
     colors = ['pink', 'blue', 'purple', 'red', 'cyan', 'magenta', 'yellow', 'navy', 'green', 'lime', 'orange']
     try:
         df = pd.read_csv(filepath, sep='\t')
@@ -39,25 +41,44 @@ def generate_heatmap(filepath):
         df.index.name = None
         df = df.astype('float')
         
-        #calculate zscores for columns
+        #calculate zscores for columns/samples
         df = get_zscore(df)
         
-        #calculate zscores for rows
+        #gene median centered
+        #df = median_centered(df, axis=1)
+        #calculate zscores for genes/rows. It seems zscore has a better visualization effect than median centered
         df = get_zscore(df, axis=1)
         
         #generate heatmap
         logger.info('Creating the heatmap...')
+        if df.shape[0] > 500:
+            sns.set(font_scale=0.4)
         g = sns.clustermap(df, method='average', metric='correlation', col_colors=col_colors, \
-                           cmap=get_cmap())
+                           robust=True, cmap=get_cmap())
+        #cbar_kws = dict(use_gridspec=False,location="right")
+        #whether to show row dendrogram depends on the data size
+        if df.shape[0] > 500:
+            g.ax_row_dendrogram.set_visible(False)
+        
         #change the rotation of ytick label
         plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0)
         
+        #get the reordered row and column index, list
+        row_order = g.dendrogram_row.reordered_ind
+        col_order = g.dendrogram_col.reordered_ind
+        
+        #Draw the legend bar for the sidebar
+        if col_colors is not None:
+            for label in stype.unique():
+                g.ax_col_dendrogram.bar(0, 0, color=lut[label], label=label, linewidth=0)
+            g.ax_col_dendrogram.legend(title="Samples", loc="best", ncol = math.floor(len(stype.unique())/2))
+        
         logger.info('Created heatmap, now try to save to file...')
         filename = save_to_svg(g)
-        return filename
+        return filename, row_order, col_order
     except Exception as e:
         logger.info(e)
-        return None
+        return None,None,None
 
 def datetime2str():
     """
@@ -85,6 +106,15 @@ def get_zscore(df, axis=0):
         #calculate zscore for samples/columns
         df_z = (df - mean)/(std + 0.0001)
     return df_z
+    
+def median_centered(df, axis=1):
+    """
+    Subtract its median from each row if axis=1
+    """
+    median = df.median(axis=axis)
+    if axis:
+        df_m = (df.T - median).T
+    return df_m
     
 def get_cmap():
     #cmap = LinearSegmentedColormap.from_list('gkr',["lime", "black", "orangered"], N=256)
@@ -121,6 +151,9 @@ def save_to_svg(g, data_folder=_data_dir):
     fn = os.path.join(data_folder, datetime2str() + '_heatmap.svg')
     try:
         g.savefig(fn, format='svg')
+        #save to pdf only for test
+        #fn = os.path.join(data_folder, datetime2str() + '_heatmap.pdf')
+        #g.savefig(fn, format='pdf')
         logger.info('Heatmap was saved.')
         return fn
     except Exception:
