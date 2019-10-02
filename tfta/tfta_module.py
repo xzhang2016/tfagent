@@ -2624,7 +2624,7 @@ class TFTA_Module(Bioagent):
                 a.db_refs.update({'TYPE':'ONT::GENE-PROTEIN'})
             mbj = self.make_cljson(members)
             res_str = KQMLList('resolve')
-            res_str.set('term', Agent(term, db_refs={'TYPE':'ONT::PROTEIN-FAMILY'}))
+            res_str.set('term', self.make_cljson(Agent(term, db_refs={'TYPE':'ONT::PROTEIN-FAMILY'})))
             res_str.set('as', mbj)
             reply = make_failure_clarification('FAMILY_NAME', res_str)
         else:
@@ -2643,7 +2643,7 @@ class TFTA_Module(Bioagent):
                     a.db_refs.update({'TYPE':'ONT::GENE-PROTEIN'})
                 mbj = self.make_cljson(members)
                 res_str = KQMLList('resolve')
-                res_str.set('family', Agent(term, db_refs={'TYPE':'ONT::PROTEIN-FAMILY'}))
+                res_str.set('family', self.make_cljson(Agent(term, db_refs={'TYPE':'ONT::PROTEIN-FAMILY'})))
                 res_str.set('as', mbj)
                 reply = make_failure_clarification('FAMILY_NAME', res_str)
             else:
