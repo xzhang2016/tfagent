@@ -132,7 +132,7 @@ class mirDisease:
                 try:
                     mir2pre[mir] = self.mirna_precursor[mir]
                 except KeyError:
-                    mir2pre[mir] = None
+                    mir2pre[mir] = []
             else:
                 mir2pre[mir] = [mir]
         return mir2pre
