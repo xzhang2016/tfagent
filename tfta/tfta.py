@@ -174,7 +174,7 @@ class TFTA:
                 for go in goids:
                     t = (go, )
                     res = self.tfdb.execute("SELECT geneSymbol FROM go2Genes WHERE termId = ? ", t).fetchall()
-                    go_genes += [r[0] for r in res]
+                    go_genes.extend([r[0] for r in res])
                 go_genes = list(set(go_genes) & set(gene_names))
         return go_genes
 
@@ -242,7 +242,7 @@ class TFTA:
                                         "WHERE Target = ? ", t).fetchall()
                 if res:
                     tfs = [r[0] for r in res]
-                    tf_names = tf_names + tfs
+                    tf_names.extend(tfs)
                     for tf in tfs:
                         targets[tf].append(target_name)
             #count for each TF
@@ -337,7 +337,7 @@ class TFTA:
             if gene_names:
                 ids = self.find_pathwayID_genes(gene_names)
                 if ids:
-                    pathlist += ids
+                    pathlist.extend(ids)
                 else:
                     raise PathwayNotFoundException
                 
@@ -345,7 +345,7 @@ class TFTA:
                 fnum = len(fmembers)
                 ids = self.find_pathwayID_families(fmembers)
                 if ids:
-                    pathlist += ids
+                    pathlist.extend(ids)
                 else:
                     raise PathwayNotFoundException
             
@@ -478,7 +478,7 @@ class TFTA:
             if gene_names:
                 ids = self.find_pathwayID_genes(gene_names)
                 if ids:
-                    pathlist += ids
+                    pathlist.extend(ids)
                 else:
                     raise PathwayNotFoundException
             #Take OR operation on family members
@@ -486,7 +486,7 @@ class TFTA:
                 fnum = len(fmembers)
                 ids = self.find_pathwayID_families(fmembers)
                 if ids:
-                    pathlist += ids
+                    pathlist.extend(ids)
                 else:
                     raise PathwayNotFoundException
             #Take intersection
@@ -496,8 +496,8 @@ class TFTA:
                     t = (id,)
                     res = self.tfdb.execute("SELECT pathwayName,dblink FROM pathwayInfo "
                                             "WHERE Id = ? ", t).fetchall()
-                    pathwayName = pathwayName + [r[0] for r in res]
-                    dblink = dblink + [r[1] for r in res]
+                    pathwayName.extend([r[0] for r in res])
+                    dblink.extend([r[1] for r in res])
             if pathwayName:
                 pathwayName,dblink = list(zip(*sorted(zip(pathwayName,dblink))))
             else:
@@ -511,7 +511,7 @@ class TFTA:
             res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
                                      "WHERE genesymbol = ? ", t).fetchall()
             if res1:
-                ids += [r[0] for r in res1]
+                ids.extend([r[0] for r in res1])
             else:
                 return None
         return ids
@@ -534,7 +534,7 @@ class TFTA:
                 if res1:
                     fid = fid.union(set([r[0] for r in res1]))
             if fid:
-                ids = ids + list(fid)
+                ids.extend(list(fid))
             else:
                 return None
         return ids
@@ -591,7 +591,7 @@ class TFTA:
             if gene_names:
                 ids = self.find_pathwayID_genes(gene_names)
                 if ids:
-                    pathlist += ids
+                    pathlist.extend(ids)
                 else:
                     raise PathwayNotFoundException
                 
@@ -600,7 +600,7 @@ class TFTA:
                 fnum = len(fmembers)
                 ids = self.find_pathwayID_families(fmembers)
                 if ids:
-                    pathlist = pathlist + ids
+                    pathlist.extend(ids)
                 else:
                     raise PathwayNotFoundException
                         
@@ -613,8 +613,8 @@ class TFTA:
                     res = self.tfdb.execute("SELECT pathwayName,dblink FROM pathwayInfo "
                                             "WHERE Id = ? AND pathwayName LIKE ? ", t).fetchall()
                     if res:
-                        pathwayName1 = pathwayName1 + [r[0] for r in res]
-                        dblink = dblink + [r[1] for r in res]
+                        pathwayName1.extend([r[0] for r in res])
+                        dblink.extend([r[1] for r in res])
             
             if len(dblink):
                 pathwayName1,dblink = list(zip(*sorted(zip(pathwayName1,dblink))))
@@ -1288,7 +1288,7 @@ class TFTA:
                 res1 = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo "
                                          "WHERE target = ? ", t).fetchall()
                 if res1:
-                    temp = temp + [r[0].upper() for r in res1]
+                    temp.extend([r[0].upper() for r in res1])
                     for mir in [r[0].upper() for r in res1]:
                         mir_targets[mir].append(gene_name)
             if temp:
@@ -1336,7 +1336,7 @@ class TFTA:
                 res1 = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo "
                                          "WHERE mirna LIKE ? ", t).fetchall()
                 if res1:
-                    temp = temp + [r[0] for r in res1]
+                    temp.extend([r[0] for r in res1])
                     for target in [r[0] for r in res1]:
                         target_mirna[target].append(mir)
                 else:
@@ -1382,9 +1382,9 @@ class TFTA:
                 res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
                                         "WHERE pathwayName LIKE ? AND source LIKE ?", t).fetchall()
                 if res:
-                    pids = pids + [r[0] for r in res]
-                    pn = pn + [r[1] for r in res]
-                    plink = plink + [r[2] for r in res]
+                    pids.extend([r[0] for r in res])
+                    pn.extend([r[1] for r in res])
+                    plink.extend([r[2] for r in res])
             if len(pids):
                 pathwayId = list(set(pids))
                 for i in range(len(pids)):
@@ -1617,7 +1617,7 @@ class TFTA:
                 for go in goids:
                     t = (go, )
                     res = self.tfdb.execute("SELECT geneSymbol FROM go2Genes WHERE termId = ? ", t).fetchall()
-                    go_genes += [r[0] for r in res]
+                    go_genes.extend([r[0] for r in res])
                 go_genes = set(go_genes)
         return go_genes
         
@@ -1653,7 +1653,7 @@ class TFTA:
                 if len(stmts):
                     stmts_filtered = filter_evidence_source(stmts, ['reach'], policy='one')
                     if len(stmts_filtered):
-                        statements += stmts_filtered
+                        statements.extend(stmts_filtered)
         except Exception as e:
             #print(e)
             return statements,False
@@ -1708,7 +1708,7 @@ class TFTA:
         targets = list(stmts_d.keys())
         stmt_list = []
         for t in targets:
-            stmt_list += stmts_d[t]
+            stmt_list.extend(stmts_d[t])
         genes = self.find_regulator_indra_gene(stmts_d[targets[0]])
         if len(targets) > 1:
             for i in range(1,len(targets)):
@@ -1744,7 +1744,7 @@ class TFTA:
         targets = list(stmts_d.keys())
         stmt_list = []
         for t in targets:
-            stmt_list += stmts_d[t]
+            stmt_list.extend(stmts_d[t])
         genes = self.find_regulator_indra_gene(stmts_d[targets[0]], of_those=of_those)
         
         if target_type:
@@ -1790,7 +1790,7 @@ class TFTA:
         regulators = list(stmts_d.keys())
         stmt_list = []
         for r in regulators:
-            stmt_list += stmts_d[r]
+            stmt_list.extend(stmts_d[r])
         genes = self.find_target_indra(stmts_d[regulators[0]])
         
         if of_those:
@@ -1845,7 +1845,7 @@ class TFTA:
         targets = list(stmts_d.keys())
         stmt_list = []
         for t in targets:
-            stmt_list += stmts_d[t]
+            stmt_list.extend(stmts_d[t])
         tfs = self.find_tf_indra(stmts_d[targets[0]])
         if len(targets) > 1:
             for i in range(1, len(targets)):
