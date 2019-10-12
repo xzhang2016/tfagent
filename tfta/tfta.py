@@ -1448,7 +1448,60 @@ class TFTA:
             else:
                 raise TissueNotFoundException
         return tissue_names
+    
+    def find_target_kinase(self, kinase_names):
+        """
+        For given kinases, return the genes regulated by them
+        """
+        gene_names = []
+        if self.tfdb is not None:
+            t = (kinase_names[0],)
+            res = self.tfdb.execute("SELECT DISTINCT target FROM kinaseReg "
+                                    "WHERE kinase = ? ", t).fetchall()
+            if res:
+                gene_names = [r[0] for r in res]
+            else:
+                raise TargetNotFoundException 
+            if len(kinase_names)>1:
+                for i in range(1,len(kinase_names)):
+                    t = (kinase_names[i],)
+                    res = self.tfdb.execute("SELECT DISTINCT target FROM kinaseReg "
+                                            "WHERE kinase = ? ", t).fetchall()
+                    if res:
+                        gene_names = list(set(gene_names) & set([r[0] for r in res]))
+                    else:
+                        raise TargetNotFoundException
+        if not gene_names:
+            raise TargetNotFoundException
         
+        return gene_names
+        
+    def find_target_kinase_keyword(self, kinase_names, keyword):
+        """
+        For given kinases, return the genes regulated by them
+        """
+        gene_names = []
+        if self.tfdb is not None:
+            t = (kinase_names[0], keyword)
+            res = self.tfdb.execute("SELECT DISTINCT target FROM kinaseReg "
+                                    "WHERE kinase = ? AND direction LIKE ? ", t).fetchall()
+            if res:
+                gene_names = [r[0] for r in res]
+            else:
+                raise TargetNotFoundException 
+            if len(kinase_names)>1:
+                for i in range(1,len(kinase_names)):
+                    t = (kinase_names[i], keyword)
+                    res = self.tfdb.execute("SELECT DISTINCT target FROM kinaseReg "
+                                            "WHERE kinase = ? AND direction LIKE ? ", t).fetchall()
+                    if res:
+                        gene_names = list(set(gene_names) & set([r[0] for r in res]))
+                    else:
+                        raise TargetNotFoundException
+        if not gene_names:
+            raise TargetNotFoundException
+        return gene_names
+    
     def find_kinase_target(self, target_names):
         """
         For given genes, return the kinases that regulate them
@@ -1602,6 +1655,7 @@ class TFTA:
         Return the genes which are in the category of go_name
         """
         go_genes = []
+        go_name = go_name.lower()
         if go_name in ['tf', 'transcription factor']:
             if not self.trans_factor:
                 if self.tfdb is not None:
@@ -1796,7 +1850,9 @@ class TFTA:
         if of_those:
             genes = genes.intersection(of_those)
             
-        if target_type:
+        if target_type and isinstance(target_type, set):
+            genes = genes.intersection(target_type)
+        else:
             try:
                 target_type_set = self.get_onto_set(target_type)
             except Exception as e:
