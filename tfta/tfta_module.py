@@ -43,16 +43,16 @@ class TFTA_Module(Bioagent):
              'FIND-TF-PATHWAY', 'FIND-GENE-PATHWAY',
              'FIND-PATHWAY-KEYWORD', 'FIND-TF-KEYWORD',
              'FIND-COMMON-TF-GENES', 'FIND-GENE-GO-TF',
-             'FIND-COMMON-PATHWAY-GENES',
-             'IS-TF-TARGET-TISSUE', 'FIND-TF-TARGET-TISSUE',
+             'FIND-COMMON-PATHWAY-GENES', 'FIND-GENE-TISSUE',
+             'IS-TF-TARGET-TISSUE', 'FIND-EVIDENCE-MIRNA-TARGET',
              'FIND-TARGET-TF-TISSUE', 'IS-PATHWAY-GENE','IS-MIRNA-TARGET', 
-             'FIND-MIRNA-TARGET', 'FIND-TARGET-MIRNA', 'FIND-EVIDENCE-MIRNA-TARGET',
+             'FIND-MIRNA-TARGET', 'FIND-TARGET-MIRNA', 'GO-ANNOTATION',
              'FIND-MIRNA-COUNT-GENE','FIND-GENE-COUNT-MIRNA',
              'FIND-PATHWAY-DB-KEYWORD', 'FIND-TISSUE', 'IS-REGULATION',
              'FIND-TF', 'FIND-PATHWAY', 'FIND-TARGET', 'FIND-GENE', 'FIND-MIRNA',
              'IS-GENE-ONTO', 'FIND-GENE-ONTO', 'FIND-KINASE-REGULATION',
-             'FIND-TF-MIRNA', 'FIND-REGULATION', 'FIND-EVIDENCE', 'FIND-GENE-TISSUE',
-             'IS-GENE-TISSUE', 'FIND-KINASE-PATHWAY', 'GO-ENRICHMENT', 'GO-ANNOTATION',
+             'FIND-TF-MIRNA', 'FIND-REGULATION', 'FIND-EVIDENCE', 
+             'IS-GENE-TISSUE', 'FIND-KINASE-PATHWAY', 'GO-ENRICHMENT', 
              'IS-MIRNA-DISEASE', 'FIND-MIRNA-DISEASE', 'FIND-DISEASE-MIRNA',
              'MAKE-HEATMAP']
     #keep the genes from the most recent previous call, which are used to input 
@@ -145,27 +145,6 @@ class TFTA_Module(Bioagent):
         else:
             reply = self.find_pathway_gene(content)
         return reply
-    
-    def respond_find_target(self, content):
-        """
-        Response content to find-target request, which includes these cases:
-        find-tf-target, find-tf-target-tissue. 
-        """
-        tf_arg = content.get('tf')
-        tissue_arg = content.get('tissue')
-        keyword_name = _get_keyword_name(content, descr='keyword')
-        
-        if all([tf_arg,tissue_arg]):
-            reply = self.respond_find_tf_targets_tissue(content)
-        elif all([tf_arg, keyword_name]):
-            if keyword_name in ['increase', 'decrease']:
-                reply = self.respond_find_target_literature(content)
-            else:
-                reply = self.respond_find_tf_targets(content)
-        else:
-            reply = self.respond_find_tf_targets(content)
-        
-        return reply
         
     def respond_find_common_pathway_genes(self, content):
         """
@@ -184,7 +163,23 @@ class TFTA_Module(Bioagent):
             reply = self.get_common_pathway_genes(content)
         
         return reply
+    
+    def respond_find_target(self, content):
+        """
+        Response content to find-target request, which includes these cases:
+        find-tf-target, find-tf-target-tissue. 
+        """
+        tissue_arg = content.get('tissue')
+        source_arg = content.get('source')
         
+        if tissue_arg:
+            reply = self.find_tf_targets_tissue(content)
+        elif source_arg:
+            reply = self.find_target_source(content)
+        else:
+            reply = self.find_target_all(content)
+        return reply
+    
     def respond_find_regulation(self, content):
         """
         Respond to find-regulation
@@ -541,14 +536,14 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
         return reply
 
-    def respond_find_tf_targets_tissue(self, content):
+    def find_tf_targets_tissue(self, content):
         """
         Response content to find-tf-target-tissue request
         For tf list, reply with the targets found within given tissue
         """
-        tf_names,term_id = self._get_targets(content, descr='tf')
+        tf_names,term_id = self._get_targets(content, descr='regulator')
         if not tf_names:
-            reply = self.wrap_family_message(term_id, 'NO_TF_NAME')
+            reply = self.wrap_family_message(term_id, 'NO_REGULATOR_NAME')
             return reply
         if term_id:
             reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
@@ -564,7 +559,7 @@ class TFTA_Module(Bioagent):
             return reply
             
         #consider an optional parameter for sequencing query
-        of_targets_names,nouse = self._get_targets(content, descr='of-those')
+        of_targets_names,_ = self._get_targets(content, descr='of-those')
         
         #consider an optional parameter to only return given types of genes
         target_type_set = self.get_target_type_set(content)
@@ -579,7 +574,11 @@ class TFTA_Module(Bioagent):
             target_names = target_type_set & set(target_names)
             
         if len(target_names):
-            reply = self.wrap_message('targets', target_names)
+            reply = KQMLList('SUCCESS')
+            target_json = self._get_genes_json(target_names)
+            tmess = KQMLList()
+            tmess.set('target-db', target_json)
+            reply.set('targets', tmess)
         else:
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
         return reply
@@ -1166,9 +1165,9 @@ class TFTA_Module(Bioagent):
             gene_list_str = '(' + gene_list_str + ')'
             gn_str = '"' + gn + '"'
             gid_str = '"' + gid + '"'
-            go_list_str += '(:id %s :name %s :genes %s) ' % (gid_str, gn_str, gene_list_str)            
+            go_list_str += '(:id %s :name %s :genes %s) ' % (gid_str, gn_str, gene_list_str)
         reply = KQMLList.from_string(
-            '(SUCCESS :go-terms (' + go_list_str + '))')        
+            '(SUCCESS :go-terms (' + go_list_str + '))')
         return reply
 
     def respond_find_genes_go_tf2(self, content):
@@ -1591,6 +1590,88 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string('(SUCCESS :tissue NIL)')
         return reply
         
+    def get_target_kinase(self, kinase_names, keyword=None, of_those=None, target_type=None, out_gene=True):
+        """
+        Response to find-target with kinase parameter
+        """
+        if keyword in ['increase', 'decrease']:
+            try:
+                targets = self.tfta.find_target_kinase_keyword(kinase_names, keyword)
+            except TargetNotFoundException:
+                targets = set()
+        else:
+            try:
+                targets = self.tfta.find_target_kinase(kinase_names)
+            except TargetNotFoundException:
+                targets = set()
+        
+        if targets and of_those:
+            targets = set(targets).intersection(set(of_those))
+        if targets and target_type:
+            targets = set(targets).intersection(target_type)
+        
+        if out_gene:
+            return targets
+            
+        if targets:
+            reply = KQMLList('SUCCESS')
+            target_json = self._get_genes_json(targets)
+            tmess = KQMLList()
+            tmess.set('target-db', target_json)
+            reply.set('targets', tmess)
+        else:
+            reply = KQMLList.from_string('(SUCCESS :targets NIL)')
+        return reply
+        
+    def get_target_kinase_keyword(self, content):
+        """
+        Response to find-target with kinase and keyword parameters
+        """
+        kinase_names,term_id = self._get_targets(content, descr='kinase')
+        if not kinase_names:
+            reply = self.wrap_family_message(term_id, 'NO_KINASE_NAME')
+            return reply
+        if term_id:
+            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
+            return reply
+        
+        keyword_name = _get_keyword_name(content, descr='keyword')
+        if not keyword_name:
+            reply = make_failure('NO_KEYWORD')
+            return reply
+        
+        #consider an optional parameter for subsequent query
+        of_those,_ = self._get_targets(content, 'of-those')
+        
+        try:
+            targets = self.tfta.find_target_kinase_keyword(kinase_names, keyword_name)
+        except TargetNotFoundException:
+            reply = KQMLList.from_string('(SUCCESS :targets NIL)')
+            return reply
+            
+        if of_those:
+            targets = list(set(targets).intersection(set(of_those)))
+        
+        #consider literature results
+        try:
+            stmt_types = stmt_type_map[keyword_name]
+        except KeyError:
+            reply = make_failure('INVALID_KEYWORD')
+            return reply
+        lit_json = self.get_target_indra(kinase_names, stmt_types, keyword_name,
+                                             of_those=of_those)
+        
+        if targets or lit_json:
+            reply = KQMLList('SUCCESS')
+            if targets:
+                target_json = self._get_genes_json(targets)
+                reply.set('targets', target_json)
+            if lit_json:
+                reply.set('targets-literature', lit_json)
+        else:
+            reply = KQMLList.from_string('(SUCCESS :targets NIL)')
+        return reply
+        
     def respond_find_kinase_target(self, content):
         """
         Response to find-kinase-regulation with only target parameter
@@ -1683,6 +1764,148 @@ class TFTA_Module(Bioagent):
                 reply = self.wrap_message(':tfs ', tf_names)
             else:
                 reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
+        return reply
+        
+    def find_target_source(self, content):
+        """
+        Response to find-target with :source parameter
+        """
+        reg_names,term_id = self._get_targets(content, descr='regulator')
+        if not reg_names:
+            reply = self.wrap_family_message(term_id, 'NO_REGULATOR_NAME')
+            return reply
+        if term_id:
+            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
+            return reply
+        reg_names = list(set(reg_names))
+        
+        keyword_name = _get_keyword_name(content)
+        if not keyword_name:
+            keyword_name = 'regulate'
+            
+        source_name = _get_keyword_name(content, descr='source')
+        if not source_name:
+            reply = make_failure('INVALID_SOURCE')
+            return reply
+            
+        #consider an optional parameter for subsequent query
+        of_those,_ = self._get_targets(content, 'of-those')
+        #consider an optional parameter to only return given type of genes
+        target_type_set = self.get_target_type_set(content)
+        
+        if source_name == 'literature':
+            try:
+                stmt_types = stmt_type_map[keyword_name]
+            except KeyError:
+                reply = make_failure('INVALID_KEYWORD')
+                return reply
+            lit_json = self.get_target_indra(reg_names, stmt_types, keyword_name,
+                                             of_those=of_those, target_type=target_type_set)
+            if len(lit_json):
+                reply = KQMLList('SUCCESS')
+                tmess = KQMLList()
+                tmess.set('target-literature', lit_json)
+                reply.set('targets', tmess)
+            else:
+                reply = KQMLList.from_string('(SUCCESS :targets NIL)')
+        elif source_name == 'kinase':
+            reply = self.get_target_kinase(reg_names, keyword=keyword_name, of_those=of_those,
+                                             target_type=target_type_set, out_gene=False)
+        else:
+            #by default go to tf-db
+            reply = self.find_target_tf(reg_names, of_those=of_those, target_type=target_type_set,
+                                          out_gene=False)
+        return reply
+    
+    def find_target_all(self, content):
+        """
+        Response to find-target with results from all sources
+        """
+        reg_names,term_id = self._get_targets(content, descr='regulator')
+        if not reg_names:
+            reply = self.wrap_family_message(term_id, 'NO_REGULATOR_NAME')
+            return reply
+        if term_id:
+            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
+            return reply
+        reg_names = list(set(reg_names))
+        
+        keyword_name = _get_keyword_name(content)
+        if not keyword_name:
+            keyword_name = 'regulate'
+            
+        #consider an optional parameter for subsequent query
+        of_those,_ = self._get_targets(content, 'of-those')
+        #consider an optional parameter to only return given type of genes
+        target_type_set = self.get_target_type_set(content)
+        
+        #results from tf-db
+        if keyword_name == 'regulate':
+            targets_tfdb = self.find_target_tf(reg_names, of_those=of_those, target_type=target_type_set)
+        else:
+            targets_tfdb = set()
+        
+        #results from kinase-db
+        targets_kdb = self.get_target_kinase(reg_names, keyword=keyword_name, of_those=of_those,
+                                                   target_type=target_type_set, out_gene=True)
+        
+        #results from literature
+        try:
+            stmt_types = stmt_type_map[keyword_name]
+        except KeyError:
+            stmt_types = stmt_type_map['regulate']
+        lit_json = self.get_target_indra(reg_names, stmt_types, keyword_name,
+                                        of_those=of_those, target_type=target_type_set)
+        
+        targets = set(targets_tfdb).union(set(targets_kdb))
+        if targets or lit_json:
+            reply = KQMLList('SUCCESS')
+            tmess = KQMLList()
+            if targets:
+                target_json = self._get_genes_json(targets)
+                tmess.set('target-db', target_json)
+            if lit_json:
+                tmess.set('target-literature', lit_json)
+            reply.set('targets', tmess)
+        else:
+            reply = KQMLList.from_string('(SUCCESS :targets NIL)')
+        return reply
+    
+    def find_target_tf(self, tf_names, of_those=None, target_type=None, out_gene=True):
+        target_names = set()
+        try:
+            target_names,dbname = self.tfta.find_targets(tf_names)
+        except TFNotFoundException:
+            #provenance support
+            self.send_background_support_db(tf_names, [], '')
+            if out_gene:
+                return target_names
+            else:
+                reply = KQMLList.from_string('(SUCCESS :targets NIL)')
+                return reply
+    
+        #check if it's a subsequent query
+        if of_those:
+            target_names = set(of_those) & set(target_names)
+        
+        #check if it requires returning a type of genes
+        if target_type:
+            target_names = target_type & set(target_names)
+            
+        #provenance support
+        self.send_background_support_db(tf_names, target_names, dbname, find_target=True)
+        
+        if out_gene:
+            return target_names
+            
+        if target_names:
+            reply = KQMLList('SUCCESS')
+            target_json = self._get_genes_json(target_names)
+            tmess = KQMLList()
+            tmess.set('target-db', target_json)
+            reply.set('targets', tmess)
+        else:
+            reply = KQMLList.from_string('(SUCCESS :targets NIL)')
         return reply
     
     def find_regulation_source(self, content):
@@ -2151,7 +2374,6 @@ class TFTA_Module(Bioagent):
                  'FIND-TF-KEYWORD':respond_find_tf_keyword,
                  'FIND-GENE-GO-TF':respond_find_genes_go_tf2,
                  'IS-TF-TARGET-TISSUE':respond_is_tf_target_tissue,
-                 'FIND-TF-TARGET-TISSUE':respond_find_tf_targets_tissue,
                  'FIND-TARGET-TF-TISSUE':respond_find_target_tfs_tissue,
                  'FIND-EVIDENCE-MIRNA-TARGET':respond_find_evidence_miRNA_target,
                  'FIND-PATHWAY-DB-KEYWORD':respond_find_pathway_db_keyword,
