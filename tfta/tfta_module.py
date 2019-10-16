@@ -1623,55 +1623,6 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
         return reply
         
-    def get_target_kinase_keyword(self, content):
-        """
-        Response to find-target with kinase and keyword parameters
-        """
-        kinase_names,term_id = self._get_targets(content, descr='kinase')
-        if not kinase_names:
-            reply = self.wrap_family_message(term_id, 'NO_KINASE_NAME')
-            return reply
-        if term_id:
-            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
-            return reply
-        
-        keyword_name = _get_keyword_name(content, descr='keyword')
-        if not keyword_name:
-            reply = make_failure('NO_KEYWORD')
-            return reply
-        
-        #consider an optional parameter for subsequent query
-        of_those,_ = self._get_targets(content, 'of-those')
-        
-        try:
-            targets = self.tfta.find_target_kinase_keyword(kinase_names, keyword_name)
-        except TargetNotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :targets NIL)')
-            return reply
-            
-        if of_those:
-            targets = list(set(targets).intersection(set(of_those)))
-        
-        #consider literature results
-        try:
-            stmt_types = stmt_type_map[keyword_name]
-        except KeyError:
-            reply = make_failure('INVALID_KEYWORD')
-            return reply
-        lit_json = self.get_target_indra(kinase_names, stmt_types, keyword_name,
-                                             of_those=of_those)
-        
-        if targets or lit_json:
-            reply = KQMLList('SUCCESS')
-            if targets:
-                target_json = self._get_genes_json(targets)
-                reply.set('targets', target_json)
-            if lit_json:
-                reply.set('targets-literature', lit_json)
-        else:
-            reply = KQMLList.from_string('(SUCCESS :targets NIL)')
-        return reply
-        
     def respond_find_kinase_target(self, content):
         """
         Response to find-kinase-regulation with only target parameter
@@ -1820,6 +1771,8 @@ class TFTA_Module(Bioagent):
     def find_target_all(self, content):
         """
         Response to find-target with results from all sources
+        By default, it will only return results from our dbs. Only if :literature is set to true, 
+        it will consider literature search in order to avoid long delay caused by literature search.
         """
         reg_names,term_id = self._get_targets(content, descr='regulator')
         if not reg_names:
@@ -1850,12 +1803,16 @@ class TFTA_Module(Bioagent):
                                                    target_type=target_type_set, out_gene=True)
         
         #results from literature
-        try:
-            stmt_types = stmt_type_map[keyword_name]
-        except KeyError:
-            stmt_types = stmt_type_map['regulate']
-        lit_json = self.get_target_indra(reg_names, stmt_types, keyword_name,
+        lit = _get_keyword_name(content, descr='literature')
+        if lit and lit.upper() == 'TRUE':
+            try:
+                stmt_types = stmt_type_map[keyword_name]
+            except KeyError:
+                stmt_types = stmt_type_map['regulate']
+            lit_json = self.get_target_indra(reg_names, stmt_types, keyword_name,
                                         of_those=of_those, target_type=target_type_set)
+        else:
+            lit_json = []
         
         targets = set(targets_tfdb).union(set(targets_kdb))
         if targets or lit_json:
