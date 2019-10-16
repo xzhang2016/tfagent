@@ -922,14 +922,14 @@ class TFTA:
         """
         Return Targets regulated by the tf list in a given tissue
         """
-        target_names = []
+        target_names = set()
         if self.tfdb is not None:
             regstr = '%' + tissue_name + '%'
             t = (tf_names[0], regstr)
             res = self.tfdb.execute("SELECT DISTINCT Target FROM Target2TF2Tissue "
                                     "WHERE TF = ? AND Tissue LIKE ? ", t).fetchall()
             if res:
-                target_names = [r[0] for r in res]
+                target_names = set([r[0] for r in res])
             else:
                 return []
                 
@@ -939,7 +939,7 @@ class TFTA:
                     res = self.tfdb.execute("SELECT DISTINCT Target FROM Target2TF2Tissue "
                                             "WHERE TF = ? AND Tissue LIKE ? ", t).fetchall()
                     if res:
-                        target_names = list(set(target_names) & set([r[0] for r in res]))
+                        target_names = set(target_names) & set([r[0] for r in res])
                     else:
                         return []
         return target_names
@@ -1453,13 +1453,13 @@ class TFTA:
         """
         For given kinases, return the genes regulated by them
         """
-        gene_names = []
+        gene_names = set()
         if self.tfdb is not None:
             t = (kinase_names[0],)
             res = self.tfdb.execute("SELECT DISTINCT target FROM kinaseReg "
                                     "WHERE kinase = ? ", t).fetchall()
             if res:
-                gene_names = [r[0] for r in res]
+                gene_names = set([r[0] for r in res])
             else:
                 raise TargetNotFoundException 
             if len(kinase_names)>1:
@@ -1468,7 +1468,7 @@ class TFTA:
                     res = self.tfdb.execute("SELECT DISTINCT target FROM kinaseReg "
                                             "WHERE kinase = ? ", t).fetchall()
                     if res:
-                        gene_names = list(set(gene_names) & set([r[0] for r in res]))
+                        gene_names = set(gene_names) & set([r[0] for r in res])
                     else:
                         raise TargetNotFoundException
         if not gene_names:
@@ -1480,13 +1480,13 @@ class TFTA:
         """
         For given kinases, return the genes regulated by them
         """
-        gene_names = []
+        gene_names = set()
         if self.tfdb is not None:
             t = (kinase_names[0], keyword)
             res = self.tfdb.execute("SELECT DISTINCT target FROM kinaseReg "
                                     "WHERE kinase = ? AND direction LIKE ? ", t).fetchall()
             if res:
-                gene_names = [r[0] for r in res]
+                gene_names = set([r[0] for r in res])
             else:
                 raise TargetNotFoundException 
             if len(kinase_names)>1:
@@ -1495,7 +1495,7 @@ class TFTA:
                     res = self.tfdb.execute("SELECT DISTINCT target FROM kinaseReg "
                                             "WHERE kinase = ? AND direction LIKE ? ", t).fetchall()
                     if res:
-                        gene_names = list(set(gene_names) & set([r[0] for r in res]))
+                        gene_names = set(gene_names) & set([r[0] for r in res])
                     else:
                         raise TargetNotFoundException
         if not gene_names:
