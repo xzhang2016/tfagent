@@ -68,7 +68,27 @@ class TestFindPathway1(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", len(output.get('pathways')))
         assert len(output.get('pathways')) == 27, output
+        
+class TestFindPathway1_1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindPathway1_1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        of_those = make_pathway_json(['Cell Differentiation - Index', 'HTLV-I infection - Homo sapiens (human)', 
+                                      'Mesodermal Commitment Pathway', 'il12 pathway'])
+        gene = agent_clj_from_text('SRF')
+        content = KQMLList('FIND-PATHWAY')
+        content.set('gene', gene)
+        content.set('of-those', of_those)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", len(output.get('pathways')))
+        assert len(output.get('pathways')) == 3, output
 
 #What pathways involve kras and elk1? (subtask: find-pathway-gene)
 class TestFindPathway2(_IntegrationTest):
@@ -84,6 +104,7 @@ class TestFindPathway2(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", len(output.get('pathways')))
         assert len(output.get('pathways')) == 23, output
         
 ##What pathways involve MEK? (subtask: find-pathway-gene)
@@ -99,13 +120,10 @@ class TestFindPathway3(_IntegrationTest):
         return get_request(content), content
         
     def check_response_to_message(self, output):
-        assert output.head() == 'FAILURE', output
-        assert output.get('reason') == 'FAMILY_NAME', output
-        print("len(output.get('clarification'))=", len(output.get('clarification')))
-        print("len(output.get('clarification').get('as')=", len(output.get('clarification').get('as')))
-        assert len(output.get('clarification')) == 5, output
-        assert len(output.get('clarification').get('as')) == 2, output
-
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", len(output.get('pathways')))
+        assert len(output.get('pathways')) == 50, output
+        
 #What pathways involve stat and il2? (subtask: find-pathway-gene)
 class TestFindPathway4(_IntegrationTest):
     def __init__(self, *args):
@@ -120,15 +138,12 @@ class TestFindPathway4(_IntegrationTest):
         return get_request(content), content
         
     def check_response_to_message(self, output):
-        assert output.head() == 'FAILURE', output
-        assert output.get('reason') == 'FAMILY_NAME', output
-        print("len(output.get('clarification'))=", len(output.get('clarification')))
-        print("len(output.get('clarification').get('as')=", len(output.get('clarification').get('as')))
-        assert len(output.get('clarification')) == 5, output
-        assert len(output.get('clarification').get('as')) == 8, output
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", len(output.get('pathways')))
+        assert len(output.get('pathways')) == 26, output
 
 #test regulator
-#What pathways involve genes regulated by smad2? (subtask: find-pathway-gene)
+#What pathways involve genes regulated by smad2? 
 class TestFindPathway5(_IntegrationTest):
     def __init__(self, *args):
         super(TestFindPathway5, self).__init__(TFTA_Module)
@@ -136,6 +151,42 @@ class TestFindPathway5(_IntegrationTest):
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
         regulator = agent_clj_from_text('smad2')
+        content = KQMLList('FIND-PATHWAY')
+        content.set('regulator', regulator)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", len(output.get('pathways')))
+        assert len(output.get('pathways')) == 30, output
+        
+class TestFindPathway5_1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindPathway5_1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        regulator = agent_clj_from_text('smad2')
+        of_those = make_pathway_json(['Gene Expression', 'Generic Transcription Pathway', 
+                   'Pathways in cancer - Homo sapiens (human)', 'Cell Differentiation - Index'])
+        content = KQMLList('FIND-PATHWAY')
+        content.set('regulator', regulator)
+        content.set('of-those', of_those)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", len(output.get('pathways')))
+        assert len(output.get('pathways')) == 3, output
+        
+#What pathways involve genes regulated by FOS (protein family)? 
+class TestFindPathway51(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindPathway51, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        regulator = agent_clj_from_text('FOS')
         content = KQMLList('FIND-PATHWAY')
         content.set('regulator', regulator)
         return get_request(content), content
@@ -161,7 +212,29 @@ class TestFindPathway6(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=" + str(len(output.get('pathways'))))
         assert len(output.get('pathways')) == 4, output
+        
+class TestFindPathway6_1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindPathway6_1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        gene = agent_clj_from_text('SRF')
+        db = 'Reactome'
+        of_those = make_pathway_json(['Cell Differentiation - Index', 'RHO GTPase Effectors',
+                   'Mesodermal Commitment Pathway', 'Signaling by Rho GTPases'])
+        content = KQMLList('FIND-PATHWAY')
+        content.set('gene', gene)
+        content.set('database', db)
+        content.set('of-those', of_those)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=" + str(len(output.get('pathways'))))
+        assert len(output.get('pathways')) == 2, output
         
 #Which KEGG pathways utilize SRF? (subtask: find-pathway-db-gene)
 class TestFindPathway7(_IntegrationTest):
@@ -179,6 +252,7 @@ class TestFindPathway7(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=" + str(len(output.get('pathways'))))
         assert len(output.get('pathways')) == 4, output
         
 ##Which KEGG pathways utilize MEK? (subtask: find-pathway-db-gene)
@@ -196,12 +270,9 @@ class TestFindPathway8(_IntegrationTest):
         return get_request(content), content
         
     def check_response_to_message(self, output):
-        assert output.head() == 'FAILURE', output
-        assert output.get('reason') == 'FAMILY_NAME', output
-        print("len(output.get('clarification'))=", len(output.get('clarification')))
-        print("len(output.get('clarification').get('as')=", len(output.get('clarification').get('as')))
-        assert len(output.get('clarification')) == 5, output
-        assert len(output.get('clarification').get('as')) == 2, output
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=" + str(len(output.get('pathways'))))
+        assert len(output.get('pathways')) == 50, output
 
 #test regulator for find-pathway-db-gene
 #which kegg pathways utilize genes regulated by smad2?
@@ -212,6 +283,46 @@ class TestFindPathway9(_IntegrationTest):
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
         regulator = agent_clj_from_text('smad2')
+        db = 'KEGG'
+        content = KQMLList('FIND-PATHWAY')
+        content.set('regulator', regulator)
+        content.set('database', db)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", len(output.get('pathways')))
+        assert len(output.get('pathways')) == 30, output
+        
+class TestFindPathway9_1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindPathway9_1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        regulator = agent_clj_from_text('smad2')
+        db = 'KEGG'
+        of_those = make_pathway_json(['Cell Differentiation - Index', 'Pathways in cancer - Homo sapiens (human)',
+                   'Transcriptional misregulation in cancer - Homo sapiens (human)', 'HTLV-I infection - Homo sapiens (human)'])
+        content = KQMLList('FIND-PATHWAY')
+        content.set('regulator', regulator)
+        content.set('database', db)
+        content.set('of-those', of_those)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", len(output.get('pathways')))
+        assert len(output.get('pathways')) == 3, output
+        
+#which kegg pathways utilize genes regulated by FOS?
+class TestFindPathway9_2(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindPathway9_2, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        regulator = agent_clj_from_text('FOS')
         db = 'KEGG'
         content = KQMLList('FIND-PATHWAY')
         content.set('regulator', regulator)
@@ -238,6 +349,25 @@ class TestFindPathwayKeyword10(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         assert len(output.get('pathways')) == 9, output
+        
+class TestFindPathwayKeyword10_1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindPathwayKeyword10_1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        keyword = 'calcium'
+        of_those = make_pathway_json(['Calcium Regulation in the Cardiac Cell', 
+                   'Highly calcium permeable nicotinic acetylcholine receptors'])
+        content = KQMLList('FIND-PATHWAY')
+        content.set('keyword', keyword)
+        content.set('of-those', of_those)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", len(output.get('pathways')))
+        assert len(output.get('pathways')) == 2, output
 
 #What pathways involve immune system?        
 class TestFindPathwayKeyword11(_IntegrationTest):
@@ -272,7 +402,29 @@ class TestFindPathway12(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", len(output.get('pathways')))
         assert len(output.get('pathways')) == 2, output
+        
+class TestFindPathway12_1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindPathway12_1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        gene = agents_clj_from_text('kras, elk1')
+        keyword = 'immune'
+        of_those = make_pathway_json(['Cell Differentiation - Index', 'immune pathway',
+                   'Immune System'])
+        content = KQMLList('FIND-PATHWAY')
+        content.set('gene', gene)
+        content.set('keyword', keyword)
+        content.set('of-those', of_those)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", len(output.get('pathways')))
+        assert len(output.get('pathways')) == 1, output
         
 #What immune pathways involve tap1 and jak1? (subtask: find-pathway-gene-keyword)
 class TestFindPathway13(_IntegrationTest):
@@ -290,6 +442,7 @@ class TestFindPathway13(_IntegrationTest):
         
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", len(output.get('pathways')))
         assert len(output.get('pathways')) == 1, output
         
 ##What immune pathways involve AKT and jak1? (subtask: find-pathway-gene-keyword)
@@ -307,12 +460,28 @@ class TestFindPathway14(_IntegrationTest):
         return get_request(content), content
         
     def check_response_to_message(self, output):
-        assert output.head() == 'FAILURE', output
-        assert output.get('reason') == 'FAMILY_NAME', output
-        print("len(output.get('clarification'))=", len(output.get('clarification')))
-        print("len(output.get('clarification').get('as')=", len(output.get('clarification').get('as')))
-        assert len(output.get('clarification')) == 5, output
-        assert len(output.get('clarification').get('as')) == 3, output
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", len(output.get('pathways')))
+        assert len(output.get('pathways')) == 2, output
+        
+##What immune pathways involve AKT? (subtask: find-pathway-gene-keyword)
+class TestFindPathway141(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindPathway141, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        gene = agents_clj_from_text('AKT')
+        keyword = 'immune'
+        content = KQMLList('FIND-PATHWAY')
+        content.set('gene', gene)
+        content.set('keyword', keyword)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('pathways'))=", len(output.get('pathways')))
+        assert len(output.get('pathways')) == 3, output
 
 #test regulator for find-pathway-gene-keyword
 #Which immune system pathways involve genes regulated by stat3?
@@ -334,11 +503,52 @@ class TestFindPathway15(_IntegrationTest):
         print('len(output)=' + str(len(output.get('pathways'))))
         assert output.head() == 'SUCCESS', output
         assert len(output.get('pathways')) == 4, output
+        
+class TestFindPathway15_1(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindPathway15_1, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        regulator = agent_clj_from_text('STAT3')
+        keyword = 'immune-system'
+        of_those = make_pathway_json(['Cell Differentiation - Index', 'immune pathway',
+                   'Immune System', 'Innate Immune System'])
+        content = KQMLList('FIND-PATHWAY')
+        content.set('regulator', regulator)
+        content.set('keyword', keyword)
+        content.set('of-those', of_those)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        print('len(output)=' + str(len(output.get('pathways'))))
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 2, output
 
-#test the limit (find-pathway-keyword)
+#Which immune system pathways involve genes regulated by FOS?
 class TestFindPathway16(_IntegrationTest):
     def __init__(self, *args):
         super(TestFindPathway16, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        regulator = agent_clj_from_text('FOS')
+        keyword = 'immune-system'
+        
+        content = KQMLList('FIND-PATHWAY')
+        content.set('regulator', regulator)
+        content.set('keyword', keyword)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        print("len(output.get('pathways'))=" + str(len(output.get('pathways'))))
+        assert output.head() == 'SUCCESS', output
+        assert len(output.get('pathways')) == 4, output
+
+#test the limit (find-pathway-keyword)
+class TestFindPathway17(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindPathway17, self).__init__(TFTA_Module)
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
@@ -673,7 +883,6 @@ class TestFindCommonPathwayGene1(_IntegrationTest):
         return get_request(content), content
         
     def check_response_to_message(self, output):
-        print('len(output)=' + str(len(output.get('pathways'))))
         assert output.head() == 'SUCCESS', output
         print("len(output.get('pathways'))=", str(len(output.get('pathways'))))
         assert len(output.get('pathways')) == 30, output
@@ -685,7 +894,7 @@ class TestFindCommonPathwayGene2(_IntegrationTest):
         
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
-        target = agents_clj_from_text('STAT3, AKT, SRF')
+        target = agents_clj_from_text('KRAS, MEK, FOS')
         
         content = KQMLList('FIND-COMMON-PATHWAY-GENES')
         content.set('target', target)
@@ -694,7 +903,7 @@ class TestFindCommonPathwayGene2(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('pathways'))=", str(len(output.get('pathways'))))
-        assert len(output.get('pathways')) == 6, output
+        assert len(output.get('pathways')) == 23, output
         
 #which of those are in the immune pathways? 
 class TestFindCommonPathwayGene3(_IntegrationTest):
