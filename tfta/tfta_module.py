@@ -2994,24 +2994,24 @@ class TFTA_Module(Bioagent):
         except Exception:
             return None,None
         if isinstance(agents, list):
-            proteins = [a.name for a in agents if a is not None and ('UP' in a.db_refs or 'HGNC' in a.db_refs or len(a.db_refs)==0)]
+            proteins = [a.name.upper() for a in agents if a is not None and ('UP' in a.db_refs or 'HGNC' in a.db_refs or len(a.db_refs)==0)]
             #family = {a.db_refs['TRIPS']:a.name for a in agents if a is not None and 'FPLX' in a.db_refs and a.name not in proteins}
             #consider +trips+ as an optional id
             for a in agents:
-                if a is not None and 'FPLX' in a.db_refs and a.name not in proteins:
+                if a is not None and 'FPLX' in a.db_refs and a.name.upper() not in proteins:
                     if 'TRIPS' in a.db_refs:
                         family[a.db_refs['TRIPS']] = a
                     else:
-                        family[a.name] = a
+                        family[a.name.upper()] = a
         elif isinstance(agents, Agent):
             if 'UP' in agents.db_refs or 'HGNC' in agents.db_refs or len(agents.db_refs)==0:
-                proteins = [agents.name]
+                proteins = [agents.name.upper()]
             if not proteins and 'FPLX' in agents.db_refs:
                 #family = {agents.db_refs['TRIPS']:agents.name}
                 if 'TRIPS' in agents.db_refs:
                     family[agents.db_refs['TRIPS']] = agents
                 else:
-                    family[agents.name] = agents
+                    family[agents.name.upper()] = agents
         return proteins,family
         
     def _get_targets2(self, content, descr='target'):
@@ -3029,17 +3029,17 @@ class TFTA_Module(Bioagent):
         except Exception:
             return None,None
         if isinstance(agents, list):
-            proteins = [a.name for a in agents if a is not None and ('UP' in a.db_refs or 'HGNC' in a.db_refs or len(a.db_refs)==0)]
+            proteins = [a.name.upper() for a in agents if a is not None and ('UP' in a.db_refs or 'HGNC' in a.db_refs or len(a.db_refs)==0)]
             #expand family name to members
             for a in agents:
-                if a is not None and 'FPLX' in a.db_refs and a.name not in proteins:
+                if a is not None and 'FPLX' in a.db_refs and a.name.upper() not in proteins:
                     family.append(a)
             fmembers = self.tfta.find_members(family)
         elif isinstance(agents, Agent):
             if 'UP' in agents.db_refs or 'HGNC' in agents.db_refs or len(agents.db_refs)==0:
-                proteins = [agents.name]
+                proteins = [agents.name.upper()]
             if not proteins and 'FPLX' in agents.db_refs:
-                fmembers[agents.name] = self.tfta.find_member(agents)
+                fmembers[agents.name.upper()] = self.tfta.find_member(agents)
         return proteins,fmembers
         
     def _get_of_those_pathway(self, content, descr='of-those'):
