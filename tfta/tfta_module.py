@@ -13,9 +13,14 @@ from kqml import KQMLModule, KQMLPerformative, KQMLList
 from .tfta import TFTA, TFNotFoundException, TargetNotFoundException, PathwayNotFoundException 
 from .tfta import GONotFoundException, miRNANotFoundException, TissueNotFoundException
 from .tfta import KinaseNotFoundException
+from .mirDisease import mirDisease
+from enrichment.GO import GOEnrich
+from utils.heatmap import generate_heatmap
 from indra.sources.trips.processor import TripsProcessor
 from collections import defaultdict
 from bioagents import Bioagent
+from indra.statements import Agent
+from indra.databases import hgnc_client
 
 stmt_provenance_map = {'increase':'upregulates', 'decrease':'downregulates',
                  'regulate':'regulates'}
@@ -35,21 +40,21 @@ class TFTA_Module(Bioagent):
     responses from and to other agents in the system."""
     name = 'TFTA'
     tasks = ['IS-TF-TARGET', 'FIND-TF-TARGET', 'FIND-TARGET-TF',
-             'FIND-PATHWAY-GENE', 'FIND-PATHWAY-DB-GENE',
              'FIND-TF-PATHWAY', 'FIND-GENE-PATHWAY',
              'FIND-PATHWAY-KEYWORD', 'FIND-TF-KEYWORD',
-             'FIND-COMMON-TF-GENES', 'FIND-OVERLAP-TARGETS-TF-GENES',
-             'FIND-COMMON-PATHWAY-GENES','FIND-PATHWAY-GENE-KEYWORD',
-             'FIND-COMMON-PATHWAY-GENES-KEYWORD', 'FIND-GENE-GO-TF',
-             'IS-TF-TARGET-TISSUE', 'FIND-TF-TARGET-TISSUE',
+             'FIND-COMMON-TF-GENES', 'FIND-GENE-GO-TF',
+             'FIND-COMMON-PATHWAY-GENES', 'FIND-GENE-TISSUE',
+             'IS-TF-TARGET-TISSUE', 'FIND-EVIDENCE-MIRNA-TARGET',
              'FIND-TARGET-TF-TISSUE', 'IS-PATHWAY-GENE','IS-MIRNA-TARGET', 
-             'FIND-MIRNA-TARGET', 'FIND-TARGET-MIRNA', 'FIND-EVIDENCE-MIRNA-TARGET',
+             'FIND-MIRNA-TARGET', 'FIND-TARGET-MIRNA', 'GO-ANNOTATION',
              'FIND-MIRNA-COUNT-GENE','FIND-GENE-COUNT-MIRNA',
              'FIND-PATHWAY-DB-KEYWORD', 'FIND-TISSUE', 'IS-REGULATION',
              'FIND-TF', 'FIND-PATHWAY', 'FIND-TARGET', 'FIND-GENE', 'FIND-MIRNA',
              'IS-GENE-ONTO', 'FIND-GENE-ONTO', 'FIND-KINASE-REGULATION',
-             'FIND-TF-MIRNA', 'FIND-REGULATION', 'FIND-EVIDENCE', 'FIND-GENE-TISSUE',
-             'IS-GENE-TISSUE', 'FIND-KINASE-PATHWAY','TEST-FUNCTION']
+             'FIND-TF-MIRNA', 'FIND-REGULATION', 'FIND-EVIDENCE', 
+             'IS-GENE-TISSUE', 'FIND-KINASE-PATHWAY', 'GO-ENRICHMENT', 
+             'IS-MIRNA-DISEASE', 'FIND-MIRNA-DISEASE', 'FIND-DISEASE-MIRNA',
+             'MAKE-HEATMAP']
     #keep the genes from the most recent previous call, which are used to input 
     #find-gene-onto if there's no gene input 
     #gene_list = ['STAT3', 'JAK1', 'JAK2', 'ELK1', 'FOS', 'SMAD2', 'KDM4B']
@@ -58,8 +63,10 @@ class TFTA_Module(Bioagent):
     def __init__(self, **kwargs):
         #Instantiate a singleton TFTA agent
         self.tfta = TFTA()
+        self.go = GOEnrich()
+        self.md = mirDisease()
         self.stmts_indra = dict()
-        self.hgnc_info = dict()
+        #self.hgnc_info = dict()
     
         # Call the constructor of Bioagent
         super(TFTA_Module, self).__init__(**kwargs)
@@ -75,8 +82,8 @@ class TFTA_Module(Bioagent):
         is-tf-target
         is-tf-target-tissue
         """
-        tf_arg = content.gets('tf')
-        target_arg = content.gets('target')
+        tf_arg = content.get('tf')
+        target_arg = content.get('target')
         tissue_arg = content.get('tissue')
         keyword_name = _get_keyword_name(content, descr='keyword')
         
@@ -87,10 +94,9 @@ class TFTA_Module(Bioagent):
                 reply = self.respond_is_tf_target_literature(content)
             else:
                 reply = self.respond_is_tf_target(content)
-        elif all([tf_arg,target_arg]):
-            reply = self.respond_is_tf_target(content)
         else:
-            reply = make_failure('UNKNOW_TASK')
+            reply = self.respond_is_tf_target(content)
+        
         return reply
     
     def respond_find_tf(self, content):
@@ -98,7 +104,7 @@ class TFTA_Module(Bioagent):
         Response content to find-tf request which includes:
         find-target-tf, find-target-tf-tissue
         """
-        target_arg = content.gets('target')
+        target_arg = content.get('target')
         tissue_arg = content.get('tissue')
         keyword_name = _get_keyword_name(content, descr='keyword')
         
@@ -109,10 +115,9 @@ class TFTA_Module(Bioagent):
                 reply = self.respond_find_tf_literature(content)
             else:
                 reply = self.respond_find_target_tfs(content)
-        elif target_arg:
-            reply = self.respond_find_target_tfs(content)
         else:
-            reply = make_failure('UNKNOW_TASK')
+            reply = self.respond_find_target_tfs(content)
+        
         return reply
     
     def respond_find_pathway(self, content):
@@ -121,27 +126,42 @@ class TFTA_Module(Bioagent):
         find-pathway-gene, find-pathway-db-gene, find-pathway-gene-keyword,
         find-pathway-keyword.
         """
-        gene_arg = content.gets('gene')
-        regulator_arg = content.gets('regulator')
+        gene_arg = content.get('gene')
+        regulator_arg = content.get('regulator')
         db_arg = content.get('database')
         keyword_arg = content.get('keyword')
-        #count_arg = content.get('count')
         if all([keyword_arg,gene_arg]):
-            reply = self.respond_find_pathway_gene_keyword(content)
+            reply = self.find_pathway_gene_keyword(content)
         elif all([gene_arg,db_arg]):
-            reply = self.respond_find_pathway_db_gene(content)
+            reply = self.find_pathway_db_gene(content)
         elif all([keyword_arg,regulator_arg]):
-            reply = self.respond_find_pathway_keyword_regulator(content)
+            reply = self.find_pathway_keyword_regulator(content)
         elif all([regulator_arg,db_arg]):
-            reply = self.respond_find_pathway_db_regulator(content)
-        elif gene_arg:
-            reply = self.respond_find_pathway_gene(content)
+            reply = self.find_pathway_db_regulator(content)
         elif regulator_arg:
-            reply = self.respond_find_pathway_regulator(content)
+            reply = self.find_pathway_regulator(content)
         elif keyword_arg:
             reply = self.respond_find_pathway_keyword(content)
         else:
-            reply = make_failure('UNKNOWN_TASK')
+            reply = self.find_pathway_gene(content)
+        return reply
+        
+    def respond_find_common_pathway_genes(self, content):
+        """
+        Respond to find-common-pathway-genes, which covers:
+        find-common-pathway-genes, find-common-pathway-genes-keyword,
+        find-common-pathway-genes-database
+        """
+        target_arg = content.get('target')
+        keyword_arg = content.get('keyword')
+        db_arg = content.get('database')
+        if all([target_arg, keyword_arg]):
+            reply = self.get_common_pathway_genes_keyword(content)
+        elif all([target_arg, db_arg]):
+            reply = self.get_common_pathway_genes_db(content)
+        else:
+            reply = self.get_common_pathway_genes(content)
+        
         return reply
     
     def respond_find_target(self, content):
@@ -149,74 +169,17 @@ class TFTA_Module(Bioagent):
         Response content to find-target request, which includes these cases:
         find-tf-target, find-tf-target-tissue. 
         """
-        tf_arg = content.gets('tf')
         tissue_arg = content.get('tissue')
-        keyword_name = _get_keyword_name(content, descr='keyword')
+        source_arg = content.get('source')
         
-        if all([tf_arg,tissue_arg]):
-            reply = self.respond_find_tf_targets_tissue(content)
-        elif all([tf_arg, keyword_name]):
-            if keyword_name in ['increase', 'decrease']:
-                reply = self.respond_find_target_literature(content)
-            else:
-                reply = self.respond_find_tf_targets(content)
-        elif tf_arg:
-            reply = self.respond_find_tf_targets(content)
+        if tissue_arg:
+            reply = self.find_tf_targets_tissue(content)
+        elif source_arg:
+            reply = self.find_target_source(content)
         else:
-            reply = make_failure('UNKNOWN_TASK')
+            reply = self.find_target_all(content)
         return reply
     
-    def respond_find_gene(self, content):
-        """
-        Response content to find-gene request, which includes:
-        find-gene-pathway, find-tf-pathway, find-kinase-pathway
-        """
-        #pathway_arg = content.gets('pathway')
-        subtype_name = _get_keyword_name(content, descr='subtype')
-        if subtype_name == 'tf':
-            reply = self.respond_find_tf_pathway(content)
-        elif subtype_name == 'gene':
-            reply = self.respond_find_gene_pathway(content)
-        elif subtype_name == 'kinase':
-            reply = self.respond_find_kinase_pathway(content)
-        else:
-            reply = make_failure('UNKNOWN_TASK')
-        return reply
-      
-    def respond_find_miRNA(self, content):
-        """
-        Response content to find-mirna request, which includes:
-        find-mirna-target, find-mirna-count-gene
-        """
-        target_arg = content.gets('target')
-        count_arg = content.get('count')
-        if all([target_arg,count_arg]):
-            reply = self.respond_find_miRNA_count_target(content)
-        elif target_arg:
-            reply = self.respond_find_miRNA_target(content)
-        else:
-            reply = make_failure('UNKNOWN_TASK')
-        return reply
-        
-    def respond_find_common_pathway_all(self, content):
-        """
-        Respond to find-common-pathway-genes, which covers:
-        find-common-pathway-genes, find-common-pathway-genes-keyword,
-        find-common-pathway-genes-database
-        """
-        target_arg = content.gets('target')
-        keyword_arg = content.get('keyword')
-        db_arg = content.get('database')
-        if all([target_arg, keyword_arg]):
-            reply = self.respond_find_common_pathway_genes_keyword(content)
-        elif all([target_arg, db_arg]):
-            reply = self.respond_find_common_pathway_genes_db(content)
-        elif target_arg:
-            reply = self.respond_find_common_pathway_genes(content)
-        else:
-            reply = make_failure('UNKNOWN_TASK')
-        return reply
-        
     def respond_find_regulation(self, content):
         """
         Respond to find-regulation
@@ -234,11 +197,11 @@ class TFTA_Module(Bioagent):
             else:
                 reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
         elif source_arg:
-            reply = self.respond_find_regulation_source(content)
+            reply = self.find_regulation_source(content)
         elif agent_arg:
-            reply = self.respond_find_regulation_agent(content)
+            reply = self.find_regulation_agent(content)
         else:
-            reply = self.respond_find_regulation_all(content)
+            reply = self.find_regulation_all(content)
         return reply
         
     def respond_is_gene_onto(self, content):
@@ -250,21 +213,20 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_KEYWORD')
             return reply
         
-        gene_name,term_id = get_gene(content, descr='gene')
-        gene_arg = content.gets('gene')
+        gene_name,term_id = self._get_targets(content, descr='gene')
         if not gene_name:
             reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
             return reply
             
         #check if keyword is protein or gene
         if keyword_name in ['gene', 'protein']:
-            is_onto,is_ekb = self.is_protein_gene(gene_arg, keyword_name)
-            if not is_ekb:
-                reply = make_failure('ONLY_SUPPORT_EKB')
-                return reply
+            if gene_name:
+                is_onto = True
+            else:
+                is_onto = False
         else:
             try:
-                is_onto = self.tfta.Is_gene_onto(keyword_name, gene_name)
+                is_onto = self.tfta.Is_gene_onto(keyword_name, gene_name[0])
             except GONotFoundException:
                 reply = make_failure('GO_NOT_FOUND')
                 return reply
@@ -277,14 +239,13 @@ class TFTA_Module(Bioagent):
         """
         Respond to find-gene-onto
         """
-        regulator_arg = content.gets('regulator')
-        gene_arg = content.gets('gene')
+        regulator_arg = content.get('regulator')
+        #gene_arg = content.get('gene')
         if regulator_arg:
             reply = self.respond_find_gene_onto_regulator(content)
-        elif gene_arg:
-            reply = self.respond_find_gene_onto_gene(content)
         else:
-            reply = make_failure('UNKNOWN_TASK')
+            reply = self.respond_find_gene_onto_gene(content)
+        
         return reply
         
     def respond_find_gene_onto_gene(self, content):
@@ -296,9 +257,8 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_KEYWORD')
             return reply
         
-        gene_names,term_id = get_of_those_list(content, descr='gene')
+        gene_names,term_id = self._get_targets(content, descr='gene')
         if not gene_names:
-            #gene_arg = content.gets('gene')
             reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
             return reply
             
@@ -308,9 +268,9 @@ class TFTA_Module(Bioagent):
             reply = make_failure('GO_NOT_FOUND')
             return reply
         if len(results):
-            gene_list_str = self.wrap_message(':genes', results)
-            reply = KQMLList.from_string(
-                '(SUCCESS ' + gene_list_str + ')')
+            gene_json = self._get_genes_json(results)
+            reply = KQMLList('SUCCESS')
+            reply.set('genes', gene_json)
         else:
             reply = KQMLList.from_string('(SUCCESS :genes NIL)')
         return reply
@@ -324,9 +284,8 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_KEYWORD')
             return reply
             
-        regulator_names,term_id = get_of_those_list(content, descr='regulator')
+        regulator_names,term_id = self._get_targets(content, descr='regulator')
         if not regulator_names:
-            #regulator_arg = content.gets('regulator')
             reply = self.wrap_family_message(term_id, 'NO_REGULATOR_NAME')
             return reply
         if term_id:
@@ -345,8 +304,9 @@ class TFTA_Module(Bioagent):
                 reply = make_failure('GO_NOT_FOUND')
                 return reply
             if len(results):
-                gene_list_str = self.wrap_message(':genes', results)
-                reply = KQMLList.from_string('(SUCCESS ' + gene_list_str + ')')
+                gene_json = self._get_genes_json(results)
+                reply = KQMLList('SUCCESS')
+                reply.set('genes', gene_json)
             else:
                 reply = KQMLList.from_string('(SUCCESS :genes NIL)')
         else:
@@ -358,40 +318,43 @@ class TFTA_Module(Bioagent):
         Response content to is-tf-target request.
         """
         literature = False
-        tf_name,term_id = get_gene(content, descr='tf')
+        tf_name,term_id = self._get_targets(content, descr='tf')
         if not tf_name:
             #tf_arg = content.gets('tf')
             reply = self.wrap_family_message(term_id, 'NO_TF_NAME')
             return reply
         
-        target_name,term_id = get_gene(content, descr='target')
+        target_name,term_id = self._get_targets(content, descr='target')
         if not target_name:
             #target_arg = content.gets('target')
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         
         #check if it exists in literature
-        term_tuple = (tf_name, target_name, 'REGULATE')
+        term_tuple = (tf_name[0], target_name[0], 'REGULATE')
         if term_tuple not in self.stmts_indra:
-            stmts,success = self.tfta.find_statement_indraDB(subj=tf_name, obj=target_name, stmt_types=['RegulateAmount'])
+            stmts,success = self.tfta.find_statement_indraDB(subj=tf_name[0], obj=target_name[0], stmt_types=['RegulateAmount'])
             if success:
                 self.stmts_indra[term_tuple] = stmts
         else:
             stmts = self.stmts_indra[term_tuple]
         #provenance support
-        self.send_background_support(stmts, tf_name, target_name, 'regulate')
+        self.send_background_support(stmts, tf_name[0], target_name[0], 'regulate')
         if len(stmts):
             literature = True
         #check the db
         try:
-            is_target,dbname = self.tfta.Is_tf_target(tf_name, target_name)
+            is_target,dbname = self.tfta.Is_tf_target(tf_name[0], target_name[0])
             #provenance support
-            self.send_background_support_db(tf_name, target_name, dbname)
-        except Exception as e:
+            self.send_background_support_db(tf_name[0], target_name[0], dbname)
+        except Exception:
             #provenance support
-            self.send_background_support_db(tf_name, target_name, '')
+            self.send_background_support_db(tf_name[0], target_name[0], '')
             if not literature:
-                reply = KQMLList.from_string('(SUCCESS :result FALSE :db FALSE :literature FALSE)')
+                reply = KQMLList('SUCCESS')
+                reply.set('result', 'FALSE')
+                reply.set('db', 'FALSE')
+                reply.set('literature', 'FALSE')
                 return reply
         
         result = is_target or literature
@@ -407,13 +370,13 @@ class TFTA_Module(Bioagent):
         Response content to is-tf-target request with regulating direction
         """
         literature = False
-        tf_name,term_id = get_gene(content, descr='tf')
+        tf_name,term_id = self._get_targets(content, descr='tf')
         if not tf_name:
             #tf_arg = content.gets('tf')
             reply = self.wrap_family_message(term_id, 'NO_TF_NAME')
             return reply
             
-        target_name,term_id = get_gene(content, descr='target')
+        target_name,term_id = self._get_targets(content, descr='target')
         if not target_name:
             #target_arg = content.gets('target')
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
@@ -429,15 +392,15 @@ class TFTA_Module(Bioagent):
             reply = make_failure('INVALID_KEYWORD')
             return reply
             
-        term_tuple = (tf_name, target_name, keyword_name)
+        term_tuple = (tf_name[0], target_name[0], keyword_name)
         if term_tuple not in self.stmts_indra:
-            stmts,success = self.tfta.find_statement_indraDB(subj=tf_name, obj=target_name, stmt_types=stmt_types)
+            stmts,success = self.tfta.find_statement_indraDB(subj=tf_name[0], obj=target_name[0], stmt_types=stmt_types)
             if success:
                 self.stmts_indra[term_tuple] = stmts
         else:
             stmts = self.stmts_indra[term_tuple]
         #provenance support
-        self.send_background_support(stmts, tf_name, target_name, keyword_name)
+        self.send_background_support(stmts, tf_name[0], target_name[0], keyword_name)
         if len(stmts):
             literature = True
         #set is_target to False since it doesn't support 'increase' or 'decrease' query
@@ -461,13 +424,13 @@ class TFTA_Module(Bioagent):
         """
         Response content to is-tf-target-tissue request.
         """
-        tf_name,term_id = get_gene(content, descr='tf')
+        tf_name,term_id = self._get_targets(content, descr='tf')
         if not tf_name:
             #tf_arg = content.gets('tf')
             reply = self.wrap_family_message(term_id, 'NO_TF_NAME')
             return reply
             
-        target_name,term_id = get_gene(content, descr='target')
+        target_name,term_id = self._get_targets(content, descr='target')
         if not target_name:
             #target_arg = content.gets('target')
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
@@ -481,9 +444,10 @@ class TFTA_Module(Bioagent):
             reply = make_failure('INVALID_TISSUE')
             return reply
         try:
-            is_target = self.tfta.Is_tf_target_tissue(tf_name, target_name, tissue_name)
+            is_target = self.tfta.Is_tf_target_tissue(tf_name[0], target_name[0], tissue_name)
         except Exception as e:
-            reply = KQMLList.from_string('(SUCCESS :result FALSE)')
+            reply = KQMLList('SUCCESS')
+            reply.set('result', 'FALSE')
             return reply
         reply = KQMLList('SUCCESS')
         is_target_str = 'TRUE' if is_target else 'FALSE'
@@ -496,18 +460,15 @@ class TFTA_Module(Bioagent):
         Covered by find-target
         For a tf list, reply with the targets found
         """
-        tf_names,term_id = get_of_those_list(content, descr='tf')
-        if not len(tf_names):
-            #tf_arg = content.gets('tf')
+        tf_names,term_id = self._get_targets(content, descr='tf')
+        if not tf_names:
             reply = self.wrap_family_message(term_id, 'NO_TF_NAME')
             return reply
         if term_id:
             reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
             return reply
 
-        #tf_str = ', '.join(tf_names[:-1]) + ' and ' + tf_names[-1]
-        #consider an optional parameter for subsequent query
-        of_targets_names,nouse = get_of_those_list(content)
+        of_targets_names,nouse = self._get_targets(content, descr='of-those')
         
         #consider an optional parameter to only return given type of genes
         target_type_set = self.get_target_type_set(content)
@@ -528,13 +489,10 @@ class TFTA_Module(Bioagent):
         if target_type_set:
             target_names = target_type_set & set(target_names)
         
-        if len(target_names):
-            gene_list_str = self.wrap_message(':targets', target_names)
-            reply = KQMLList.from_string('(SUCCESS ' + gene_list_str + ')')
+        if target_names:
+            reply = self.wrap_message('targets', target_names)
         else:
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
-            
-        self.gene_list = target_names
         
         #provenance support
         self.send_background_support_db(tf_names, target_names, dbname, find_target=True)
@@ -545,12 +503,10 @@ class TFTA_Module(Bioagent):
         """
         Respond to find-target request with information in literatures
         """
-        tf_names,term_id = get_of_those_list(content, descr='tf')
-        if not len(tf_names):
-            #tf_arg = content.gets('tf')
+        tf_names,term_id = self._get_targets(content, descr='tf')
+        if not tf_names:
             reply = self.wrap_family_message(term_id, 'NO_TF_NAME')
             return reply
-            
         if term_id:
             reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
             return reply
@@ -561,34 +517,33 @@ class TFTA_Module(Bioagent):
             return reply
         
         #consider an optional parameter for sequencing query
-        of_those_names,nouse = get_of_those_list(content)
+        of_those_names,nouse = self._get_targets(content, descr='of-those')
         
         #consider an optional parameter to only return given types of genes
         target_type = _get_keyword_name(content, descr='target-type')
     
         try:
             stmt_types = stmt_type_map[keyword_name]
-        except KeyError as e:
+        except KeyError:
             reply = make_failure('INVALID_KEYWORD')
             return reply
         lit_messages = self.get_target_indra(tf_names, stmt_types, keyword_name, 
                                              of_those=of_those_names, target_type=target_type)
         if len(lit_messages):
-            reply = KQMLList.from_string(
-                    '(SUCCESS ' + lit_messages + ')')
+            reply = KQMLList('SUCCESS')
+            reply.set('targets', lit_messages)
         else:
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
         return reply
 
-    def respond_find_tf_targets_tissue(self, content):
+    def find_tf_targets_tissue(self, content):
         """
         Response content to find-tf-target-tissue request
         For tf list, reply with the targets found within given tissue
         """
-        tf_names,term_id = get_of_those_list(content, descr='tf')
-        if not len(tf_names):
-            #tf_arg = content.gets('tf')
-            reply = self.wrap_family_message(term_id, 'NO_TF_NAME')
+        tf_names,term_id = self._get_targets(content, descr='regulator')
+        if not tf_names:
+            reply = self.wrap_family_message(term_id, 'NO_REGULATOR_NAME')
             return reply
         if term_id:
             reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
@@ -604,30 +559,28 @@ class TFTA_Module(Bioagent):
             return reply
             
         #consider an optional parameter for sequencing query
-        of_targets_names,nouse = get_of_those_list(content)
+        of_targets_names,_ = self._get_targets(content, descr='of-those')
         
         #consider an optional parameter to only return given types of genes
         target_type_set = self.get_target_type_set(content)
         
-        try:
-            target_names = self.tfta.find_targets_tissue(tf_names, tissue_name)
-        except TFNotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :targets NIL)')
-            return reply
+        target_names = self.tfta.find_targets_tissue(tf_names, tissue_name)
             
         #check if it's a sequencing query
-        if of_targets_names:
+        if of_targets_names and target_names:
             target_names = list(set(of_targets_names) & set(target_names))
         #check if it requires returning a type of genes
-        if target_type_set:
+        if target_type_set and target_names:
             target_names = target_type_set & set(target_names)
             
         if len(target_names):
-            gene_list_str = self.wrap_message(':targets', target_names)
-            reply = KQMLList.from_string('(SUCCESS ' + gene_list_str + ')')
+            reply = KQMLList('SUCCESS')
+            target_json = self._get_genes_json(target_names)
+            tmess = KQMLList()
+            tmess.set('target-db', target_json)
+            reply.set('targets', tmess)
         else:
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
-        self.gene_list = target_names
         return reply
 
     def respond_find_target_tfs(self, content):
@@ -635,9 +588,8 @@ class TFTA_Module(Bioagent):
         Response content to find-target-tf request
         For a target list, reply the tfs found
         """
-        target_names,term_id = get_of_those_list(content, descr='target')
-        if not len(target_names):
-            #target_arg = content.gets('target')
+        target_names,term_id = self._get_targets(content, descr='target')
+        if not target_names:
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         if term_id:
@@ -645,7 +597,7 @@ class TFTA_Module(Bioagent):
             return reply
             
         #consider an optional parameter for subsequent query
-        of_tfs_names,nouse = get_of_those_list(content)
+        of_tfs_names,nouse = self._get_targets(content, descr='of-those')
         
         try:
             tf_names,dbname = self.tfta.find_tfs(target_names)
@@ -656,10 +608,9 @@ class TFTA_Module(Bioagent):
             return reply
         #check if it's a subsequent query
         if of_tfs_names:
-            tf_names = list(set(of_tfs_names) & set(tf_names))
+            tf_names = sorted(list(set(of_tfs_names) & set(tf_names)))
         if len(tf_names):
-            gene_list_str = self.wrap_message(':tfs', tf_names)
-            reply = KQMLList.from_string('(SUCCESS ' + gene_list_str + ')')
+            reply = self.wrap_message('tfs', tf_names)
         else:
             reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
         #self.gene_list = tf_names
@@ -671,9 +622,8 @@ class TFTA_Module(Bioagent):
         """
         Respond to find-tf request with information in literatures
         """
-        target_names,term_id = get_of_those_list(content, descr='target')
-        if not len(target_names):
-            #target_arg = content.gets('target')
+        target_names,term_id = self._get_targets(content, descr='target')
+        if not target_names:
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         if term_id:
@@ -692,8 +642,8 @@ class TFTA_Module(Bioagent):
             return reply
         lit_messages = self.get_tf_indra(target_names, stmt_types, keyword_name)
         if len(lit_messages):
-            reply = KQMLList.from_string(
-                    '(SUCCESS ' + lit_messages + ')')
+            reply = KQMLList('SUCCESS')
+            reply.set('tfs', lit_messages)
         else:
             reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
         return reply
@@ -703,9 +653,8 @@ class TFTA_Module(Bioagent):
         Response content to find-target-tf-tissue request
         For a target list, reply the tfs found within a given tissue
         """
-        target_names,term_id = get_of_those_list(content, descr='target')
-        if not len(target_names):
-            #target_arg = content.gets('target')
+        target_names,term_id = self._get_targets(content, descr='target')
+        if not target_names:
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         if term_id:
@@ -720,80 +669,70 @@ class TFTA_Module(Bioagent):
         if tissue_name not in self.tissue_list:
             reply = make_failure('INVALID_TISSUE')
             return reply
+            
         #consider an optional parameter for subsequent query
-        of_tfs_names,nouse = get_of_those_list(content)
+        of_tfs_names,nouse = self._get_targets(content, descr='of-those')
         
-        try:
-            tf_names = self.tfta.find_tfs_tissue(target_names, tissue_name)
-        except TargetNotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
-            return reply
+        tf_names = self.tfta.find_tfs_tissue(target_names, tissue_name)
+            
         #check if it's a sequencing query
-        if of_tfs_names:
-            tf_names = list(set(of_tfs_names) & set(tf_names))         
-        if len(tf_names):
-            gene_list_str = self.wrap_message(':tfs', tf_names)
-            reply = KQMLList.from_string('(SUCCESS ' + gene_list_str + ')')
+        if of_tfs_names and tf_names:
+            tf_names = sorted(list(set(of_tfs_names) & set(tf_names)))
+        if tf_names:
+            reply = self.wrap_message('tfs', tf_names)
         else:
             reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
-        self.gene_list = tf_names
         return reply
 
-    def respond_find_pathway_gene(self,content):
+    def find_pathway_gene(self,content):
         """
-        Response content to find_pathway_gene request
-        For a given gene list, reply the related pathways information
+        Response content to find-pathway request
+        For a given gene list, return the related pathways information
         """
-        gene_names,term_id = get_of_those_list(content, descr='gene')
-        if not len(gene_names):
-            #gene_arg = content.gets('gene')
-            reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
-            return reply
-        if term_id:
-            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
+        gene_names,fmembers = self._get_targets2(content, descr='gene')
+        if not gene_names and not fmembers:
+            reply = make_failure('NO_GENE_NAME')
             return reply
             
+        #Consider an optional parameter
+        of_those = self._get_of_those_pathway(content)
+            
         try:
-            pathwayName, dblink = \
-                self.tfta.find_pathways_from_genelist(gene_names)
+            pathwayName,dblink = self.tfta.find_pathway_genes(gene_names, fmembers)
         except PathwayNotFoundException:
-            #reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
-            #gene_arg = content.gets('gene')
-            reply = self.wrap_family_message_pathway(term_id, descr='pathways', msg="PATHWAY_NOT_FOUND")
+            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+            #reply = self.wrap_family_message_pathway(term_id, descr='pathways', msg="PATHWAY_NOT_FOUND")
             return reply
-        reply = _wrap_pathway_message(pathwayName, dblink)
+        reply = _wrap_pathway_message(pathwayName, dblink, of_those=of_those)
         return reply
         
-    def respond_find_pathway_regulator(self,content):
+    def find_pathway_regulator(self,content):
         """
-        Response content to find_pathway_gene request
-        For a given gene list, reply the related pathways information
+        Response content to find-pathway request
+        For a given regulator list, reply the pathways containing their targets
         """
-        regulator_names,term_id = get_of_those_list(content, descr='regulator')
-        if not len(regulator_names):
-            reply = self.wrap_family_message(term_id, 'NO_REGULATOR_NAME')
+        regulator_names,fmembers = self._get_targets2(content, descr='regulator')
+        if not regulator_names and not fmembers:
+            reply = make_failure('NO_REGULATOR_NAME')
             return reply
-        if term_id:
-            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
-            return reply
+            
+        #Consider an optional parameter
+        of_those = self._get_of_those_pathway(content)
         
-        #get genes regulated by regulators in regulator_names
+        #get genes regulated by regulators in regulator_names and fmembers
         try:
-            gene_names,dbname = self.tfta.find_targets(regulator_names)
+            gene_names,dbname = self.tfta.find_targets(regulator_names, fmembers)
         except TFNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
         
         if len(gene_names) < 3:
             try:
-                pathwayName, dblink = \
-                    self.tfta.find_pathways_from_genelist(gene_names)
+                pathwayName, dblink = self.tfta.find_pathway_genes(gene_names)
             except PathwayNotFoundException:
                 reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
-                #gene_arg = content.gets('gene')
-                #reply = self.wrap_family_message_pathway(term_id, descr='pathways', msg="PATHWAY_NOT_FOUND")
                 return reply
-            reply = _wrap_pathway_message(pathwayName, dblink)
+            reply = _wrap_pathway_message(pathwayName, dblink, of_those=of_those)
             return reply
         else:
             try:
@@ -802,10 +741,11 @@ class TFTA_Module(Bioagent):
                 reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
                 return reply
             
-            reply = _wrap_pathway_genelist_message(pathwayName, dblink, genes, gene_descr=':gene-list')
+            reply = self._wrap_pathway_genelist_message(pathwayName, dblink, genes, 
+                    gene_descr='gene-list', of_those=of_those)
             return reply
 
-    def respond_find_pathway_gene_keyword(self,content):
+    def find_pathway_gene_keyword(self,content):
         """
         Response content to find_pathway_gene_name request
         For a given gene list and keyword, reply the related pathways information
@@ -815,27 +755,25 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_KEYWORD')
             return reply
             
-        gene_names,term_id = get_of_those_list(content, descr='gene')
-        if not len(gene_names):
-            #gene_arg = content.gets('gene')
-            reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
+        gene_names,fmembers = self._get_targets2(content, descr='gene')
+        if not gene_names and not fmembers:
+            reply = make_failure('NO_GENE_NAME')
             return reply
-        if term_id:
-            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
-            return reply
+            
+        #Consider an optional parameter
+        of_those = self._get_of_those_pathway(content)
             
         try:
             pathwayName, dblink = \
-                self.tfta.find_pathway_gene_keyword(gene_names, keyword_name)
+                self.tfta.find_pathway_gene_keyword(gene_names, keyword_name, fmembers)
         except PathwayNotFoundException:
-            #reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
-            #gene_arg = content.gets('gene')
-            reply = self.wrap_family_message_pathway(term_id, descr='pathways', msg="PATHWAY_NOT_FOUND")
+            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+            #reply = self.wrap_family_message_pathway(term_id, descr='pathways', msg="PATHWAY_NOT_FOUND")
             return reply
-        reply = _wrap_pathway_message(pathwayName, dblink, keyword=[keyword_name])
+        reply = _wrap_pathway_message(pathwayName, dblink, keyword=[keyword_name], of_those=of_those)
         return reply
         
-    def respond_find_pathway_keyword_regulator(self,content):
+    def find_pathway_keyword_regulator(self,content):
         """
         Response content to find_pathway_gene_name request
         For a given gene list and keyword, reply the related pathways information
@@ -845,18 +783,17 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_KEYWORD')
             return reply
             
-        regulator_names,term_id = get_of_those_list(content, descr='regulator')
-        if not len(regulator_names):
-            #gene_arg = content.gets('gene')
-            reply = self.wrap_family_message(term_id, 'NO_REGULATOR_NAME')
+        regulator_names,fmembers = self._get_targets2(content, descr='regulator')
+        if not regulator_names and not fmembers:
+            reply = make_failure('NO_REGULATOR_NAME')
             return reply
-        if term_id:
-            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
-            return reply
+            
+        #Consider an optional parameter
+        of_those = self._get_of_those_pathway(content)
             
         #get genes regulated by regulators in regulator_names
         try:
-            gene_names,dbname = self.tfta.find_targets(regulator_names)
+            gene_names,dbname = self.tfta.find_targets(regulator_names, fmembers)
         except TFNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
@@ -866,9 +803,9 @@ class TFTA_Module(Bioagent):
                 pathwayName, dblink = \
                     self.tfta.find_pathway_gene_keyword(gene_names, keyword_name)
             except PathwayNotFoundException:
-                reply = self.wrap_family_message_pathway(term_id, descr='pathways', msg="PATHWAY_NOT_FOUND")
+                reply = self.KQMLList.from_string('(SUCCESS :pathways NIL)')
                 return reply
-            reply = _wrap_pathway_message(pathwayName, dblink, keyword=[keyword_name])
+            reply = _wrap_pathway_message(pathwayName, dblink, keyword=[keyword_name], of_those=of_those)
             return reply
         else:
             #go to find-common-pathway-genes
@@ -879,39 +816,38 @@ class TFTA_Module(Bioagent):
                 reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
                 return reply
             
-            reply = _wrap_pathway_genelist_message(pathwayName, dblink, genes, pathway_names=[keyword_name],
-                                               gene_descr=':gene-list')
+            reply = self._wrap_pathway_genelist_message(pathwayName, dblink, genes, pathway_names=[keyword_name],
+                                               gene_descr='gene-list', of_those=of_those)
             return reply
 
-    def respond_find_pathway_db_gene(self, content):
-        """Response content to FIND-PATHWAY-DB-GENE request
+    def find_pathway_db_gene(self, content):
+        """
+        Response content to FIND-PATHWAY-DB-GENE request
         For a given gene list and certain db source, reply the related
-        pathways information"""
+        pathways information
+        """
         db_name = _get_keyword_name(content, descr='database', low_case=False)
         if not db_name:
             reply = make_failure('NO_DB_NAME')
             return reply
             
-        gene_names,term_id = get_of_those_list(content, descr='gene')
-        if not gene_names:
-            #gene_arg = content.gets('gene')
-            reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
+        gene_names,fmembers = self._get_targets2(content, descr='gene')
+        if not gene_names and not fmembers:
+            reply = make_failure('NO_GENE_NAME')
             return reply
-        if term_id:
-            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
-            return reply
+            
+        #Consider an optional parameter
+        of_those = self._get_of_those_pathway(content)
             
         try:
-            pathwayName,dblink = self.tfta.find_pathways_from_dbsource_geneName(db_name,gene_names)
+            pathwayName,dblink = self.tfta.find_pathway_db_gene(db_name,gene_names,fmembers)
         except PathwayNotFoundException:
-            #reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
-            #gene_arg = content.gets('gene')
-            reply = self.wrap_family_message_pathway(term_id, descr='pathways', msg="PATHWAY_NOT_FOUND")
+            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
-        reply = _wrap_pathway_message(pathwayName, dblink)
+        reply = _wrap_pathway_message(pathwayName, dblink, of_those=of_those)
         return reply
         
-    def respond_find_pathway_db_regulator(self, content):
+    def find_pathway_db_regulator(self, content):
         """Response content to FIND-PATHWAY-DB-GENE request
         For a given gene list and certain db source, reply the related
         pathways information"""
@@ -920,31 +856,28 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_DB_NAME')
             return reply
             
-        regulator_names,term_id = get_of_those_list(content, descr='regulator')
-        if not regulator_names:
-            #gene_arg = content.gets('gene')
-            reply = self.wrap_family_message(term_id, 'NO_REGULATOR_NAME')
+        regulator_names,fmembers = self._get_targets2(content, descr='regulator')
+        if not regulator_names and not fmembers:
+            reply = make_failure('NO_REGULATOR_NAME')
             return reply
-        if term_id:
-            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
-            return reply
+            
+        #Consider an optional parameter
+        of_those = self._get_of_those_pathway(content)
         
         #get genes regulated by regulators in regulator_names
         try:
-            gene_names,dbname = self.tfta.find_targets(regulator_names)
+            gene_names,dbname = self.tfta.find_targets(regulator_names, fmembers)
         except TFNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
             
         if len(gene_names) < 3:
             try:
-                pathwayName,dblink = self.tfta.find_pathways_from_dbsource_geneName(db_name,gene_names)
+                pathwayName,dblink = self.tfta.find_pathway_db_gene(db_name,gene_names)
             except PathwayNotFoundException:
                 reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
-                #gene_arg = content.gets('gene')
-                #reply = self.wrap_family_message_pathway(term_id, descr='pathways', msg="PATHWAY_NOT_FOUND")
                 return reply
-            reply = _wrap_pathway_message(pathwayName, dblink)
+            reply = _wrap_pathway_message(pathwayName, dblink, of_those=of_those)
             return reply
         else:
             try:
@@ -954,7 +887,8 @@ class TFTA_Module(Bioagent):
                 reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
                 return reply
             
-            reply = _wrap_pathway_genelist_message(pathwayName, dblink, genes, gene_descr=':gene-list')
+            reply = self._wrap_pathway_genelist_message(pathwayName, dblink, genes, 
+                          gene_descr='gene-list', of_those=of_those)
             return reply
 
     def respond_find_tf_pathway(self, content):
@@ -962,24 +896,24 @@ class TFTA_Module(Bioagent):
         Response content to FIND_TF_PATHWAY request
         For a given pathway name, reply the tfs within the pathway
         """
-        pathway_arg = content.gets('pathway')
-        pathway_names = _get_pathway_name(pathway_arg)
-        pathway_names = trim_word(pathway_names, 'pathway')
-        if not len(pathway_names):
+        logger.info('TFTA is processing the task: FIND-TF-PATHWAY.')
+        pathway_names = self._get_pathway_name(content)
+        if not pathway_names:
             reply = make_failure('NO_PATHWAY_NAME')
             return reply
         
         #consider another optional parameter for subsequent query
-        of_gene_names,nouse = get_of_those_list(content, descr='of-those')
+        of_gene_names,nouse = self._get_targets(content, descr='of-those')
         
         try:
-            pathwayName,tflist,dblink = \
-                self.tfta.find_tf_pathway(pathway_names)
+            pathwayName,tflist,dblink = self.tfta.find_tf_pathway(pathway_names)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
-        reply = _wrap_pathway_genelist_message(pathwayName, dblink, tflist, pathway_names=pathway_names,
-                                               gene_descr=':tfs', of_gene_names=of_gene_names)
+            
+        logger.info('FIND-TF-PATHWAY: wrapping message...')
+        reply = self._wrap_pathway_genelist_message(pathwayName, dblink, tflist, pathway_names=pathway_names,
+                                               gene_descr='tfs', of_gene_names=of_gene_names)
         return reply
         
     def respond_find_kinase_pathway(self, content):
@@ -987,15 +921,13 @@ class TFTA_Module(Bioagent):
         Response content to FIND_KINASE_PATHWAY request
         For a given pathway name, reply the kinases within the pathway
         """
-        pathway_arg = content.gets('pathway')
-        pathway_names = _get_pathway_name(pathway_arg)
-        pathway_names = trim_word(pathway_names, 'pathway')
-        if not len(pathway_names):
+        pathway_names = self._get_pathway_name(content)
+        if not pathway_names:
             reply = make_failure('NO_PATHWAY_NAME')
             return reply
             
         #consider an optional parameter for subsequent query
-        of_those_names,nouse = get_of_those_list(content)
+        of_those_names,nouse = self._get_targets(content, descr='of-those')
         
         try:
             pathwayName, kinaselist, dblink = \
@@ -1004,8 +936,8 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
         
-        reply = _wrap_pathway_genelist_message(pathwayName, dblink, kinaselist, pathway_names=pathway_names,
-                                               gene_descr=':kinase', of_gene_names=of_those_names)
+        reply = self._wrap_pathway_genelist_message(pathwayName, dblink, kinaselist, pathway_names=pathway_names,
+                                               gene_descr='kinase', of_gene_names=of_those_names)
         return reply
 
     def respond_find_gene_pathway(self, content):
@@ -1013,22 +945,22 @@ class TFTA_Module(Bioagent):
         Response content to FIND-GENE-PATHWAY request
         For a given pathway name, reply the genes within the pathway
         """
-        pathway_arg = content.gets('pathway')
-        pathway_names = _get_pathway_name(pathway_arg)
-        pathway_names = trim_word(pathway_names, 'pathway')
-        if not len(pathway_names):
+        logger.info('TFTA is processing the task: FIND-GENE-PATHWAY.')
+        pathway_names = self._get_pathway_name(content)
+        if not pathway_names:
             reply = make_failure('NO_PATHWAY_NAME')
             return reply
         try:
-            pathwayName,genelist,plink = self.tfta.find_genes_from_pathwayName(pathway_names)
+            pathwayName,genelist,plink = self.tfta.find_gene_pathway(pathway_names)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
         #consider an optional parameter for subsequent query
-        of_gene_names,nouse = get_of_those_list(content)
+        of_gene_names,nouse = self._get_targets(content, descr='of-those')
         
-        reply = _wrap_pathway_genelist_message(pathwayName, plink, genelist, pathway_names=pathway_names,
-                                       gene_descr=':genes', of_gene_names=of_gene_names)
+        logger.info('FIND-GENE-PATHWAY: wrapping message...')
+        reply = self._wrap_pathway_genelist_message(pathwayName, plink, genelist, pathway_names=pathway_names,
+                                       gene_descr='genes', of_gene_names=of_gene_names)
         return reply
 
     def respond_find_pathway_keyword(self, content):
@@ -1042,6 +974,9 @@ class TFTA_Module(Bioagent):
             return reply
         else:
             keyword_name = trim_word([keyword_name], 'pathway')
+            
+        #Consider an optional parameter
+        of_those = self._get_of_those_pathway(content)
         
         try:
             pathwayName, dblink = \
@@ -1049,7 +984,7 @@ class TFTA_Module(Bioagent):
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
-        reply = _wrap_pathway_message(pathwayName, dblink, keyword=keyword_name)
+        reply = _wrap_pathway_message(pathwayName, dblink, keyword=keyword_name, of_those=of_those)
         return reply
 
     def respond_find_tf_keyword(self, content):
@@ -1070,26 +1005,25 @@ class TFTA_Module(Bioagent):
             return reply
         
         #consider an optional parameter for subsequent query
-        of_those_names,nouse = get_of_those_list(content)
+        of_gene_names,nouse = self._get_targets(content, descr='of-those')
         
-        reply = _wrap_pathway_genelist_message(pathwayName, dblink, tflist, pathway_names=[keyword_name],
-                                               gene_descr=':tfs', of_gene_names=of_those_names)
+        reply = self._wrap_pathway_genelist_message(pathwayName, dblink, tflist, pathway_names=[keyword_name],
+                                               gene_descr='tfs', of_gene_names=of_gene_names)
         return reply
 
-    def respond_find_common_tfs_genes(self, content):
+    def respond_find_common_tf_genes(self, content):
         """
         Response content to FIND-COMMON-TF-GENES request
         For a given target list, reply the tfs regulating these genes
         and the regulated targets by each TF
         """
-        target_names,term_id = get_of_those_list(content, descr='target')
-        if len(target_names) < 2:
-            #target_arg = content.gets('target')
+        target_names,term_id = self._get_targets(content, descr='target')
+        if not target_names or len(target_names) < 2:
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
-        
+       
         #consider another parameter for subsequent query
-        of_those_names,nouse = get_of_those_list(content, descr='of-those')
+        of_those_names,nouse = self._get_targets(content, descr='of-those')
         
         try:
             tf_targets = self.tfta.find_common_tfs(target_names)
@@ -1098,56 +1032,55 @@ class TFTA_Module(Bioagent):
             return reply
         #cluster the tfs according to the targets
         tf_clustered = cluster_dict_by_value2(tf_targets)
-        tf_list_str = ''
         targets = list(tf_clustered.keys())
+        tf_target_mes = []
         for tg in targets:
-            tf_list = ''
             if of_those_names:
                 tfs = set(of_those_names) & set(tf_clustered[tg])
             else:
                 tfs = tf_clustered[tg]
             if tfs:
                 target_list = tg.split(',')
-                target_str = ''
-                for t in target_list:
-                    target_str += '(:name %s) ' % t
-                target_str = ':target-list (' + target_str + ')'
-                for tf in tfs:
-                    tf_list += '(:name %s) ' % tf
-                tf_list = ':tf-list (' + tf_list + ') '
-                tf_list += target_str
-                tf_list_str += '(' + tf_list + ') '
-        if tf_list_str:
-            reply = KQMLList.from_string(
-                '(SUCCESS :tfs (' + tf_list_str + '))')
+                target_json = self._get_genes_json(target_list)
+                tf_json = self._get_genes_json(tfs)
+                mes = KQMLList()
+                mes.set('tf-list', tf_json)
+                mes.set('target-list', target_json)
+                tf_target_mes.append(mes.to_string())
+        if tf_target_mes:
+            mes_str = '(' + ' '.join(tf_target_mes) + ')'
+            reply = KQMLList('SUCCESS')
+            reply.set('tfs', mes_str)
         else:
             reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
         return reply
         
-    def respond_find_common_pathway_genes(self, content):
+    def get_common_pathway_genes(self, content):
         """
         response content to FIND-COMMON-PATHWAY-GENES request
         """
-        gene_arg = content.gets('target')
-        if not gene_arg:
-            gene_arg = content.gets('gene')
-        gene_names,term_id = get_of_those_list(content, descr='target')
-        if not gene_names and not term_id:
-            gene_names,term_id = get_of_those_list(content, descr='gene')
-        if len(gene_names) < 2:
-            reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
+        gene_names,fmembers = self._get_targets2(content, descr='target')
+        if not gene_names and not fmembers:
+            reply = make_failure('NO_GENE_NAME')
             return reply
             
+        #logger.info('FIND-COMMON-PATHWAY-GENES:genes=' + str(gene_names))
+        #logger.info('FIND-COMMON-PATHWAY-GENES:fmembers=' + str(fmembers))
+        
         try:
-            pathwayName, dblink, genes = self.tfta.find_common_pathway_genes(gene_names)
+            pathwayName, dblink, genes = self.tfta.find_common_pathway_genes(gene_names, fmembers)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
-            
-        reply = _wrap_pathway_genelist_message(pathwayName, dblink, genes, gene_descr=':gene-list')
+        
+        #logger.debug('FIND-COMMON-PATHWAY-GENES: starting wrapping message.')
+        
+        reply = self._wrap_pathway_genelist_message(pathwayName, dblink, genes, gene_descr='gene-list')
+        
+        logger.debug('FIND-COMMON-PATHWAY-GENES: sending message...')
         return reply
 
-    def respond_find_common_pathway_genes_keyword(self, content):
+    def get_common_pathway_genes_keyword(self, content):
         """
         Response content to FIND-COMMON-PATHWAY-GENES-KEYWORD request
         """
@@ -1157,29 +1090,23 @@ class TFTA_Module(Bioagent):
             return reply
         else:
             keyword_name = trim_word([keyword_name], 'pathway')
-            
-        gene_arg = content.gets('target')
-        if not gene_arg:
-            gene_arg = content.gets('gene')
-        gene_names,term_id = get_of_those_list(content, descr='target')
-        if not gene_names and not term_id:
-            gene_names,term_id = get_of_those_list(content, descr='gene')
-        if len(gene_names) <  2:
-            reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
+        
+        gene_names,fmembers = self._get_targets2(content, descr='target')
+        if not gene_names and not fmembers:
+            reply = make_failure('NO_GENE_NAME')
             return reply
             
         try:
-            pathwayName,dblink,genes = \
-               self.tfta.find_common_pathway_genes_keyword(gene_names, keyword_name[0])
+            pathwayName,dblink,genes = self.tfta.find_common_pathway_genes_keyword(gene_names, keyword_name[0], fmembers)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
             
-        reply = _wrap_pathway_genelist_message(pathwayName, dblink, genes, pathway_names=keyword_name,
-                                               gene_descr=':gene-list')
+        reply = self._wrap_pathway_genelist_message(pathwayName, dblink, genes, pathway_names=keyword_name,
+                                               gene_descr='gene-list')
         return reply
         
-    def respond_find_common_pathway_genes_db(self, content):
+    def get_common_pathway_genes_db(self, content):
         """
         Response content to FIND-COMMON-PATHWAY-GENES-DB request
         """
@@ -1188,24 +1115,19 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_DB_NAME')
             return reply
             
-        gene_arg = content.gets('target')
-        if not gene_arg:
-            gene_arg = content.gets('gene')
-        gene_names,term_id = get_of_those_list(content, descr='target')
-        if not gene_names and not term_id:
-            gene_names,term_id = get_of_those_list(content, descr='gene')
-        if len(gene_names) < 2:
-            reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
+        gene_names,fmembers = self._get_targets2(content, descr='target')
+        if not gene_names and not fmembers:
+            reply = make_failure('NO_GENE_NAME')
             return reply
             
         try:
             pathwayName,dblink,genes = \
-               self.tfta.find_common_pathway_genes_db(gene_names, db_name)
+               self.tfta.find_common_pathway_genes_db(gene_names, db_name, fmembers)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
             
-        reply = _wrap_pathway_genelist_message(pathwayName, dblink, genes, gene_descr=':gene-list')
+        reply = self._wrap_pathway_genelist_message(pathwayName, dblink, genes, gene_descr='gene-list')
         return reply
 
     def respond_is_pathway_gene(self, content):
@@ -1213,29 +1135,23 @@ class TFTA_Module(Bioagent):
         Respond to IS-PATHWAY-GENE request
         query like: Does the mTor pathway utilize SGK1? 
         """
-        pathway_arg = content.gets('pathway')
-        pathway_names = _get_pathway_name(pathway_arg)
-        pathway_names = trim_word(pathway_names, 'pathway')
-        if not len(pathway_names):
+        pathway_names = self._get_pathway_name(content)
+        if not pathway_names:
             reply = make_failure('NO_PATHWAY_NAME')
             return reply
             
-        gene_names,term_id = get_of_those_list(content, descr='gene')
-        if not len(gene_names):
-            #gene_arg = content.gets('gene')
-            reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
-            return reply
-        if term_id:
-            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
+        gene_names,fmembers = self._get_targets2(content, descr='gene')
+        if not gene_names and not fmembers:
+            reply = make_failure('NO_GENE_NAME')
             return reply
             
         try:
-            pathwayName, dblink = \
-                self.tfta.Is_pathway_gene(pathway_names, gene_names)
+            pathwayName, dblink = self.tfta.Is_pathway_gene(pathway_names, gene_names, fmembers)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
             
+        logger.info('IS-PATHWAY-GENE: wrapping message...')
         reply = _wrap_pathway_message(pathwayName, dblink, keyword=pathway_names)
         return reply
 
@@ -1249,7 +1165,7 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_GO_NAME')
             return reply
             
-        tf_names,term_id = get_of_those_list(content, descr='tf')
+        tf_names,term_id = self._get_targets(content, descr='tf')
         if not tf_names:
             #tf_arg = content.gets('tf')
             reply = self.wrap_family_message(term_id, 'NO_TF_NAME')
@@ -1272,9 +1188,9 @@ class TFTA_Module(Bioagent):
             gene_list_str = '(' + gene_list_str + ')'
             gn_str = '"' + gn + '"'
             gid_str = '"' + gid + '"'
-            go_list_str += '(:id %s :name %s :genes %s) ' % (gid_str, gn_str, gene_list_str)            
+            go_list_str += '(:id %s :name %s :genes %s) ' % (gid_str, gn_str, gene_list_str)
         reply = KQMLList.from_string(
-            '(SUCCESS :go-terms (' + go_list_str + '))')        
+            '(SUCCESS :go-terms (' + go_list_str + '))')
         return reply
 
     def respond_find_genes_go_tf2(self, content):
@@ -1287,7 +1203,7 @@ class TFTA_Module(Bioagent):
             reply = make_failure('NO_GO_ID')
             return reply
         
-        tf_names,term_id = get_of_those_list(content, descr='tf')
+        tf_names,term_id = self._get_targets(content, descr='tf')
         if not tf_names:
             #tf_arg = content.gets('tf')
             reply = self.wrap_family_message(term_id, 'NO_TF_NAME')
@@ -1314,62 +1230,30 @@ class TFTA_Module(Bioagent):
         reply = KQMLList.from_string(
             '(SUCCESS :go-terms (' + go_list_str + '))')            
         return reply
-
+        
     def respond_is_miRNA_target(self, content):
         """
         Respond to IS-MIRNA-TARGET request
         """
-        #assume the miRNA is also in EKB XML format
-        miRNA_arg = content.gets('miRNA')
-        miRNA_name = list(_get_miRNA_name(miRNA_arg).keys())
-        if not len(miRNA_name):
+        miRNA_name = self._get_mirnas(content)
+        if not miRNA_name:
             reply = make_failure('NO_MIRNA_NAME')
             return reply
         
-        target_name,term_id = get_gene(content, descr='target')
-        if not len(target_name):
-            #target_arg = content.gets('target')
-            reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
-            return reply
-            
-        try:
-            is_target = self.tfta.Is_miRNA_target(miRNA_name[0], target_name)
-        except miRNANotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :is-miRNA-target FALSE)')
-            return reply
-        except TargetNotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :is-miRNA-target FALSE)')
-            return reply            
-        reply = KQMLList('SUCCESS')
-        is_target_str = 'TRUE' if is_target else 'FALSE'
-        reply.set('is-miRNA-target', is_target_str)
-        return reply
-        
-    def respond_is_miRNA_target2(self, content):
-        """
-        Respond to IS-MIRNA-TARGET request
-        """
-        miRNA_arg = content.gets('miRNA')
-        miRNA_name = _get_miRNA_name(miRNA_arg)
-        if not len(miRNA_name):
-            reply = make_failure('NO_MIRNA_NAME')
-            return reply
-        
-        target_name,term_id = get_gene(content, descr='target')
-        if not len(target_name):
-            #target_arg = content.gets('target')
+        target_name,term_id = self._get_targets(content, descr='target')
+        if not target_name:
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         
-        is_target,expr,supt,pmid,miRNA_mis = self.tfta.Is_miRNA_target2(miRNA_name, target_name)
+        is_target,expr,supt,pmid,miRNA_mis = self.tfta.Is_miRNA_target(miRNA_name, target_name[0])
         
         #provenance support
-        self.send_background_support_mirna(list(miRNA_name.keys())[0], target_name, expr, supt, pmid)
+        #self.send_background_support_mirna(list(miRNA_name.keys())[0], target_name[0], expr, supt, pmid)
         
         #respond to BA
         #check if it's necessary for user clarification
-        if len(miRNA_mis):
-            reply = self.get_reply_mirna_clarification(miRNA_mis)
+        if miRNA_mis:
+            reply = self._get_mirna_clarification(miRNA_mis)
             return reply
         else:
             reply = KQMLList('SUCCESS')
@@ -1381,9 +1265,8 @@ class TFTA_Module(Bioagent):
         """
         Respond to FIND-MIRNA-TARGET request
         """
-        target_names,term_id = get_of_those_list(content, descr='target')
-        if not len(target_names) or term_id:
-            #target_arg = content.gets('target')
+        target_names,term_id = self._get_targets(content, descr='target')
+        if not target_names:
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         if term_id:
@@ -1391,7 +1274,7 @@ class TFTA_Module(Bioagent):
             return reply
         
         ##consider another parameter for subsequent query
-        of_those_names = get_of_those_mirna(content, descr='of-those')
+        of_those_names = self._get_mirnas(content, descr='of-those')
         
         try:
             miRNA_names = self.tfta.find_miRNA_target(target_names)
@@ -1405,11 +1288,10 @@ class TFTA_Module(Bioagent):
             miRNA_names = res_db & res_of
             
         if len(miRNA_names):
-            miRNA_list_str = ''
-            for m in miRNA_names:
-                miRNA_list_str += '(:name %s ) ' % m
-            reply = KQMLList.from_string(
-                '(SUCCESS :miRNAs (' + miRNA_list_str + '))')
+            mir_agent = [Agent(mir, db_refs={'type':'MIRNA'}) for mir in miRNA_names]
+            mir_json = self.make_cljson(mir_agent)
+            reply = KQMLList('SUCCESS')
+            reply.set('miRNAs', mir_json)
         else:
             reply = KQMLList.from_string('(SUCCESS :miRNAs NIL)')
         return reply
@@ -1420,22 +1302,17 @@ class TFTA_Module(Bioagent):
         """
         strength_arg = content.get('strength')
         if strength_arg:
-            reply = self.respond_find_target_miRNA_strength(content)
+            reply = self.find_target_miRNA_strength(content)
         else:
-            reply = self.respond_find_target_miRNA_all(content)
+            reply = self.find_target_miRNA_all(content)
         return reply
 
-    def respond_find_target_miRNA_strength(self, content):
+    def find_target_miRNA_strength(self, content):
         """
         Respond to FIND-TARGET-MIRNA request with strength parameter
         """
-        try:
-            miRNA_arg = content.gets('miRNA')
-            miRNA_names = _get_miRNA_name(miRNA_arg)
-        except Exception as e:
-            reply = make_failure('NO_MIRNA_NAME')
-            return reply
-        if not len(miRNA_names):
+        miRNA_names = self._get_mirnas(content)
+        if not miRNA_names:
             reply = make_failure('NO_MIRNA_NAME')
             return reply
             
@@ -1445,19 +1322,15 @@ class TFTA_Module(Bioagent):
             return reply
             
         #consider another parameter for subsequent query
-        of_those_names,nouse = get_of_those_list(content)
+        of_those_names,nouse = self._get_targets(content, descr='of-those')
         
         #consider an optional parameter to only return given type of genes
         target_type_set = self.get_target_type_set(content)
         
-        try:
-            target_names,miRNA_mis = self.tfta.find_target_miRNA_strength(miRNA_names, strength_name)
-        except miRNANotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :targets NIL)')
-            return reply
+        target_names,miRNA_mis = self.tfta.find_target_miRNA_strength(miRNA_names, strength_name)
         #check if it's necessary for user clarification
-        if len(miRNA_mis):
-            reply = self.get_reply_mirna_clarification(miRNA_mis)
+        if miRNA_mis:
+            reply = self._get_mirna_clarification(miRNA_mis)
             return reply
         else:
             if of_those_names:
@@ -1467,38 +1340,30 @@ class TFTA_Module(Bioagent):
                 target_names = target_type_set & set(target_names)
             
             if len(target_names):
-                gene_list_str = self.wrap_message(':targets', target_names)
-                reply = KQMLList.from_string('(SUCCESS ' + gene_list_str + ')')
+                reply = self.wrap_message('targets', target_names)
             else:
                 reply = KQMLList.from_string('(SUCCESS :targets NIL)')
-        #self.gene_list = target_names  
         return reply
         
-    def respond_find_target_miRNA_all(self, content):
+    def find_target_miRNA_all(self, content):
         """
         Respond to FIND-TARGET-MIRNA request without strength parameter
         """
-        #assume the miRNA is also in EKB XML format
-        try:
-            miRNA_arg = content.gets('miRNA')
-            miRNA_names = _get_miRNA_name(miRNA_arg)
-        except Exception as e:
-            reply = make_failure('NO_MIRNA_NAME')
-            return reply
-        if not len(miRNA_names):
+        miRNA_names = self._get_mirnas(content)
+        if not miRNA_names:
             reply = make_failure('NO_MIRNA_NAME')
             return reply
             
         #consider another parameter for subsequent query
-        of_those_names,nouse = get_of_those_list(content)
+        of_those_names,nouse = self._get_targets(content, descr='of-those')
         
         #consider an optional parameter to only return given type of genes
         target_type_set = self.get_target_type_set(content)
         
         target_names,miRNA_mis = self.tfta.find_target_miRNA(miRNA_names)
         #check if it's necessary for user clarification
-        if len(miRNA_mis):
-            reply = self.get_reply_mirna_clarification(miRNA_mis)
+        if miRNA_mis:
+            reply = self._get_mirna_clarification(miRNA_mis)
             return reply
         else:
             if of_those_names:
@@ -1509,125 +1374,185 @@ class TFTA_Module(Bioagent):
                 target_names = target_type_set & set(target_names)
             
             if len(target_names):
-                gene_list_str = self.wrap_message(':targets', target_names)
-                reply = KQMLList.from_string('(SUCCESS ' + gene_list_str + ')')
+                reply = self.wrap_message('targets', target_names)
             else:
                 reply = KQMLList.from_string('(SUCCESS :targets NIL)')
-        #self.gene_list = target_names  
         return reply
         
     def respond_find_evidence_miRNA_target(self, content):
         """
         Respond to FIND-EVIDENCE-MIRNA-TARGET request
         """
-        #assume the miRNA is also in EKB XML format
-        miRNA_arg = content.gets('miRNA')
-        miRNA_name = _get_miRNA_name(miRNA_arg)
-        if not len(miRNA_name):
+        miRNA_name = self._get_mirnas(content)
+        if not miRNA_name:
             reply = make_failure('NO_MIRNA_NAME')
             return reply
         
-        target_name,term_id = get_gene(content, descr='target')
-        if not len(target_name):
-            #target_arg = content.gets('target')
+        target_name,term_id = self._get_targets(content, descr='target')
+        if not target_name:
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
                    
-        try:
-            experiments,supportType,pmlink,miRNA_mis = \
-                self.tfta.find_evidence_miRNA_target(miRNA_name, target_name)
-        except Exception as e:
-            reply = KQMLList.from_string('(SUCCESS :evidence NIL)')
-            return reply
+        expe,sType,pmlink,miRNA_mis = self.tfta.find_evidence_miRNA_target(miRNA_name, target_name[0])
+        
         if miRNA_mis:
-            reply = self.get_reply_mirna_clarification(miRNA_mis)
+            reply = self._get_mirna_clarification(miRNA_mis)
             return reply
-        if len(experiments):
-            evidence_list_str = ''
-            for e,s,l in zip(experiments,supportType,pmlink):
+        
+        mes_list = []
+        if expe:
+            for e,s,l in zip(expe,sType,pmlink):
                 en = '"' + e + '"'
                 sn = '"' + s + '"'
                 ln = '"' + l + '"'
-                evidence_list_str += \
-                    '(:experiment %s :supportType %s :pubmedLink %s) ' % (en, sn, ln)
-            reply = KQMLList.from_string(
-                '(SUCCESS :evidence (' + evidence_list_str + '))')
+                mes = KQMLList()
+                mes.set('experiment', en)
+                mes.set('supportType', sn)
+                mes.set('pubmedLink', ln)
+                mes_list.append(mes.to_string())
+        if mes_list:
+            evi_str = '(' + ' '.join(mes_list) + ')'
+            reply = KQMLList('SUCCESS')
+            reply.set('evidence', evi_str)
         else:
             reply = KQMLList.from_string('(SUCCESS :evidence NIL)')   
         return reply
 
-    def respond_find_target_count_miRNA(self, content):
+    def respond_find_gene_count_miRNA(self, content):
         """
         Respond to FIND-GENE-COUNT-MIRNA request
         """
-        #assume the miRNA is also in EKB XML format
-        miRNA_arg = content.gets('miRNA')
-        miRNA_names = _get_miRNA_name(miRNA_arg)
-        if not len(miRNA_names):
+        miRNA_names = self._get_mirnas(content)
+        if not miRNA_names:
             reply = make_failure('NO_MIRNA_NAME')
             return reply
         
         #consider another parameter for subsequent query
-        of_those_names,nouse = get_of_those_list(content)
+        of_those_names,nouse = self._get_targets(content, descr='of-those')
         
-        targets,counts,mrna,miRNA_mis = self.tfta.find_gene_count_miRNA(miRNA_names)
-        if not len(targets):
+        target_count,target_mirna,miRNA_mis = self.tfta.find_gene_count_miRNA(miRNA_names, of_those=of_those_names)
+        if not target_count:
             #clarification
             if miRNA_mis:
-                reply = self.get_reply_mirna_clarification(miRNA_mis)
+                reply = self._get_mirna_clarification(miRNA_mis)
                 return reply
             else:
                 reply = KQMLList.from_string('(SUCCESS :targets NIL)')
                 return reply
-                
-        target_str = ''
-        if of_those_names:
-            ftargets = set(of_those_names) & set(targets)
-        else:
-            ftargets = targets
-        if ftargets:
-            for t in ftargets:
-                ct = counts[t]
-                ms = mrna[t]
-                m_str = ''
-                for m in ms:
-                    m_str += '(:name %s)' % m
-                m_str = '(' + m_str + ')'
-                target_str += '(:name %s :count %d :miRNA %s) ' % (t, ct, m_str)
-            reply = KQMLList.from_string('(SUCCESS :targets (' + target_str + '))')
+        
+        target_mir_mes = []
+        if target_count:
+            for t,c in target_count.items():
+                mes = KQMLList()
+                mes.set('target', self.make_cljson(Agent(t, db_refs={'TYPE':'ONT::GENE-PROTEIN'})))
+                mes.set('count', str(c))
+                mes.set('miRNA', self.make_cljson([Agent(mir, db_refs={'TYPE':'MIRNA'}) for mir in target_mirna[t]]))
+                target_mir_mes.append(mes.to_string())
+        if target_mir_mes:
+            mes_str = '(' + ' '.join(target_mir_mes) + ')'
+            reply = KQMLList('SUCCESS')
+            reply.set('targets', mes_str)
         else:
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
-        #self.gene_list = targets
         return reply
              
-    def respond_find_miRNA_count_target(self, content):
+    def respond_find_miRNA_count_gene(self, content):
         """
         Respond to FIND-MIRNA-COUNT-GENE request
         """
-        target_names,term_id = get_of_those_list(content, descr='target')
-        if len(target_names) < 2:
-            #target_arg = content.gets('target')
+        target_names,term_id = self._get_targets(content, descr='target')
+        if not target_names or len(target_names) < 2:
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
-            
-        try:
-            mirnas,counts,genes = self.tfta.find_miRNA_count_gene(target_names)
-        except miRNANotFoundException:
+        #consider another parameter for subsequent query
+        of_those_names = self._get_mirnas(content, descr='of-those')
+        
+        mirna_count,mir_targets = self.tfta.find_miRNA_count_gene(target_names, of_those=of_those_names)
+        
+        mir_target_mes = []
+        if mirna_count:
+            for mir,count in mirna_count.items():
+                mes = KQMLList()
+                mes.set('miRNA', self.make_cljson(Agent(mir, db_refs={'type': 'MIRNA'})))
+                mes.set('count', str(count))
+                mes.set('target', self.make_cljson([Agent(t, db_refs={'TYPE':'ONT::GENE-PROTEIN'}) for t in mir_targets[mir]]))
+                mir_target_mes.append(mes.to_string())
+        if mir_target_mes:
+            mes_str = '(' + ' '.join(mir_target_mes) + ')'
+            reply = KQMLList('SUCCESS')
+            reply.set('miRNAs', mes_str)
+        else:
             reply = KQMLList.from_string('(SUCCESS :miRNAs NIL)')
+        return reply
+        
+    def respond_is_mirna_disease(self, content):
+        """
+        Respond to IS-MIRNA-DISEASE request
+        """
+        miRNA_name = self._get_mirnas(content)
+        if not miRNA_name:
+            reply = make_failure('NO_MIRNA_NAME')
             return reply
-        except TargetNotFoundException:
+        
+        disease = _get_keyword_name(content, descr='disease', hyphen=True)
+        if not disease:
+            reply = self.wrap_family_message(term_id, 'NO_DISEASE_NAME')
+            return reply
+        
+        res = self.md.is_mirna_disease(miRNA_name, disease)
+        
+        reply = KQMLList('SUCCESS')
+        res_str = 'TRUE' if res else 'FALSE'
+        reply.set('result', res_str)
+        return reply
+        
+    def respond_find_mirna_disease(self, content):
+        """
+        Respond to find-mirna-disease request
+        """
+        disease = _get_keyword_name(content, descr='disease', hyphen=True)
+        if not disease:
+            reply = self.wrap_family_message(term_id, 'NO_DISEASE_NAME')
+            return reply
+            
+        mirnas = self.md.find_mirna_disease(disease)
+        
+        ##consider another parameter for subsequent query
+        of_those_names = self._get_mirnas(content, descr='of-those')
+        
+        if of_those_names:
+            res_db = set(','.join(mirnas).upper().split(','))
+            res_of = set(','.join(of_those_names).upper().split(','))
+            mirnas = res_db & res_of
+            
+        if len(mirnas):
+            #mir_agent = [Agent(mir, db_refs={'type':'MIRNA'}) for mir in miRNA_names]
+            #mir_json = self.make_cljson(mir_agent)
+            mir_json = self._to_json_mirna(mirnas)
+            reply = KQMLList('SUCCESS')
+            reply.set('miRNAs', mir_json)
+        else:
             reply = KQMLList.from_string('(SUCCESS :miRNAs NIL)')
-            return reply            
-        mirna_str = ''
-        for m,ct in zip(mirnas,counts):
-            gs = genes[m]
-            g_str = ''
-            for g in gs:
-                g_str += '(:name %s) ' % g
-            g_str = '(' + g_str + ')'
-            mirna_str += '(:name %s :count %d :targets %s) ' % (m, ct, g_str)
-        reply = KQMLList.from_string(
-            '(SUCCESS :miRNAs (' + mirna_str + '))')
+        return reply
+        
+    def respond_find_disease_mirna(self, content):
+        """
+        Respond to fidn-disease-mirna request.
+        """
+        miRNA_names = self._get_mirnas(content)
+        if not miRNA_names:
+            #return all the diseases
+            diseases = self.md.find_disease()
+        else:
+            diseases = self.md.find_disease_mirna(miRNA_names)
+            
+        if diseases:
+            dagent = [Agent(d, db_refs={'type':'disease'}) for d in diseases]
+            djson = self.make_cljson(dagent)
+            reply = KQMLList('SUCCESS')
+            reply.set('disease', djson)
+        else:
+            reply = KQMLList.from_string('(SUCCESS :disease NIL)')
         return reply
 
     def respond_find_pathway_db_keyword(self, content):
@@ -1647,8 +1572,7 @@ class TFTA_Module(Bioagent):
             pathway_names = trim_word([pathway_names], 'pathway')
         
         try:
-            pathwayName,dblink = \
-                    self.tfta.find_pathway_db_keyword(db_name, pathway_names)
+            pathwayName,dblink = self.tfta.find_pathway_db_keyword(db_name, pathway_names)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
@@ -1660,39 +1584,74 @@ class TFTA_Module(Bioagent):
         """
         Response to FIND-TISSUE-GENE task
         """
-        gene_arg = content.gets('gene')
+        gene_arg = content.get('gene')
         #without gene parameter, then return all the tissues
         if not gene_arg:
-            tissue_str = ''
-            for ts in self.tissue_list:
-                tissue_str += '(:name %s) ' % ts
-            reply = KQMLList.from_string(
-                    '(SUCCESS :tissue (' + tissue_str + '))')
+            tissue_agent = [Agent(ts) for ts in self.tissue_list]
+            tissue_json = self.make_cljson(tissue_agent)
+            reply = KQMLList('SUCCESS')
+            reply.set('tissue', tissue_json)
             return reply
-        gene_name,term_id = get_gene(content, descr='gene')
-        if not len(gene_name):
+            
+        gene_name,term_id = self._get_targets(content, descr='gene')
+        if not gene_name:
             reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
             return reply
             
         try:
-            tissues = self.tfta.find_tissue_gene(gene_name)
+            tissues = self.tfta.find_tissue_gene(gene_name[0])
         except TissueNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :tissue NIL)')
-            return reply    
-        tissue_str = ''
-        for ts in tissues:
-            tissue_str += '(:name %s) ' % ts
-        reply = KQMLList.from_string(
-            '(SUCCESS :tissue (' + tissue_str + '))')
+            return reply
+            
+        if tissues:
+            tissue_agent = [Agent(ts, db_refs={'TYPE':'tissue'}) for ts in tissues]
+            tissue_json = self.make_cljson(tissue_agent)
+            reply = KQMLList('SUCCESS')
+            reply.set('tissue', tissue_json)
+        else:
+            reply = KQMLList.from_string('(SUCCESS :tissue NIL)')
+        return reply
+        
+    def get_target_kinase(self, kinase_names, keyword=None, of_those=None, target_type=None, out_gene=True):
+        """
+        Response to find-target with kinase parameter
+        """
+        if keyword in ['increase', 'decrease']:
+            try:
+                targets = self.tfta.find_target_kinase_keyword(kinase_names, keyword)
+            except TargetNotFoundException:
+                targets = set()
+        else:
+            try:
+                targets = self.tfta.find_target_kinase(kinase_names)
+            except TargetNotFoundException:
+                targets = set()
+        
+        if targets and of_those:
+            targets = set(targets).intersection(set(of_those))
+        if targets and target_type:
+            targets = set(targets).intersection(target_type)
+        
+        if out_gene:
+            return targets
+            
+        if targets:
+            reply = KQMLList('SUCCESS')
+            target_json = self._get_genes_json(targets)
+            tmess = KQMLList()
+            tmess.set('target-db', target_json)
+            reply.set('targets', tmess)
+        else:
+            reply = KQMLList.from_string('(SUCCESS :targets NIL)')
         return reply
         
     def respond_find_kinase_target(self, content):
         """
         Response to find-kinase-regulation with only target parameter
         """
-        target_names,term_id = get_of_those_list(content, descr='target')
-        if not len(target_names):
-            #target_arg = content.gets('target')
+        target_names,term_id = self._get_targets(content, descr='target')
+        if not target_names:
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         if term_id:
@@ -1704,17 +1663,21 @@ class TFTA_Module(Bioagent):
         except KinaseNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :kinase NIL)')
             return reply
-        kinase_str = self.wrap_message(':kinase ', kinases)
-        reply = KQMLList.from_string('(SUCCESS ' + kinase_str + ')')
+        
+        if kinases:
+            kin_json = self._get_genes_json(kinases)
+            reply = KQMLList('SUCCESS')
+            reply.set('kinase', kin_json)
+        else:
+            reply = KQMLList.from_string('(SUCCESS :kinase NIL)')
         return reply
         
     def respond_find_kinase_target_keyword(self, content):
         """
         Response to find-kinase-regulation with target and keyword parameter
         """
-        target_names,term_id = get_of_those_list(content, descr='target')
-        if not len(target_names):
-            #target_arg = content.gets('target')
+        target_names,term_id = self._get_targets(content, descr='target')
+        if not target_names:
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         if term_id:
@@ -1731,65 +1694,206 @@ class TFTA_Module(Bioagent):
         except KinaseNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :kinase NIL)')
             return reply
-        kinase_str = self.wrap_message(':kinase ', kinases)
-        reply = KQMLList.from_string('(SUCCESS ' + kinase_str + ')')
+        if kinases:
+            kin_json = self._get_genes_json(kinases)
+            reply = KQMLList('SUCCESS')
+            reply.set('kinase', kin_json)
+        else:
+            reply = KQMLList.from_string('(SUCCESS :kinase NIL)')
         return reply
         
     def respond_find_kinase_regulation(self, content):
         """
         Response to FIND-KINASE-REGULATION
         """
-        target_arg = content.gets('target')
+        target_arg = content.get('target')
         keyword_arg = content.get('keyword')
         if all([target_arg, keyword_arg]):
             reply = self.respond_find_kinase_target_keyword(content)
-        elif target_arg:
-            reply = self.respond_find_kinase_target(content)
         else:
-            reply = make_failure('UNKNOW_TASK')
+            reply = self.respond_find_kinase_target(content)
+        
         return reply
         
     def respond_find_tf_miRNA(self, content):
         """
         Response to FIND-TF-MIRNA
         """
-        try:
-            miRNA_arg = content.gets('miRNA')
-            miRNA_names = _get_miRNA_name(miRNA_arg)
-        except Exception as e:
+        miRNA_names = self._get_mirnas(content)
+        if not miRNA_names:
             reply = make_failure('NO_MIRNA_NAME')
             return reply
-        if not len(miRNA_names):
-            reply = make_failure('NO_MIRNA_NAME')
-            return reply 
             
         #consider an additional parameter for subsequent query
-        of_those_names,nouse = get_of_those_list(content, descr='of-those')
+        of_those_names,nouse = self._get_targets(content, descr='of-those')
         
-        try:
-            tf_names,miRNA_mis = self.tfta.find_tf_miRNA(miRNA_names)
-            #check if it's necessary for user clarification
-            if len(miRNA_mis):
-                reply = self.get_reply_mirna_clarification(miRNA_mis)
-                return reply
+        tf_names,miRNA_mis = self.tfta.find_tf_miRNA(miRNA_names)
+        #check if it's necessary for user clarification
+        if miRNA_mis:
+            reply = self._get_mirna_clarification(miRNA_mis)
+        else:
+            if of_those_names:
+                tf_names = set(of_those_names) & set(tf_names)
+            if tf_names:
+                reply = self.wrap_message(':tfs ', tf_names)
             else:
-                if of_those_names:
-                    tf_names = set(of_those_names) & set(tf_names)
-                tf_list_str = self.wrap_message(':tfs ', tf_names)
-                reply = KQMLList.from_string('(SUCCESS ' + tf_list_str + ')')
-        except TFNotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
+                reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
+        return reply
+        
+    def find_target_source(self, content):
+        """
+        Response to find-target with :source parameter
+        """
+        reg_names,term_id = self._get_targets(content, descr='regulator')
+        if not reg_names:
+            reply = self.wrap_family_message(term_id, 'NO_REGULATOR_NAME')
             return reply
-        #self.gene_list = tf_names  
+        if term_id:
+            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
+            return reply
+        reg_names = list(set(reg_names))
+        
+        keyword_name = _get_keyword_name(content)
+        if not keyword_name:
+            keyword_name = 'regulate'
+            
+        source_name = _get_keyword_name(content, descr='source')
+        if not source_name:
+            reply = make_failure('INVALID_SOURCE')
+            return reply
+            
+        #consider an optional parameter for subsequent query
+        of_those,_ = self._get_targets(content, 'of-those')
+        #consider an optional parameter to only return given type of genes
+        target_type_set = self.get_target_type_set(content)
+        
+        if source_name == 'literature':
+            try:
+                stmt_types = stmt_type_map[keyword_name]
+            except KeyError:
+                reply = make_failure('INVALID_KEYWORD')
+                return reply
+            lit_json = self.get_target_indra(reg_names, stmt_types, keyword_name,
+                                             of_those=of_those, target_type=target_type_set)
+            if len(lit_json):
+                reply = KQMLList('SUCCESS')
+                tmess = KQMLList()
+                tmess.set('target-literature', lit_json)
+                reply.set('targets', tmess)
+            else:
+                reply = KQMLList.from_string('(SUCCESS :targets NIL)')
+        elif source_name == 'kinase':
+            reply = self.get_target_kinase(reg_names, keyword=keyword_name, of_those=of_those,
+                                             target_type=target_type_set, out_gene=False)
+        else:
+            #by default go to tf-db
+            reply = self.find_target_tf(reg_names, of_those=of_those, target_type=target_type_set,
+                                          out_gene=False)
         return reply
     
-    def respond_find_regulation_source(self, content):
+    def find_target_all(self, content):
+        """
+        Response to find-target with results from all sources
+        By default, it will only return results from our dbs. Only if :literature is set to true, 
+        it will consider literature search in order to avoid long delay caused by literature search.
+        """
+        reg_names,term_id = self._get_targets(content, descr='regulator')
+        if not reg_names:
+            reply = self.wrap_family_message(term_id, 'NO_REGULATOR_NAME')
+            return reply
+        if term_id:
+            reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
+            return reply
+        reg_names = list(set(reg_names))
+        
+        keyword_name = _get_keyword_name(content)
+        if not keyword_name:
+            keyword_name = 'regulate'
+            
+        #consider an optional parameter for subsequent query
+        of_those,_ = self._get_targets(content, 'of-those')
+        #consider an optional parameter to only return given type of genes
+        target_type_set = self.get_target_type_set(content)
+        
+        #results from tf-db
+        if keyword_name == 'regulate':
+            targets_tfdb = self.find_target_tf(reg_names, of_those=of_those, target_type=target_type_set)
+        else:
+            targets_tfdb = set()
+        
+        #results from kinase-db
+        targets_kdb = self.get_target_kinase(reg_names, keyword=keyword_name, of_those=of_those,
+                                                   target_type=target_type_set, out_gene=True)
+        
+        #results from literature
+        lit = _get_keyword_name(content, descr='literature')
+        if lit and lit.upper() == 'TRUE':
+            try:
+                stmt_types = stmt_type_map[keyword_name]
+            except KeyError:
+                stmt_types = stmt_type_map['regulate']
+            lit_json = self.get_target_indra(reg_names, stmt_types, keyword_name,
+                                        of_those=of_those, target_type=target_type_set)
+        else:
+            lit_json = []
+        
+        targets = set(targets_tfdb).union(set(targets_kdb))
+        if targets or lit_json:
+            reply = KQMLList('SUCCESS')
+            tmess = KQMLList()
+            if targets:
+                target_json = self._get_genes_json(targets)
+                tmess.set('target-db', target_json)
+            if lit_json:
+                tmess.set('target-literature', lit_json)
+            reply.set('targets', tmess)
+        else:
+            reply = KQMLList.from_string('(SUCCESS :targets NIL)')
+        return reply
+    
+    def find_target_tf(self, tf_names, of_those=None, target_type=None, out_gene=True):
+        target_names = set()
+        try:
+            target_names,dbname = self.tfta.find_targets(tf_names)
+        except TFNotFoundException:
+            #provenance support
+            self.send_background_support_db(tf_names, [], '')
+            if out_gene:
+                return target_names
+            else:
+                reply = KQMLList.from_string('(SUCCESS :targets NIL)')
+                return reply
+    
+        #check if it's a subsequent query
+        if of_those:
+            target_names = set(of_those) & set(target_names)
+        
+        #check if it requires returning a type of genes
+        if target_type:
+            target_names = target_type & set(target_names)
+            
+        #provenance support
+        self.send_background_support_db(tf_names, target_names, dbname, find_target=True)
+        
+        if out_gene:
+            return target_names
+            
+        if target_names:
+            reply = KQMLList('SUCCESS')
+            target_json = self._get_genes_json(target_names)
+            tmess = KQMLList()
+            tmess.set('target-db', target_json)
+            reply.set('targets', tmess)
+        else:
+            reply = KQMLList.from_string('(SUCCESS :targets NIL)')
+        return reply
+    
+    def find_regulation_source(self, content):
         """
         Respond to find-regulation
         """
-        target_names,term_id = get_of_those_list(content, descr='target')
-        if not len(target_names):
-            #target_arg = content.gets('target')
+        target_names,term_id = self._get_targets(content, descr='target')
+        if not target_names:
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         if term_id:
@@ -1808,7 +1912,7 @@ class TFTA_Module(Bioagent):
             return reply
             
         #consider an optional parameter for subsequent query
-        of_those_names,nouse = get_of_those_list(content)
+        of_those_names,nouse = self._get_targets(content, 'of-those')
             
         if source_name == 'literature':
             #literature result
@@ -1817,37 +1921,44 @@ class TFTA_Module(Bioagent):
             except KeyError as e:
                 reply = make_failure('INVALID_KEYWORD')
                 return reply
+            
+            tf_json, gene_json, mirna_json, oth_json = [],[],[],[]
             if of_those_names:
-                lit_messages = self.get_regulator_indra_those(target_names, stmt_types, keyword_name,
-                                                        of_those=set(of_those_names))
+                gene_json = self.get_regulator_indra_those(target_names, stmt_types, keyword_name,
+                                                        of_those=of_those_names)
             else:
-                lit_messages = self.get_regulator_indra(target_names, stmt_types, keyword_name)
-            if len(lit_messages):
-                reply = KQMLList.from_string(
-                        '(SUCCESS :regulators (' + lit_messages + '))')
+                tf_json, gene_json, mirna_json, oth_json = self.get_regulator_indra(target_names, stmt_types, keyword_name)
+            
+            descr_list = ['gene-literature','tf-literature','mirna-literature','other-literature']
+            json_list = [gene_json, tf_json, mirna_json, oth_json]
+            res = self._combine_json_list(descr_list, json_list)
+            if res:
+                reply = KQMLList('SUCCESS')
+                reply.set('regulators', res)
             else:
                 reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
         elif source_name == 'geo rnai':
             #kinase regualtion
-            kin_messages = self.get_kinase_regulation(target_names, keyword_name, of_those=set(of_those_names))
+            kin_json = self.get_kinase_regulation(target_names, keyword_name, of_those=of_those_names)
             
-            if len(kin_messages):
-                reply = KQMLList.from_string(
-                        '(SUCCESS :regulators (' + kin_messages + '))')
+            if len(kin_json):
+                mes = KQMLList()
+                mes.set('kinase-db', kin_json)
+                reply = KQMLList('SUCCESS')
+                reply.set('regulators', mes)
             else:
                 reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
         else:
             reply = make_failure('INVALID_SOURCE')
         return reply
         
-    def respond_find_regulation_agent(self, content):
+    def find_regulation_agent(self, content):
         """
         Response to find-regulation request
         For example: Which kinases regulate the cfos gene?
         """
-        target_names,term_id = get_of_those_list(content, descr='target')
-        if not len(target_names):
-            #target_arg = content.gets('target')
+        target_names,term_id = self._get_targets(content, descr='target')
+        if not target_names:
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         if term_id:
@@ -1866,36 +1977,39 @@ class TFTA_Module(Bioagent):
             return reply
             
         #consider an optional parameter for subsequent query
-        of_those_names,nouse = get_of_those_list(content)
+        of_those_names,nouse = self._get_targets(content, descr='of-those')
             
         if agent_name == 'kinase':
             #kinase regualtion
-            kin_messages = self.get_kinase_regulation(target_names, keyword_name, of_those=set(of_those_names))
-            if len(kin_messages):
-                reply = KQMLList.from_string(
-                        '(SUCCESS :regulators (' + kin_messages + '))')
+            kin_json = self.get_kinase_regulation(target_names, keyword_name, of_those=of_those_names)
+            if len(kin_json):
+                mes = KQMLList()
+                mes.set('kinase-db', kin_json)
+                reply = KQMLList('SUCCESS')
+                reply.set('regulators', mes)
             else:
                 reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
         elif agent_name in ['transcription factor', 'tf']:
             temp_reply = self.respond_find_target_tfs(content)
             tf_str = temp_reply.get('tfs')
             if tf_str != 'NIL':
-                reply = KQMLList.from_string(
-                    '(SUCCESS :regulators (:tf-db ' + tf_str.to_string() + '))')
+                mes = KQMLList()
+                mes.set('tf-db', tf_str)
+                reply = KQMLList('SUCCESS')
+                reply.set('regulators', mes)
             else:
                 reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
         else:
             reply = make_failure('INVALID_REGULATOR')
         return reply
         
-    def respond_find_regulation_all(self, content):
+    def find_regulation_all(self, content):
         """
         Response to find-regulation request
         For example: what regulate MYC?
         """
-        target_names,term_id = get_of_those_list(content, descr='target')
-        if not len(target_names):
-            #target_arg = content.gets('target')
+        target_names,term_id = self._get_targets(content, descr='target')
+        if not target_names:
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         if term_id:
@@ -1909,7 +2023,7 @@ class TFTA_Module(Bioagent):
             return reply
         
         #consider an optional parameter for subsequent query
-        of_those_names,nouse = get_of_those_list(content)
+        of_those_names,nouse = self._get_targets(content, 'of-those')
         
         #literature result
         try:
@@ -1917,15 +2031,16 @@ class TFTA_Module(Bioagent):
         except KeyError as e:
             reply = make_failure('INVALID_KEYWORD')
             return reply
-            
+        
+        tf_json, gene_json, mirna_json, oth_json = [],[],[],[]
         if of_those_names:
-            lit_messages = self.get_regulator_indra_those(target_names, stmt_types, keyword_name,
+            gene_json = self.get_regulator_indra_those(target_names, stmt_types, keyword_name,
                                                           of_those=set(of_those_names))
         else:
-            lit_messages = self.get_regulator_indra(target_names, stmt_types, keyword_name)
+            tf_json, gene_json, mirna_json, oth_json = self.get_regulator_indra(target_names, stmt_types, keyword_name)
         
         #kinase regulation
-        kin_messages = self.get_kinase_regulation(target_names, keyword_name, of_those=set(of_those_names))
+        kin_json = self.get_kinase_regulation(target_names, keyword_name, of_those=of_those_names)
         
         #db result
         #only considering the regulation case
@@ -1940,28 +2055,33 @@ class TFTA_Module(Bioagent):
                 #provenance support
                 self.send_background_support_db([], target_names, '')
                 
-                messages = _combine_messages([kin_messages, lit_messages])
-                if len(messages):
-                    reply = KQMLList.from_string(
-                        '(SUCCESS :regulators (' + messages + '))')
+                descr_list = ['kinase-db','gene-literature','tf-literature','mirna-literature','other-literature']
+                json_list = [kin_json, gene_json, tf_json, mirna_json, oth_json]
+                res = self._combine_json_list(descr_list, json_list)
+                if res:
+                    reply = KQMLList('SUCCESS')
+                    reply.set('regulators', res)
                 else:
                     reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
                 return reply
         else:
             tf_names = []
         if len(tf_names):
-            tf_messages = self.wrap_message(':tf-db', tf_names)
-            messages = _combine_messages([tf_messages, kin_messages, lit_messages])
-            reply = KQMLList.from_string(
-                '(SUCCESS :regulators (' + messages + '))')
+            tf_db_json = self._get_genes_json(tf_names)
+            descr_list = ['tf-db','kinase-db','gene-literature','tf-literature','mirna-literature','other-literature']
+            json_list = [tf_db_json, kin_json, gene_json, tf_json, mirna_json, oth_json]
+            res = self._combine_json_list(descr_list, json_list)
+            reply = KQMLList('SUCCESS')
+            reply.set('regulators', res)
         else:
-            messages = _combine_messages([kin_messages, lit_messages])
-            if len(messages):
-                reply = KQMLList.from_string(
-                        '(SUCCESS :regulators (' + messages + '))')
+            descr_list = ['kinase-db','gene-literature','tf-literature','mirna-literature','other-literature']
+            json_list = [kin_json, gene_json, tf_json, mirna_json, oth_json]
+            res = self._combine_json_list(descr_list, json_list)
+            if res:
+                reply = KQMLList('SUCCESS')
+                reply.set('regulators', res)
             else:
                 reply = KQMLList.from_string('(SUCCESS :regulators NIL)')
-        #self.gene_list = tf_names
         return reply
         
     def respond_find_evidence(self, content):
@@ -1985,15 +2105,13 @@ class TFTA_Module(Bioagent):
         for example: show me evidence that IL6 increases the amount of SOCS1.
         Only consider one-one case
         """
-        regulator_name,term_id = get_gene(content, descr='regulator')
+        regulator_name,term_id = self._get_targets(content, descr='regulator')
         if not regulator_name:
-            #regulator_arg = content.gets('regulator')
             reply = self.wrap_family_message(term_id, 'NO_REGULATOR_NAME')
             return reply
         
-        target_name,term_id = get_gene(content, descr='target')
+        target_name,term_id = self._get_targets(content, descr='target')
         if not target_name:
-            #target_arg = content.gets('target')
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         
@@ -2009,32 +2127,28 @@ class TFTA_Module(Bioagent):
         
         evi_message = ''
         db_message = ''
-        term_tuple = (regulator_name, target_name, keyword_name)
+        term_tuple = (regulator_name[0], target_name[0], keyword_name)
         if term_tuple not in self.stmts_indra:
-            stmts,success = self.tfta.find_statement_indraDB(subj=regulator_name, obj=target_name, stmt_types=stmt_types)
+            stmts,success = self.tfta.find_statement_indraDB(subj=regulator_name[0], obj=target_name[0], stmt_types=stmt_types)
             if success:
                 self.stmts_indra[term_tuple] = stmts
         else:
             stmts = self.stmts_indra[term_tuple]
-        self.send_background_support(stmts, regulator_name, target_name, keyword_name)
+        self.send_background_support(stmts, regulator_name[0], target_name[0], keyword_name)
         if len(stmts):
             evidences = self.tfta.find_evidence_indra(stmts)
             if len(evidences):
                 evi_message = _wrap_evidence_message(':literature', evidences)
+        
         if keyword_name == 'regulate':
-            db_names = self.tfta.find_evidence_dbname(regulator_name, target_name)
+            db_names = self.tfta.find_evidence_dbname(regulator_name[0], target_name[0])
             if len(db_names):
-                for db in db_names:
-                    try:
-                        pmid = dbname_pmid_map[db]
-                    except KeyError as e:
-                        pmid = ''
-                    db_message += '(:name %s :pmid %s) ' % (db, pmid)
-                db_message = ':tf-db (' + db_message + ') '
+                db_message = _wrap_dbname_message(':tf-db', db_names)
+                
         message = _combine_messages([db_message, evi_message])
         if message:
-            reply = KQMLList.from_string(
-                             '(SUCCESS :evidence (' + message + '))')
+            reply = KQMLList('SUCCESS')
+            reply.set('evidence', '(' + message + ')')
         else:
             reply = KQMLList.from_string('(SUCCESS :evidence NIL)')
         return reply
@@ -2043,31 +2157,21 @@ class TFTA_Module(Bioagent):
         """
         Respond to find-evidence request from tfdb
         """
-        regulator_name,term_id = get_gene(content, descr='regulator')
+        regulator_name,term_id = self._get_targets(content, descr='regulator')
         if not regulator_name:
-            #regulator_arg = content.gets('regulator')
             reply = self.wrap_family_message(term_id, 'NO_REGULATOR_NAME')
             return reply
         
-        target_name,term_id = get_gene(content, descr='target')
+        target_name,term_id = self._get_targets(content, descr='target')
         if not target_name:
-            #target_arg = content.gets('target')
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
             
-        db_names = self.tfta.find_evidence_dbname(regulator_name, target_name)
+        db_names = self.tfta.find_evidence_dbname(regulator_name[0], target_name[0])
         if len(db_names):
-            db_str = ''
-            for db in db_names:
-                try:
-                    pmid = dbname_pmid_map[db]
-                except KeyError as e:
-                    pmid = ''
-                db_str += '(:name %s :pmid %s) ' % (db, pmid)
-            reply = KQMLList.from_string(
-                    '(SUCCESS :evidence (:tf-db (' + db_str + ')))')
-        else:
-            reply = KQMLList.from_string('(SUCCESS :evidence NIL)')
+            db_message = _wrap_dbname_message(':tf-db', db_names)
+            reply = KQMLList('SUCCESS')
+            reply.set('evidence', '( ' + db_message + ')')
         return reply
             
     def respond_find_gene_tissue(self, content):
@@ -2087,7 +2191,7 @@ class TFTA_Module(Bioagent):
             
         #optional keyword
         keyword_name = _get_keyword_name(content, descr='keyword')
-        if len(keyword_name):
+        if keyword_name:
             try:
                 gene_list = self.tfta.find_gene_tissue_exclusive(tissue_name)
             except TissueNotFoundException:
@@ -2101,15 +2205,15 @@ class TFTA_Module(Bioagent):
                 return reply
         
         #check if it's a subsequent query with optional parameter
-        ogenes,nouse = get_of_those_list(content, descr='gene')
-        if len(ogenes):
+        ogenes,nouse = self._get_targets(content, descr='gene')
+        if ogenes:
             results = list(set(gene_list) & set(ogenes))
         else:
             results = gene_list
         if len(results):
-            results.sort()
-            gene_str = self.wrap_message(':genes ', results)
-            reply = KQMLList.from_string('(SUCCESS ' + gene_str + ')')
+            gene_json = self._get_genes_json(results)
+            reply = KQMLList('SUCCESS')
+            reply.set('genes', gene_json)
         else:
             reply = KQMLList.from_string('(SUCCESS :genes NIL)')
         return reply
@@ -2128,9 +2232,8 @@ class TFTA_Module(Bioagent):
             reply = make_failure('INVALID_TISSUE')
             return reply
             
-        gene_name,term_id = get_gene(content, descr='gene')
+        gene_name,term_id = self._get_targets(content, descr='gene')
         if not gene_name:
-            #gene_arg = content.gets('gene')
             reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
             return reply
             
@@ -2138,14 +2241,14 @@ class TFTA_Module(Bioagent):
         keyword_name = _get_keyword_name(content, descr='keyword')
         if keyword_name == 'exclusive':
             try:
-                is_express = self.tfta.is_tissue_gene_exclusive(tissue_name, gene_name)
-            except Exception as e:
+                is_express = self.tfta.is_tissue_gene_exclusive(tissue_name, gene_name[0])
+            except Exception:
                 reply = KQMLList.from_string('(SUCCESS :result FALSE)')
                 return reply
         else:
             try:
-                is_express = self.tfta.is_tissue_gene(tissue_name, gene_name)
-            except Exception as e:
+                is_express = self.tfta.is_tissue_gene(tissue_name, gene_name[0])
+            except Exception:
                 reply = KQMLList.from_string('(SUCCESS :result FALSE)')
                 return reply
         reply = KQMLList('SUCCESS')
@@ -2153,28 +2256,90 @@ class TFTA_Module(Bioagent):
         reply.set('result', is_express_str)
         return reply
         
-#
-    def respond_get_family_name(self, content):
-        family_arg = content.gets('family')
-        
-        agent = _get_family_name(family_arg)
-        if agent:
-            res_str = ' (:for ' + agent[0].name + ' :error FAMILY_NAME_NOT_ALLOWED)'
-            reply = make_failure(res_str)
+    def respond_go_enrichment(self, content):
+        """
+        Respond to GO-ENRICHMENT
+        """
+        gene_names,term_id = self._get_targets(content, descr='gene')
+        if not gene_names:
+            reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
+            return reply
+            
+        results = self.go.go_enrichment_analysis(gene_names)
+        #return GO_id, GO_name, p_bonferroni, study_items
+        mes_json = []
+        if results:
+            for res in results:
+                mes = KQMLList()
+                mes.sets('GO-term', res.goterm.id)
+                mes.sets('GO-name', res.name)
+                mes.sets('p-bonferroni', str(res.p_bonferroni))
+                r1 = res.ratio_in_study
+                mes.sets('ratio_in_study', str(r1[0]) + '/' + str(r1[1]))
+                r1 = res.ratio_in_pop
+                mes.sets('ratio_in_pop', str(r1[0]) + '/' + str(r1[1]))
+                gene_agent = [Agent(g, db_refs={'TYPE':'ONT::GENE-PROTEIN'}) for g in res.study_items]
+                gene_json = self.make_cljson(gene_agent)
+                mes.set('genes', gene_json)
+                mes_json.append(mes.to_string())
+            reply=KQMLList('SUCCESS')
+            res_str = '(' + ' '.join(mes_json) + ')'
+            reply.set('results', res_str)
+            return reply
         else:
-            reply = KQMLList.from_string('(SUCCESS :family NIL)')
-        return reply
-        
+            reply = KQMLList.from_string('(SUCCESS :results NIL)')
+            return reply
     
+    def respond_go_annotation(self, content):
+        """
+        Respond to GO-ANNOTATION request
+        """
+        keyword_name = _get_keyword_name(content, hyphen=True)
+        if not keyword_name:
+            reply = make_failure('NO_KEYWORD_NAME')
+            return reply
+        
+        results = self.go.get_annotations_keyword(keyword_name)
+        if results:
+            #return GO_ID, gene_name
+            agent = []
+            for key, value in results.items():
+                go_terms = ','.join([entry['GO_ID'] for entry in value])
+                agent.append(Agent(key, db_refs={'GO':go_terms}))
+            a_json = self.make_cljson(agent)
+            reply = KQMLList('SUCCESS')
+            reply.set('genes', a_json)
+            return reply
+        else:
+            reply = KQMLList.from_string('(SUCCESS :genes NIL)')
+            return reply
+            
+    def respond_make_heatmap(self, content):
+        """
+        Respond to make-heatmap request
+        """
+        path = _get_keyword_name(content, descr='filepath')
+        if not path:
+            reply = make_failure('NO_FILE_NAME')
+            return reply
+            
+        heatmap_file, row_index, col_index = generate_heatmap(path.lower())
+        if heatmap_file:
+            reply = KQMLList('SUCCESS')
+            reply.sets('heatmap-file', heatmap_file)
+            reply.sets('row-reordered-ind', ','.join([str(r) for r in row_index]))
+            reply.sets('col-reordered-ind', ','.join([str(r) for r in col_index]))
+        else:
+            reply = make_failure('INVALID_DATA_FORMAT')
+        return reply
         
     task_func = {'IS-REGULATION':respond_is_regulation, 'FIND-TF':respond_find_tf,
                  'FIND-PATHWAY':respond_find_pathway, 'FIND-TARGET':respond_find_target,
-                 'FIND-GENE':respond_find_gene, 'FIND-MIRNA':respond_find_miRNA,
-                 'FIND-COMMON-PATHWAY-GENES':respond_find_common_pathway_all,
-                 'FIND-MIRNA-COUNT-GENE':respond_find_miRNA_count_target,
-                 'FIND-GENE-COUNT-MIRNA':respond_find_target_count_miRNA,
-                 'IS-MIRNA-TARGET':respond_is_miRNA_target2,
-                 'FIND-COMMON-TF-GENES':respond_find_common_tfs_genes,
+                 'FIND-COMMON-PATHWAY-GENES':respond_find_common_pathway_genes,
+                 'FIND-MIRNA-COUNT-GENE':respond_find_miRNA_count_gene,
+                 'FIND-GENE-COUNT-MIRNA':respond_find_gene_count_miRNA,
+                 'IS-MIRNA-TARGET':respond_is_miRNA_target,
+                 'FIND-COMMON-TF-GENES':respond_find_common_tf_genes,
                  'IS-PATHWAY-GENE':respond_is_pathway_gene,
                  'FIND-TARGET-MIRNA':respond_find_target_miRNA,
                  'FIND-MIRNA-TARGET':respond_find_miRNA_target,
@@ -2183,17 +2348,12 @@ class TFTA_Module(Bioagent):
                  'IS-TF-TARGET':respond_is_tf_target,
                  'FIND-TF-TARGET':respond_find_tf_targets,
                  'FIND-TARGET-TF':respond_find_target_tfs,
-                 'FIND-PATHWAY-GENE':respond_find_pathway_gene,
-                 'FIND-PATHWAY-GENE-KEYWORD':respond_find_pathway_gene_keyword,
-                 'FIND-PATHWAY-DB-GENE':respond_find_pathway_db_gene,
                  'FIND-TF-PATHWAY':respond_find_tf_pathway,
                  'FIND-GENE-PATHWAY':respond_find_gene_pathway,
                  'FIND-PATHWAY-KEYWORD':respond_find_pathway_keyword,
                  'FIND-TF-KEYWORD':respond_find_tf_keyword,
-                 'FIND-COMMON-PATHWAY-GENES-KEYWORD':respond_find_common_pathway_genes_keyword,
                  'FIND-GENE-GO-TF':respond_find_genes_go_tf2,
                  'IS-TF-TARGET-TISSUE':respond_is_tf_target_tissue,
-                 'FIND-TF-TARGET-TISSUE':respond_find_tf_targets_tissue,
                  'FIND-TARGET-TF-TISSUE':respond_find_target_tfs_tissue,
                  'FIND-EVIDENCE-MIRNA-TARGET':respond_find_evidence_miRNA_target,
                  'FIND-PATHWAY-DB-KEYWORD':respond_find_pathway_db_keyword,
@@ -2205,7 +2365,11 @@ class TFTA_Module(Bioagent):
                  'FIND-GENE-TISSUE':respond_find_gene_tissue,
                  'IS-GENE-TISSUE':respond_is_gene_tissue,
                  'FIND-KINASE-PATHWAY':respond_find_kinase_pathway,
-                 'TEST-FUNCTION':respond_get_family_name}
+                 'GO-ENRICHMENT':respond_go_enrichment, 'GO-ANNOTATION':respond_go_annotation,
+                 'IS-MIRNA-DISEASE':respond_is_mirna_disease,
+                 'FIND-MIRNA-DISEASE':respond_find_mirna_disease,
+                 'FIND-DISEASE-MIRNA':respond_find_disease_mirna,
+                 'MAKE-HEATMAP':respond_make_heatmap}
     
     def receive_request(self, msg, content):
         """If a "request" message is received, decode the task and
@@ -2213,58 +2377,19 @@ class TFTA_Module(Bioagent):
         response. A reply message is then sent back.
         """
         task_str = content.head().upper()
-        try:
+        if task_str not in self.task_func:
+            logger.info('In receive_request: TFTA received the unkonwn task: {}.'.format(task_str))
+            reply_content = make_failure2('NO-CAPABILITY', task_str)
+        else:
             reply_content = self.task_func[task_str](self, content)
-        except KeyError:
-            self.error_reply(msg, 'unknown request task ' + task_str)
-            return
+            logger.info('In receive_request: TFTA received the task: {}.'.format(task_str))
+        
         reply_msg = KQMLPerformative('reply')
         reply_msg.set('content', reply_content)
-        self.reply(msg, reply_msg)
         
-    def get_regulator_indra0(self, target_names, stmt_types, keyword_name):
-        """
-        wrap message for multiple targets case
-        target_names: list
-        stmt_types: indra statement type
-        """
-        lit_messages = ''
-        tfs = defaultdict(set)
-        others = defaultdict(set)
-        mirnas = defaultdict(set)
-        genes = defaultdict(set)
-        for target in target_names:
-            term_tuple = (target, 'target', keyword_name)
-            if term_tuple not in self.stmts_indra:
-                stmts,success = self.tfta.find_statement_indraDB(obj=target, stmt_types=stmt_types)
-                if success:
-                    self.stmts_indra[term_tuple] = stmts
-            else:
-                stmts = self.stmts_indra[term_tuple]
-            #provenance support
-            self.send_background_support(stmts, 'what', target, keyword_name)
-            if len(stmts):
-                tfs[target], genes[target], mirnas[target], others[target] = self.tfta.find_regulator_indra(stmts)
-        #take the intersection
-        ftfs = tfs[target_names[0]]
-        fmirnas = mirnas[target_names[0]]
-        fothers = others[target_names[0]]
-        fgenes = genes[target_names[0]]
-        if len(target_names)>1:
-            for i in range(1, len(target_names)):
-                ftfs = ftfs.intersection(tfs[target_names[i]])
-                fmirnas = fmirnas.intersection(mirnas[target_names[i]])
-                fothers = fothers.intersection(others[target_names[i]])
-                fgenes = fgenes.intersection(genes[target_names[i]])
-        if len(ftfs):
-            lit_messages += self.wrap_message(':tf-literature', ftfs)
-        if len(fgenes):
-            lit_messages += self.wrap_message(':gene-literature', fgenes)
-        if len(fmirnas):
-            lit_messages += self.wrap_message(':miRNA-literature', fmirnas, hgnc_id=False)
-        if len(fothers):
-            lit_messages += self.wrap_message(':other-literature', fothers, hgnc_id=False)
-        return lit_messages
+        logger.info('In receive_request: {} is sending message...'.format(task_str))
+        
+        self.reply(msg, reply_msg)
         
     def get_regulator_indra(self, target_names, stmt_types, keyword_name):
         """
@@ -2272,7 +2397,7 @@ class TFTA_Module(Bioagent):
         target_names: list
         stmt_types: indra statement type
         """
-        lit_messages = ''
+        #lit_messages = ''
         tfs = defaultdict(set)
         others = defaultdict(set)
         mirnas = defaultdict(set)
@@ -2294,31 +2419,37 @@ class TFTA_Module(Bioagent):
                 stmts_d[target] = stmts
             else:
                 self.send_background_support([], 'what', target_str, keyword_name)
-                return lit_messages
+                return None,None,None,None
         tfs, genes, mirnas, others, stmt_f = self.tfta.find_regulators_indra(stmts_d)
-        
+        tf_json, gene_json, mirna_json, oth_json = [],[],[],[]
         if len(tfs):
-            lit_messages += self.wrap_message(':tf-literature', tfs)
+            tf_json = self._get_genes_json(tfs)
+            #lit_messages.set('tf-literature', tf_json)
         if len(genes):
-            lit_messages += self.wrap_message(':gene-literature', genes)
+            gene_json = self._get_genes_json(genes)
+            #lit_messages.set('gene-literature', gene_json)
         if len(mirnas):
-            lit_messages += self.wrap_message(':miRNA-literature', mirnas, hgnc_id=False)
+            mirna_agent = [Agent(mir, db_refs={'TYPE':'MIRNA'}) for mir in mirnas]
+            mirna_json = self.make_cljson(mirna_agent)
+            #lit_messages.set('miRNA-literature', mirna_json)
         if len(others):
-            lit_messages += self.wrap_message(':other-literature', others, hgnc_id=False)
+            oth_agent = [Agent(oth) for oth in others]
+            oth_json = self.make_cljson(oth_agent)
+            #lit_messages.set('other-literature', oth_json)
             
         #provenance support
         self.send_background_support(stmt_f, 'what', target_str, keyword_name)
         
-        return lit_messages
+        return tf_json, gene_json, mirna_json, oth_json
         
     def get_regulator_indra_those(self, target_names, stmt_types, keyword_name, of_those=None, target_type=None):
         """
-        wrap message for multiple targets case
+        wrap message for multiple targets case, use json format
         target_names: list
         stmt_types: indra statement type
         of_those: set
         """
-        lit_messages = ''
+        lit_json = ''
         stmts_d = defaultdict(list)
         if len(target_names) > 1:
             target_str = ', '.join(target_names[:-1]) + ' and ' + target_names[-1]
@@ -2336,15 +2467,17 @@ class TFTA_Module(Bioagent):
                 stmts_d[target] = stmts
             else:
                 self.send_background_support([], 'what', target_str, keyword_name)
-                return lit_messages
+                return lit_json
         genes, stmt_f = self.tfta.find_regulator_indra_targets(stmts_d, of_those=of_those, target_type=target_type)
         
         if len(genes):
-            lit_messages += self.wrap_message(':gene-literature', genes)
+            lit_json = self._get_genes_json(genes)
+            #lit_messages = KQMLList()
+            #lit_messages.set('gene-literature', gene_json)
         #provenance support
         self.send_background_support(stmt_f, 'what', target_str, keyword_name)
         
-        return lit_messages
+        return lit_json
         
     def get_target_indra(self, regulator_names, stmt_types, keyword_name, of_those=None, target_type=None):
         """
@@ -2375,7 +2508,9 @@ class TFTA_Module(Bioagent):
         genes, stmt_f = self.tfta.find_target_indra_regulators(stmts_d, of_those=of_those, target_type=target_type)
         
         if len(genes):
-            lit_messages += self.wrap_message(':targets', genes)
+            target_list = [Agent(target, db_refs={'TYPE':'ONT::GENE-PROTEIN'}) for target in genes]
+            lit_messages = self.make_cljson(target_list)
+             
         #provenance support
         self.send_background_support(stmt_f, regulator_str, 'what', keyword_name)
         
@@ -2394,6 +2529,7 @@ class TFTA_Module(Bioagent):
             target_str = ', '.join(target_names[:-1]) + ' and ' + target_names[-1]
         else:
             target_str = target_names[0]
+        
         for target in target_names:
             term_tuple = (target, 'target', keyword_name)
             if term_tuple not in self.stmts_indra:
@@ -2407,10 +2543,12 @@ class TFTA_Module(Bioagent):
             else:
                 self.send_background_support([], target_str, 'what', keyword_name)
                 return lit_messages
-        tfs, stmt_f = self.tfta.find_tfs_indra(stmts_d)        
+        tfs, stmt_f = self.tfta.find_tfs_indra(stmts_d)
         
         if len(tfs):
-            lit_messages += self.wrap_message(':tfs', tfs)
+            tf_list = [Agent(tf, db_refs={'TYPE':'ONT::GENE-PROTEIN'}) for tf in tfs]
+            lit_messages = self.make_cljson(tf_list)
+            
         #provenance support
         self.send_background_support(stmt_f, target_str, 'what', keyword_name)
         
@@ -2588,24 +2726,24 @@ class TFTA_Module(Bioagent):
         target_names: list
         keyword_name: string
         """
-        kin_messages = ''
+        kin_json = ''
         kinase_names = []
         if keyword_name == 'regulate':
             try:
                 kinase_names = self.tfta.find_kinase_target(target_names)
             except KinaseNotFoundException:
-                return kin_messages
+                return kin_json
         else:
             try:
                 kinase_names = self.tfta.find_kinase_target_keyword(target_names, keyword_name)
             except KinaseNotFoundException:
-                return kin_messages
+                return kin_json
         
         if of_those:
             kinase_names = list(set(kinase_names).intersection(set(of_those)))
         if len(kinase_names):
-            kin_messages += self.wrap_message(':kinase-db', kinase_names)
-        return kin_messages
+            kin_json = self._get_genes_json(kinase_names)
+        return kin_json
         
     def send_background_support(self, stmts, regulator_name, target_name, keyword_name):
         logger.info('Sending support for %d statements' % len(stmts))
@@ -2631,35 +2769,31 @@ class TFTA_Module(Bioagent):
                                                 cause=for_what, reason=reason))
         return self.tell(content)
         
-    def wrap_message(self, descr, data, hgnc_id=True):
-        if type(data) is set:
-            data = list(data)
-        if not self.hgnc_info:
-            self.hgnc_info = self.tfta.get_hgnc_mapping()
-        if not data:
-            return None
-        data.sort()  
-        tf_list_str = ''
-        #don't consider strings from literature containing double quote
-        dquote = '"'
-        if hgnc_id:
-            for tf in data:
-                if dquote not in tf:
-                    tf_str = '"' + tf + '"'
-                    try:
-                        id = self.hgnc_info[tf]
-                    except KeyError:
-                        id = None
-                    if id:
-                        tf_list_str += '(:name %s :hgnc %s) ' % (tf_str, str(id))
-                    else:
-                        tf_list_str += '(:name %s) ' % tf_str
-        else:
-            for tf in data:
-                if dquote not in tf:
-                    tf_str = '"' + tf + '"'
-                    tf_list_str += '(:name %s) ' % tf_str
-        return descr + ' (' + tf_list_str + ') '
+    def wrap_message(self, descr, gene_names):
+        #use json format
+        gene_list = []
+        for gene in gene_names:
+            hgnc_id = hgnc_client.get_hgnc_id(gene)
+            if hgnc_id:
+                gene_list.append(Agent(gene, db_refs={'HGNC': hgnc_id, 'TYPE':'ONT::GENE-PROTEIN'}))
+            else:
+                gene_list.append(Agent(gene, db_refs={'TYPE':'ONT::GENE-PROTEIN'}))
+        gene_json = self.make_cljson(gene_list)
+        reply = KQMLList('SUCCESS')
+        reply.set(descr, gene_json)
+        return reply
+        
+    def _get_genes_json(self, gene_names):
+        #use json format
+        gene_list = []
+        for gene in gene_names:
+            hgnc_id = hgnc_client.get_hgnc_id(gene)
+            if hgnc_id:
+                gene_list.append(Agent(gene, db_refs={'HGNC': hgnc_id, 'TYPE':'ONT::GENE-PROTEIN'}))
+            else:
+                gene_list.append(Agent(gene, db_refs={'TYPE':'ONT::GENE-PROTEIN'}))
+        gene_json = self.make_cljson(gene_list)
+        return gene_json
     
     def get_target_type_set(self, content):
         target_type = _get_keyword_name(content, descr='target-type')
@@ -2670,231 +2804,355 @@ class TFTA_Module(Bioagent):
             except GONotFoundException:
                 return target_type_set
         return target_type_set
-        
+    
     def wrap_family_message(self, term_id, msg):
-        #term_id = _get_term_id(target_arg)
-        #-,term_id = _get_targets(target_arg)
-        members = dict()
-        if len(term_id):
-            members = self.tfta.find_members(term_id)
+        """
+        parameter
+        -------------
+        term_id: dict, key is trips id or family name, value is Agent
+        msg: str
+        """
+        #use json format
+        #only consider one family for clarification for now
+        members = []
+        if term_id:
+            term = list(term_id.keys())[0]
+            members = self.tfta.find_member(term_id[term])
+        else:
+            reply = make_failure(msg)
         if members:
-            res_str = ''
-            if len(members) == 1:
-                n_str = ''
-                id = list(members.keys())[0]
-                for a in members[id]:
-                    n_str += '(:name %s)' % a.name
-                res_str += '(resolve :term %s :as (%s))' % (id, n_str)
-            else:
-                for id in members:
-                    n_str = ''
-                    for a in members[id]:
-                        n_str += '(:name %s)' % a.name
-                    res_str += '(resolve :term %s :as (%s))' % (id, n_str)
-                res_str = '(' + res_str + ')'
+            #add +type+ to db_refs{}
+            for a in members:
+                a.db_refs.update({'TYPE':'ONT::GENE-PROTEIN'})
+            mbj = self.make_cljson(members)
+            res_str = KQMLList('resolve')
+            res_str.set('term', self.make_cljson(Agent(term, db_refs={'TYPE':'ONT::PROTEIN-FAMILY'})))
+            res_str.set('as', mbj)
             reply = make_failure_clarification('FAMILY_NAME', res_str)
         else:
             reply = make_failure(msg)
         return reply
-        
+    
     def wrap_family_message_pathway(self, term_id, descr='pathways', msg="PATHWAY_NOT_FOUND"):
         #term_id = _get_term_id(target_arg)
-        if len(term_id):
-            members = self.tfta.find_members(term_id)
-            res_str = ''
+        if term_id:
+            term = list(term_id.keys())[0]
+            members = self.tfta.find_member(term_id[term])
             if members:
-                for id in members:
-                    for a in members[id]:
-                        res_str += '(:name %s)' % a.name
-                    res_str = '(:term %s :as (%s))' % (id, res_str)
-                res_str = '(resolve :agents (' + res_str + '))'
-            if res_str:
-                reply = make_failure_clarification(msg, res_str)
+                #id = list(members.keys())[0]
+                #add +type+ to db_refs{}
+                for a in members:
+                    a.db_refs.update({'TYPE':'ONT::GENE-PROTEIN'})
+                mbj = self.make_cljson(members)
+                res_str = KQMLList('resolve')
+                res_str.set('family', self.make_cljson(Agent(term, db_refs={'TYPE':'ONT::PROTEIN-FAMILY'})))
+                res_str.set('as', mbj)
+                reply = make_failure_clarification('FAMILY_NAME', res_str)
             else:
-                reply = KQMLList('SUCCESS')
-                reply.set(descr, 'NIL')
+                reply = make_failure(msg)
         else:
             reply = KQMLList('SUCCESS')
             reply.set(descr, 'NIL')
         return reply
-    
-    def get_reply_mirna_clarification(self, miRNA_mis):
-        try:
-            clari_mirna = self.tfta.get_similar_miRNAs(list(miRNA_mis.keys())[0])
-            c_str = _wrap_mirna_clarification(miRNA_mis, clari_mirna)
-            reply = make_failure_clarification('MIRNA_NOT_FOUND', c_str)
-            return reply
-        except miRNANotFoundException:
-            reply = make_failure('NO_SIMILAR_MIRNA')
-            return reply
-    
-    def is_protein_gene(self, gene_arg, keyword):
-        gene_map = {'gene':['ONT::GENE-PROTEIN', 'ONT:GENE'], 'protein': ['ONT::GENE-PROTEIN', 'ONT:PROTEIN']}
-        #gene_arg = content.gets('gene')
-        is_onto = False
-        is_ekb = True
-        if '<ekb' in gene_arg or '<EKB' in gene_arg:
-            tp = TripsProcessor(gene_arg)
-            for term in tp.tree.findall('TERM'):
-                if term.find('type').text in gene_map[keyword]:
-                    is_onto = True
-                    break
-        else:
-            is_ekb = False
-        return is_onto, is_ekb
-         
-#------------------------------------------------------------------------#######
-def _get_target(target_str):
-    agent = None
-    ont1 = ['ONT::PROTEIN', 'ONT::GENE-PROTEIN', 'ONT::GENE']
-    tp = TripsProcessor(target_str)
-    for term in tp.tree.findall('TERM'):
-        if term.find('type').text in ont1:
-            term_id = term.attrib['id']
-            agent = tp._get_agent_by_id(term_id, None)
-            break
-    return agent
-    
-def _get_targets(target_arg):
-   tp = TripsProcessor(target_arg)
-   #agents: dict with term id as key, agent as value
-   agents = tp.get_term_agents()
-   protein_agents = [a for k,a in agents.items() if a is not None and ('UP' in a.db_refs or 'HGNC' in a.db_refs)]
-   proteins = [a.name for k,a in agents.items() if a is not None and ('UP' in a.db_refs or 'HGNC' in a.db_refs)]
-   families = {k:a for k,a in agents.items() if a is not None and 'FPLX' in a.db_refs and a.name not in proteins}
-   #filter out the repeat family agents
-   f_family = dict()
-   temp = []
-   for k,a in families.items():
-       if a.name not in temp:
-           temp.append(a.name)
-           f_family[k] = a
-   return protein_agents, f_family
-
-def _get_targets2(target_arg):
-    agent = []
-    ont1 = ['ONT::PROTEIN', 'ONT::GENE-PROTEIN', 'ONT::GENE']
-    tp = TripsProcessor(target_arg)
-    for term in tp.tree.findall('TERM'):
-        if term.find('type').text in ont1:
-            term_id = term.attrib['id']
-            agent.append(tp._get_agent_by_id(term_id, None))
-    return agent
-    
-def _get_family_name(target_arg):
-    agent = []
-    ont1 = ['ONT::PROTEIN-FAMILY', 'ONT::GENE-FAMILY']
-    tp = TripsProcessor(target_arg)
-    for term in tp.tree.findall('TERM'):
-        if term.find('type').text in ont1:
-            term_id = term.attrib['id']
-            agent.append(tp._get_agent_by_id(term_id, None))
-    return agent
-    
-def _get_term_id(target_arg, otype=1):
-    term_id = dict()
-    if '<ekb' in target_arg or '<EKB' in target_arg:
-        if otype == 1:
-            ont1 = ['ONT::PROTEIN-FAMILY', 'ONT::GENE-FAMILY']
-        else:
-            ont1 = ['ONT::RNA', 'ONT::GENE']
-        tp = TripsProcessor(target_arg)
-        for term in tp.tree.findall('TERM'):
-            if term.find('type').text in ont1:
-                id = term.attrib['id']
-                term_id[id] = tp._get_agent_by_id(id, None)
-    #print('term_id = ' + ','.join(term_id))
-    return term_id
-
-def _wrap_family_message(term_id, msg):
-    #term_id = _get_term_id(target_arg)
-    #-,term_id = _get_targets(target_arg)
-    if len(term_id):
-        res_str = ''
-        for t in term_id:
-            res_str += '(:for ' + t + ' :error FAMILY_NAME_NOT_ALLOWED) '
-        res_str = '(' + res_str + ')'
-        reply = make_failure(res_str)
-    else:
-        reply = make_failure(msg)
-    return reply
-
-def _wrap_family_message2(target_arg, msg):
-    family = _get_family_name(target_arg)
-    family_name = []
-    for f in family:
-        family_name.append(f.name)
-    if family_name:
-        res_str = ''
-        for f in family_name:
-            res_str += '(:for ' + f + ' :error FAMILY_NAME_NOT_ALLOWED) '
-        res_str = '(' + res_str + ')'
-        reply = make_failure(res_str)
-    else:
-        reply = make_failure(msg)
-    return reply
-
-def _get_pathway_name(target_str):
-    #print('In _get_pathway_name')
-    #tree = ET.XML(xml_string, parser=UTB())
-    pathway_name = []
-    try:
-        #test the ekb xml format
-        f = open('TFTA-test-pathway-ekb.txt', 'a')
-        f.write(target_str + '\n')
-        f.write('===============================\n')
         
-        root = ET.fromstring(target_str)
-    except Exception as e:
-        return pathway_name
-    try:
-        for term in root.findall('TERM'):
-            for t in term.find('drum-terms').findall('drum-term'):
-                s = t.get('matched-name')
-                if s and s not in ['PATHWAY', 'SIGNALING-PATHWAY']:
-                    pathway_name = pathway_name + [t.get('matched-name')]
-                s = t.get('name')
-                if s and s not in ['PATHWAY', 'SIGNALING-PATHWAY']:
-                    pathway_name = pathway_name + [t.get('name')]
-        pathway_name = list(set(pathway_name))
-    except Exception as e:
+    def _wrap_pathway_genelist_message(self, pathwayName, dblink, genelist, pathway_names=None,
+                                   gene_descr='tfs', of_gene_names=None, of_those=None):
+        """
+        parameters
+        -------------
+        pathwayName: dict[pthid]
+        dblink: dict[pthid]
+        genelist: dict[pthid]
+        pathway_names: list or None
+        gene_descr: str
+        of_gene_names: list
+        of_those: list or None
+        """
+        limit = 30
+        num = 1
+        pathway_list_json = []
+        keys = list(genelist.keys())
+        if keys:
+            if pathway_names:
+                for key in keys:
+                    if of_those:
+                        if pathwayName[key].lower() in of_those:
+                            if _filter_subword(pathwayName[key], pathway_names):
+                                if of_gene_names:
+                                    genes = set(of_gene_names) & set(genelist[key])
+                                else:
+                                    genes = genelist[key]
+                                if genes:
+                                    gene_agent = [Agent(g, db_refs={'TYPE':'ONT::GENE-PROTEIN'}) for g in genes]
+                                    gene_json = self.make_cljson(gene_agent)
+                                    mes = KQMLList()
+                                    mes.sets('name', pathwayName[key])
+                                    mes.sets('dblink', dblink[key])
+                                    mes.set(gene_descr, gene_json)
+                                    pathway_list_json.append(mes.to_string())
+                                    #check the limit
+                                    num += 1
+                                    if num > limit:
+                                        break
+                    else:
+                        if _filter_subword(pathwayName[key], pathway_names):
+                            if of_gene_names:
+                                genes = set(of_gene_names) & set(genelist[key])
+                            else:
+                                genes = genelist[key]
+                            if genes:
+                                #for debug
+                                #logger.info('wrap_pathway_genelist_message: The {}th pathwayname={}.'.format(num+1, pathwayName[key]))
+                                gene_agent = [Agent(g, db_refs={'TYPE':'ONT::GENE-PROTEIN'}) for g in genes]
+                                gene_json = self.make_cljson(gene_agent)
+                                mes = KQMLList()
+                                mes.sets('name', pathwayName[key])
+                                mes.sets('dblink', dblink[key])
+                                mes.set(gene_descr, gene_json)
+                                pathway_list_json.append(mes.to_string())
+                                #check the limit
+                                num += 1
+                                if num > limit:
+                                    break
+            else:
+                for key in keys:
+                    if of_those:
+                        if pathwayName[key].lower() in of_those:
+                            if of_gene_names:
+                                genes = set(of_gene_names) & set(genelist[key])
+                            else:
+                                genes = genelist[key]
+                            if genes:
+                                gene_agent = [Agent(g, db_refs={'TYPE':'ONT::GENE-PROTEIN'}) for g in genes]
+                                gene_json = self.make_cljson(gene_agent)
+                                mes = KQMLList()
+                                mes.sets('name', pathwayName[key])
+                                mes.sets('dblink', dblink[key])
+                                mes.set(gene_descr, gene_json)
+                                pathway_list_json.append(mes.to_string())
+                                #check the limit
+                                num += 1
+                                if num > limit:
+                                    break
+                    else:
+                        if of_gene_names:
+                            genes = set(of_gene_names) & set(genelist[key])
+                        else:
+                            genes = genelist[key]
+                        if genes:
+                            #for debug
+                            #logger.info('wrap_pathway_genelist_message: The {}th pathwayname={}.'.format(num+1, pathwayName[key]))
+                            gene_agent = [Agent(g, db_refs={'TYPE':'ONT::GENE-PROTEIN'}) for g in genes]
+                            gene_json = self.make_cljson(gene_agent)
+                            mes = KQMLList()
+                            mes.sets('name', pathwayName[key])
+                            mes.sets('dblink', dblink[key])
+                            mes.set(gene_descr, gene_json)
+                            pathway_list_json.append(mes.to_string())
+                            #check the limit
+                            num += 1
+                            if num > limit:
+                                break
+            if pathway_list_json:
+                reply = KQMLList('SUCCESS')
+                pathway_list_str = '(' + ' '.join(pathway_list_json) + ')'
+                reply.set('pathways', pathway_list_str)
+            else:
+                reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+        else:
+            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+        return reply
+    
+    def _get_mirna_clarification(self, miRNA_mis):
+        """
+        miRNA_mis: dict, key is mirna name, value is trips term id or mirna name
+        """
+        #only consider the single miRNA case
+        mirna = list(miRNA_mis.keys())[0]
+        clari_mirna = self.tfta.get_similar_miRNAs(mirna)
+        if clari_mirna:
+            mir_agent = [Agent(mir, db_refs={'TYPE':'MIRNA'}) for mir in clari_mirna]
+            mir_json = self.make_cljson(mir_agent)
+            res = KQMLList('resolve')
+            res.set('term', miRNA_mis[mirna])
+            res.set('as', mir_json)
+            reply = make_failure_clarification('MIRNA_NOT_FOUND', res)
+        else:
+            reply = make_failure('NO_SIMILAR_MIRNA')
+        return reply
+    
+    def _get_targets(self, content, descr='target'):
+        #parse json message format
+        proteins = []
+        family = dict()
+        
+        target_arg = content.get(descr)
+        if not target_arg:
+            return None,None
         try:
-            for term in root.findall('TERM'):
-                s = term.find('name')
-                if s is not None:
-                    s1 = s.text
-                    if s1 not in ['PATHWAY', 'SIGNALING-PATHWAY']:
-                        pathway_name = pathway_name + [s1.replace('-', ' ').lower()]
-            pathway_name = list(set(pathway_name))
-        except Exception as e:
-            return pathway_name
-    f.write('Extracted pathwayName=' + ';;;'.join(pathway_name) + '\n')
-    f.write('===============================\n')
-    f.close()
-    return pathway_name
+            agents = self.get_agent(target_arg)
+        except Exception:
+            return None,None
+        if isinstance(agents, list):
+            proteins = [a.name.upper() for a in agents if a is not None and ('UP' in a.db_refs or 'HGNC' in a.db_refs or len(a.db_refs)==0)]
+            #family = {a.db_refs['TRIPS']:a.name for a in agents if a is not None and 'FPLX' in a.db_refs and a.name not in proteins}
+            #consider +trips+ as an optional id
+            for a in agents:
+                if a is not None and 'FPLX' in a.db_refs and a.name.upper() not in proteins:
+                    if 'TRIPS' in a.db_refs:
+                        family[a.db_refs['TRIPS']] = a
+                    else:
+                        family[a.name.upper()] = a
+        elif isinstance(agents, Agent):
+            if 'UP' in agents.db_refs or 'HGNC' in agents.db_refs or len(agents.db_refs)==0:
+                proteins = [agents.name.upper()]
+            if not proteins and 'FPLX' in agents.db_refs:
+                #family = {agents.db_refs['TRIPS']:agents.name}
+                if 'TRIPS' in agents.db_refs:
+                    family[agents.db_refs['TRIPS']] = agents
+                else:
+                    family[agents.name.upper()] = agents
+        return proteins,family
+        
+    def _get_targets2(self, content, descr='target'):
+        #parse json message format
+        #expand members for family name
+        proteins = []
+        family = []
+        fmembers = dict()
+        
+        target_arg = content.get(descr)
+        if not target_arg:
+            return None,None
+        try:
+            agents = self.get_agent(target_arg)
+        except Exception:
+            return None,None
+        if isinstance(agents, list):
+            proteins = [a.name.upper() for a in agents if a is not None and ('UP' in a.db_refs or 'HGNC' in a.db_refs or len(a.db_refs)==0)]
+            #expand family name to members
+            for a in agents:
+                if a is not None and 'FPLX' in a.db_refs and a.name.upper() not in proteins:
+                    family.append(a)
+            fmembers = self.tfta.find_members(family)
+        elif isinstance(agents, Agent):
+            if 'UP' in agents.db_refs or 'HGNC' in agents.db_refs or len(agents.db_refs)==0:
+                proteins = [agents.name.upper()]
+            if not proteins and 'FPLX' in agents.db_refs:
+                fmembers[agents.name.upper()] = self.tfta.find_member(agents)
+        return proteins,fmembers
+        
+    def _get_of_those_pathway(self, content, descr='of-those'):
+        #parse pathway names from JSON format
+        pathways = []
+        path = content.get(descr)
+        try:
+            agents = self.get_agent(path)
+            if isinstance(agents, list):
+                pathways = [a.name.lower() for a in agents if a is not None]
+            elif isinstance(agents, Agent):
+                pathways = [agents.name]
+            return pathways
+        except Exception:
+            return None
+        
+    def _combine_json_list(self, descr_list, json_list):
+        if any(json_list):
+            res = KQMLList()
+            for i in range(len(descr_list)):
+                if json_list[i]:
+                    res.set(descr_list[i], json_list[i])
+            return res
+        else:
+            return None
+    
+    def _get_mirnas(self, content, descr='miRNA'):
+        #JSON format
+        #consider +trips+ if it exists
+        mirna = {}
+        try:
+            mir_arg = content.get(descr)
+        except Exception:
+            return []
+        try:
+            agents = self.get_agent(mir_arg)
+        except Exception:
+            return []
+        if isinstance(agents, list):
+            for a in agents:
+                if a is not None:
+                    mname = _get_mirna_name(a.name.upper())
+                    if 'TRIPS' in a.db_refs:
+                        mirna[mname] = a.db_refs['TRIPS']
+                    else:
+                        mirna[mname] = mname
+        elif isinstance(agents, Agent):
+            if agents is not None:
+                mname = _get_mirna_name(agents.name.upper())
+                if 'TRIPS' in agents.db_refs:
+                    mirna[mname] = agents.db_refs['TRIPS']
+                else:
+                    mirna[mname] = mname
+        return mirna
+        
+    def _get_pathway_name(self, content, descr='pathway'):
+        #JSON format
+        pathways = set()
+        keyword = ['signaling pathway', 'pathway']
+        try:
+            pth_arg = content.get(descr)
+        except Exception:
+            return []
+        try:
+            agents = self.get_agent(pth_arg)
+        except Exception:
+            return []
+        if isinstance(agents, list):
+            for a in agents:
+                if a is not None:
+                    p = _filter_pathway_name(a.name, keyword)
+                    if p:
+                        pathways.add(p.replace('-', ' '))
+                    if a.db_refs.get('TEXT'):
+                        p = _filter_pathway_name(a.db_refs.get('TEXT'), keyword)
+                        if p:
+                            pathways.add(p)
+        elif isinstance(agents, Agent):
+            if agents is not None:
+                p = _filter_pathway_name(agents.name, keyword)
+                if p:
+                    pathways.add(p.replace('-', ' '))
+                if agents.db_refs.get('TEXT'):
+                    p = _filter_pathway_name(agents.db_refs['TEXT'], keyword)
+                    if p:
+                        pathways.add(p)
+        return list(pathways)
+        
+    def _to_json_mirna(self, mirnas):
+        mir_agent = [Agent(mir, db_refs={'type':'MIRNA'}) for mir in mirnas]
+        mir_json = self.make_cljson(mir_agent)
+        return mir_json
+        
+#------------------------------------------------------------------------#######
 
-def _get_miRNA_name(xml_string):
-    miRNA_names = dict()
-    try:
-        root = ET.fromstring(xml_string)
-    except Exception as e:
-        return miRNA_names
-    ont1 = ['ONT::RNA', 'ONT::GENE']
-    try:
-        for term in root.findall('TERM'):
-            if term.find('type').text in ont1:
-                s = term.find('name')
-                if s is not None:
-                    s1 = s.text
-                    s1 = rtrim_hyphen(s1)
-                    miRNA_names[s1.upper()] = term.attrib['id']
-    except Exception as e:
-        return miRNA_names
-    return miRNA_names
+def _filter_pathway_name(path_name, keyword):
+    p = ''
+    for k in keyword:
+        if path_name:
+            p = path_name.lower().replace('signaling pathway', '').strip()
+            p = p.replace('pathway', '').strip()
+    return p
 
 def make_failure(reason):
     msg = KQMLList('FAILURE')
     msg.set('reason', reason)
+    return msg
+    
+def make_failure2(reason, task_str):
+    msg1 = KQMLList(reason)
+    msg1.set('name', task_str)
+    msg = KQMLList('FAILURE')
+    msg.set('reason', msg1)
     return msg
 
 def make_failure_clarification(reason, clarification):
@@ -2922,7 +3180,7 @@ def trim_hyphen(descr):
 def trim_word(descr, word):
     #descr is a list
     ds = []
-    if len(descr):
+    if descr:
         for d in descr:
             if d[-len(word):] == word:
                 if len(d[:-len(word)-1]):
@@ -2931,13 +3189,20 @@ def trim_word(descr, word):
                 ds.append(d)
     return ds
 
-def rtrim_hyphen(str1):
-    plist = re.findall('([0-9]+-[a-zA-Z])', str1)
-    s = str1
-    for p in plist:
-        p1 = p.replace('-','')
-        s = s.replace(p, p1)
-    return s
+def _get_mirna_name(str1):
+    #handle two forms of input, like MIR-PUNC-MINUS-20-B-PUNC-MINUS-5-P and MIR-20-B-5-P
+    if 'PUNC-MINUS' in str1:
+        str2 = str1.replace('-PUNC-MINUS-','_')
+        str2 = str2.replace('-','')
+        str2 = str2.replace('_', '-')
+        return str2.upper()
+    else:
+        plist = re.findall('([0-9]+-[a-zA-Z])', str1)
+        s = str1
+        for p in plist:
+            p1 = p.replace('-','')
+            s = s.replace(p, p1)
+        return s.upper()
 
 def cluster_dict_by_value(d):
     #d is a list with tuple pair
@@ -2953,6 +3218,16 @@ def cluster_dict_by_value2(d):
         clusters[','.join(val)].append(key)
     return clusters
     
+def _make_evidence_json(evids, limit = 10):
+    ind = 0
+    ev_json = []
+    for ev in evids:
+        if all(ev) and ind < limit:
+            ev_json.append(Agent(ev[2], db_refs={'source_api':ev[0], 'pmid':ev[1]}))
+            ind += 1
+        else:
+            break
+    return ev_json
 
 def _wrap_evidence_message(descr, evids, limit = 10):
     """
@@ -2974,60 +3249,57 @@ def _wrap_evidence_message(descr, evids, limit = 10):
     evi_message = descr + ' (' + evi_message + ') '
     return evi_message
     
+def _wrap_dbname_message(descr, db_names):
+    db_str = ''
+    for db in db_names:
+        try:
+            pmid = dbname_pmid_map[db]
+        except KeyError as e:
+            pmid = ''
+        db_str += '(:name %s :pmid %s) ' % (db, pmid)
+    db_str = descr + '( ' + db_str + ') '
+    return db_str
+    
 def _combine_messages(mess_list):
     messages = ''
     for mess in mess_list:
-        if len(mess):
+        if mess:
             messages += mess
     return messages
-    
-def _wrap_mirna_clarification(miRNA_mis, clari_mirna):
-    """
-    miRNA_mis: dict
-    clari_mirna: list
-    """
-    c_str = ''
-    for c in clari_mirna:
-        c_str += '(:name %s) ' % c
-    c_str = '(resolve :term ' + list(miRNA_mis.values())[0] + ' :as (' + c_str + '))'
-    return c_str
 
-def _wrap_mirna_clarification2(miRNA_mis, clari_mirna):
-    """
-    miRNA_mis: dict
-    clari_mirna: dict
-    """
-    mir_str = ''
-    for mir in clari_mirna.keys():
-        c_str = ''
-        for c in clari_mirna[mir]:
-            c_str += '(:name %s) ' % c
-        c_str = '(:term ' + miRNA_mis[mir] + ' :as (' + c_str + '))'
-        mir_str += c_str
-    mir_str = '(resolve (' + mir_str + '))'
-    return mir_str
-
-def _wrap_pathway_message(pathwayName, dblink, keyword=None):
+def _wrap_pathway_message(pathwayName, dblink, keyword=None, of_those=None):
     """
     pathwayName: list
     dblink: list
     keyword: list or None
+    of_those: list or None
     """
     pathway_list_str = ''
     #limit the number of pathways to return
-    limit = 50
-    num = 0
+    limit = 30
+    num = 1
     if keyword:
         if type(keyword).__name__ == 'str':
             keyword = [keyword]
-        for pn, dbl in zip(pathwayName, dblink):
-            num += 1
-            if num > limit:
-                break
-            if _filter_subword(pn, keyword):
-                pnslash = '"' + pn +'"'
-                dbl = '"' + dbl +'"'
-                pathway_list_str += '(:name %s :dblink %s) ' % (pnslash, dbl)
+        if of_those:
+            for pn, dbl in zip(pathwayName, dblink):
+                if pn.lower() in of_those:
+                    if _filter_subword(pn, keyword):
+                        pnslash = '"' + pn +'"'
+                        dbl = '"' + dbl +'"'
+                        pathway_list_str += '(:name %s :dblink %s) ' % (pnslash, dbl)
+                        num += 1
+                        if num > limit:
+                            break
+        else:
+            for pn, dbl in zip(pathwayName, dblink):
+                if _filter_subword(pn, keyword):
+                    pnslash = '"' + pn +'"'
+                    dbl = '"' + dbl +'"'
+                    pathway_list_str += '(:name %s :dblink %s) ' % (pnslash, dbl)
+                    num += 1
+                    if num > limit:
+                        break
         if pathway_list_str:
             pathway_list_str = '(' + pathway_list_str + ')'
             reply = KQMLList('SUCCESS')
@@ -3035,78 +3307,26 @@ def _wrap_pathway_message(pathwayName, dblink, keyword=None):
         else:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
     else:
-        for pn, dbl in zip(pathwayName, dblink):
-            num += 1
-            if num > limit:
-                break
-            pnslash = '"' + pn + '"'
-            dbl = '"' + dbl + '"'
-            pathway_list_str += '(:name %s :dblink %s) ' % (pnslash, dbl)
-        pathway_list_str = '(' + pathway_list_str + ')'
-        reply = KQMLList('SUCCESS')
-        reply.set('pathways', pathway_list_str)
-    return reply
-    
-def _wrap_pathway_genelist_message(pathwayName, dblink, genelist, pathway_names=None,
-                                   gene_descr=':tfs', of_gene_names=None):
-    """
-    parameters
-    -------------
-    pathwayName: dict[pthid]
-    dblink: dict[pthid]
-    genelist: dict[pthid]
-    pathway_names: list or None
-    gene_descr: string
-    of_gene_names: list
-    """
-    limit = 50
-    num = 0
-    pathway_list_str = ''
-    keys = list(genelist.keys())
-    if keys:
-        if pathway_names:
-            for key in keys:
-                if _filter_subword(pathwayName[key], pathway_names):
-                    gene_list_str = ''
-                    if of_gene_names:
-                        genes = set(of_gene_names) & set(genelist[key])
-                    else:
-                        genes = genelist[key]
-                    if genes:
-                    #check the limit
-                        num += 1
-                        if num > limit:
-                            break
-                        for gene in genes:
-                            gene_list_str += '(:name %s) ' % gene
-                        gene_list_str = '(' + gene_list_str + ')'
-                        pn = '"' + pathwayName[key] + '"'
-                        dl = '"' + dblink[key] + '"'
-                        pathway_list_str += '(:name %s :dblink %s %s %s) ' % (pn, dl, gene_descr, gene_list_str)
-        else:
-            for key in keys:
-                gene_list_str = ''
-                if of_gene_names:
-                    genes = set(of_gene_names) & set(genelist[key])
-                else:
-                    genes = genelist[key]
-                if genes:
-                #check the limit
+        if of_those:
+            for pn, dbl in zip(pathwayName, dblink):
+                if pn.lower() in of_those:
+                    pnslash = '"' + pn + '"'
+                    dbl = '"' + dbl + '"'
+                    pathway_list_str += '(:name %s :dblink %s) ' % (pnslash, dbl)
                     num += 1
                     if num > limit:
                         break
-                    for gene in genes:
-                        gene_list_str += '(:name %s) ' % gene
-                    gene_list_str = '(' + gene_list_str + ')'
-                    pn = '"' + pathwayName[key] + '"'
-                    dl = '"' + dblink[key] + '"'
-                    pathway_list_str += '(:name %s :dblink %s %s %s) ' % (pn, dl, gene_descr, gene_list_str)
-        if pathway_list_str:
-            reply = KQMLList.from_string('(SUCCESS :pathways (' + pathway_list_str + '))')
         else:
-            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
-    else:
-        reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+            for pn, dbl in zip(pathwayName, dblink):
+                pnslash = '"' + pn + '"'
+                dbl = '"' + dbl + '"'
+                pathway_list_str += '(:name %s :dblink %s) ' % (pnslash, dbl)
+                num += 1
+                if num > limit:
+                    break
+        pathway_list_str = '(' + pathway_list_str + ')'
+        reply = KQMLList('SUCCESS')
+        reply.set('pathways', pathway_list_str)
     return reply
     
 def _filter_subword(sentence, pattern_list):
@@ -3125,58 +3345,6 @@ def _filter_subword(sentence, pattern_list):
             word = True
             break
     return word
-    
-def get_of_those_list(content, descr='of-those'):
-    """
-    return a list of genes by parsing of_those_arg
-    of_those_arg: str or EKB xml
-    """
-    #check if it's using ekb xml format
-    gene_names = []
-    family = dict()
-    gene_arg = content.gets(descr)
-    if gene_arg:
-        if '<ekb' in gene_arg or '<EKB' in gene_arg:
-            genes,family = _get_targets(gene_arg)
-            for gene in genes:
-                gene_names.append(gene.name)
-        else:
-            gene_arg = content.get(descr)
-            gene_arg_str = gene_arg.data
-            gene_arg_str = gene_arg_str.replace(' ', '')
-            gene_arg_str = gene_arg_str.upper()
-            gene_names = gene_arg_str.split(',')
-    return gene_names,family
-    
-def get_of_those_mirna(content, descr='of-those'):
-    mirna_names = []
-    mirna_arg = content.gets(descr)
-    if mirna_arg:
-        if '<ekb' in mirna_arg or '<EKB' in mirna_arg:
-            mirna_names = set(_get_miRNA_name(mirna_arg).keys())
-        else:
-            mirna_arg = content.get(descr)
-            mirna_str = mirna_arg.data
-            mirna_str = mirna_str.replace(' ', '')
-            mirna_names = mirna_str.split(',')
-    return mirna_names
-    
-def get_gene(content, descr='gene'):
-    gene_name = ''
-    family = dict()
-    gene_arg = content.gets(descr)
-    if gene_arg:
-        if '<ekb' in gene_arg or '<EKB' in gene_arg:
-            gene,family = _get_targets(gene_arg)
-            if gene:
-                gene_name = gene[0].name
-        else:
-            gene_arg = content.get(descr)
-            gene_arg_str = gene_arg.data
-            gene_arg_str = gene_arg_str.replace(' ', '')
-            gene_arg_str = gene_arg_str.upper()
-            gene_name = gene_arg_str.split(',')[0]
-    return gene_name,family
     
 def _get_tissue_name(content):
     tissue_name = ''

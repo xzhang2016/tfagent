@@ -6,10 +6,11 @@ import operator
 import logging
 import sqlite3
 import numpy as np
-from collections import defaultdict
+from collections import defaultdict, Counter
 import math
 from indra import has_config
 from indra.tools import expand_families
+from utils.util import merge_dict_sum, merge_dict_list
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
@@ -99,7 +100,7 @@ class TFTA:
         tf_db_file = _resource_dir + 'TF_target_v7_1.db'
         if os.path.isfile(tf_db_file):
             self.tfdb = sqlite3.connect(tf_db_file, check_same_thread=False)
-            logger.info('Loaded TF-target database')
+            logger.info('TFTA loaded TF-target database')
             self.tfdb.row_factory = sqlite3.Row
         else:
             logger.error('TFTA could not load TF-target database.')
@@ -129,7 +130,7 @@ class TFTA:
         """
         Return true if the gene is in the go category of go_name
         """
-        if go_name == 'transcription factor':
+        if go_name in ['transcription factor', 'tf']:
             if not self.trans_factor:
                 if self.tfdb is not None:
                     t = (gene_name, )
@@ -158,7 +159,7 @@ class TFTA:
         Return the genes which are in the category of go_name
         """
         go_genes = []
-        if go_name == 'transcription factor':
+        if go_name in ['transcription factor', 'tf']:
             if not self.trans_factor:
                 if self.tfdb is not None:
                     res = self.tfdb.execute("SELECT DISTINCT tf FROM transFactor").fetchall()
@@ -173,10 +174,8 @@ class TFTA:
                 for go in goids:
                     t = (go, )
                     res = self.tfdb.execute("SELECT geneSymbol FROM go2Genes WHERE termId = ? ", t).fetchall()
-                    go_genes += [r[0] for r in res]
+                    go_genes.extend([r[0] for r in res])
                 go_genes = list(set(go_genes) & set(gene_names))
-        if len(go_genes):
-            go_genes.sort()
         return go_genes
 
     def Is_tf_target_tissue(self,tf_name,target_name,tissue_name):
@@ -243,7 +242,7 @@ class TFTA:
                                         "WHERE Target = ? ", t).fetchall()
                 if res:
                     tfs = [r[0] for r in res]
-                    tf_names = tf_names + tfs
+                    tf_names.extend(tfs)
                     for tf in tfs:
                         targets[tf].append(target_name)
             #count for each TF
@@ -268,7 +267,6 @@ class TFTA:
         """
         Return TFs regulating the given target list as well as the regulated targets by each TF
         """
-        #query
         tf_targets = defaultdict(list)
         counts = defaultdict(int)
         if self.tfdb is not None:
@@ -315,14 +313,7 @@ class TFTA:
             if res:
                 tf_names = [r[0] for r in res]
             else:
-                #check if the target is in the database
-                t = (target_names[0],)
-                res = self.tfdb.execute("SELECT DISTINCT TF FROM Target2TF2Tissue "
-                                        "WHERE Target = ? ", t).fetchall()
-                if res:
-                    return tf_names
-                else:
-                    raise TargetNotFoundException	
+                return []
             if len(target_names) > 1:
                 for i in range(1,len(target_names)):
                     t = (target_names[i],regstr)
@@ -331,111 +322,68 @@ class TFTA:
                     if res:
                         tf_names = list(set(tf_names) & set([r[0] for r in res]))
                     else:
-                        #check if the target is in the database
-                        t = (target_names[i],)
-                        res = self.tfdb.execute("SELECT DISTINCT TF FROM Target2TF2Tissue "
-                                                "WHERE Target = ? ", t).fetchall()
-                        if res:
-                            return tf_names
-                        else:
-                            raise TargetNotFoundException
-            if len(tf_names):
-                tf_names.sort()
+                        return []
         return tf_names
 
-    def find_pathways_from_name(self, pathway_name):
-        """
-        return pathway information related to pathway_name
-        """
-        #query
-        if self.tfdb is not None:
-            regstr = '%' + pathway_name + ' %'
-            t = (regstr,)
-            #get pathwayId
-            res = self.tfdb.execute("SELECT * FROM pathwayInfo "
-                                    "WHERE pathwayName LIKE ? ORDER BY pathwayName", t).fetchall()
-            if res:
-                pathwayId = [r[0] for r in res]
-                pathwayName = [r[1] for r in res]
-                externalId = [r[2] for r in res]
-                source = [r[3] for r in res]
-                dblink = [r[4] for r in res]
-            else:
-                raise PathwayNotFoundException
-        else:
-            pathwayId = []
-            pathwayName = []
-            externalId = []
-            source = []
-            dblink = []
-        return pathwayId,pathwayName,externalId,source,dblink
-
-    def find_pathways_from_dbsource_geneName(self, dbsource,gene_names):
+    def find_pathway_db_gene(self, dbsource, gene_names, fmembers=None):
         """
         return pathway information for given dbsource and gene_names
         """
-        #query
         pathwayName = []
         dblink = []
-        fpname = []
-        fdblink = []
+        fnum = 0
         if self.tfdb is not None:
             pathlist = []
-            for gene_name in gene_names:
-                t = (gene_name,dbsource)
-                print(t)
-                res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
-                                   "WHERE Id in (SELECT DISTINCT pathwayID FROM pathway2Genes "
-                                   "WHERE genesymbol = ?) AND source LIKE ? ", t).fetchall()
-                if res:
-                    pathlist = pathlist + [r[0] for r in res]
-                    pathwayName += [r[1] for r in res]
-                    dblink += [r[2] for r in res]
+            if gene_names:
+                ids = self.find_pathwayID_genes(gene_names)
+                if ids:
+                    pathlist.extend(ids)
                 else:
                     raise PathwayNotFoundException
-            #interaction
-            pids = set(pathlist)
-            if pids:
-                for pth in pids:
-                    if pathlist.count(pth) == len(gene_names):
-                        ind = pathlist.index(pth)
-                        fpname.append(pathwayName[ind])
-                        fdblink.append(dblink[ind])
+                
+            if fmembers:
+                fnum = len(fmembers)
+                ids = self.find_pathwayID_families(fmembers)
+                if ids:
+                    pathlist.extend(ids)
+                else:
+                    raise PathwayNotFoundException
+            
+            #Take intersection
+            id_count = Counter(pathlist)
+            for id in id_count:
+                if id_count[id] == (len(gene_names) + fnum):
+                    t = (id, dbsource)
+                    res = self.tfdb.execute("SELECT pathwayName,dblink FROM pathwayInfo "
+                                            "WHERE Id = ? AND source LIKE ?", t).fetchone()
+                    if res:
+                        pathwayName.append(res['pathwayName'])
+                        dblink.append(res['dblink'])
+            if pathwayName:
+                pathwayName,dblink = list(zip(*sorted(zip(pathwayName,dblink))))
             else:
-                raise PathwayNotFoundException    
-            #sort
-            fpname,fdblink = list(zip(*sorted(zip(fpname,fdblink))))
-        return fpname,fdblink
+                raise PathwayNotFoundException
+        return pathwayName,dblink
 
-    def find_genes_from_pathwayName(self, pathway_names):
+    def find_gene_pathway(self, pathway_names):
         """
         return genes related to pathway_name
         """
-        pathwayId = []
         pathwayName = dict()
         genelist = dict()
         pw_link = dict()
-        #query
         if self.tfdb is not None:
-            pn = []
-            pids = []
-            plink = []
             for pathway_name in pathway_names:
                 regstr = '%' + pathway_name + '%'
                 t = (regstr,)
-                #get pathwayId
                 res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
                                     "WHERE pathwayName LIKE ? ", t).fetchall()
                 if res:
-                    pids = pids + [r[0] for r in res]
-                    pn = pn + [r[1] for r in res]
-                    plink = plink + [r[2] for r in res]
-            if len(pids):
-                pathwayId = list(set(pids))
-                for i in range(len(pids)):
-                    pathwayName[pids[i]] = pn[i]
-                    pw_link[pids[i]] = plink[i]
-                for pthID in pathwayId:
+                    for r in res:
+                        pathwayName[r[0]] = r[1]
+                        pw_link[r[0]] = r[2]
+            if pathwayName:
+                for pthID in pathwayName:
                     t = (pthID,)
                     res1 = self.tfdb.execute("SELECT DISTINCT genesymbol FROM pathway2Genes "
                                            "WHERE pathwayID = ? ORDER BY genesymbol", t).fetchall()
@@ -453,35 +401,27 @@ class TFTA:
         dblink = dict()
         tflist = dict()
         if self.tfdb is not None:
-            pids = []
-            pn = []
-            dl = []
+            tf_set = self.get_tf_set()
             for pathway_name in pathway_names:
                 regstr = '%' + pathway_name + '%'
                 t = (regstr,)
                 res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
                                         "WHERE pathwayName LIKE ? ", t).fetchall()
                 if res:
-                    pids += [r[0] for r in res]
-                    pn += [r[1] for r in res]
-                    dl += [r[2] for r in res]
-            if len(pids):
-                pathwayId = list(set(pids))
-                for i in range(len(pids)):
-                    pathwayName[pids[i]] = pn[i]
-                    dblink[pids[i]] = dl[i]
+                    for r in res:
+                        pathwayName[r[0]] = r[1]
+                        dblink[r[0]] = r[2]
+                
+            if pathwayName:
+                pathwayId = pathwayName.keys()
                 for pthID in pathwayId:
                     t = (pthID,)
                     res1 = self.tfdb.execute("SELECT DISTINCT genesymbol FROM pathway2Genes "
-                                             "WHERE pathwayID = ? AND isTF = 1 ORDER BY genesymbol", t).fetchall()
-                    if res1:
-                        tfs = [r[0] for r in res1]
+                                             "WHERE pathwayID = ? ", t).fetchall()
+                    tfs = tf_set.intersection(set([r[0] for r in res1]))
+                    if tfs:
                         tflist[pthID] = tfs
-                    else:
-                        del pathwayName[pthID]
-                        del dblink[pthID]
-                        #pathwayId.remove(pthID)
-            else:
+            if not len(tflist):
                 raise PathwayNotFoundException
         return pathwayName,tflist,dblink
         
@@ -489,12 +429,10 @@ class TFTA:
         """
         Return kinases within the given pathway
         """
-        pathwayId = []
         pathwayName = dict()
         dblink = dict()
         kinaselist = dict()
         if self.tfdb is not None:
-            #get kinases
             t = ('kinase',)
             res = self.tfdb.execute("SELECT DISTINCT geneSymbol FROM go2Genes "
                                         "WHERE termId = ? ", t).fetchall()
@@ -508,15 +446,14 @@ class TFTA:
                     for r in res:
                         pathwayName[r[0]] = r[1]
                         dblink[r[0]] = r[2]
-            if len(pathwayName):
+            if pathwayName:
                 pathwayId = pathwayName.keys()
                 for pthID in pathwayId:
                     t = (pthID,)
                     res1 = self.tfdb.execute("SELECT DISTINCT genesymbol FROM pathway2Genes "
                                              "WHERE pathwayID = ? ", t).fetchall()
                     kins = list(kinases & set([r[0] for r in res1]))
-                    if len(kins):
-                        kins.sort()
+                    if kins:
                         kinaselist[pthID] = kins
             else:
                 raise PathwayNotFoundException
@@ -524,135 +461,167 @@ class TFTA:
                 raise PathwayNotFoundException
         return pathwayName, kinaselist, dblink
 
-    def find_pathways_from_genelist(self,gene_names):
+    def find_pathway_genes(self,gene_names, fmembers=None):
         """
         return pathways having given genes
+        
+        parameter
+        -----------
+        gene_names: list of gene symbols
+        fmembers: dict, family name as key and list of Agent for members as value
         """
-        pathwayId=[]
-        pathwayName=[]
-        dblink=[]
+        pathwayName = []
+        dblink = []
+        fnum = 0
         if self.tfdb is not None:
             pathlist=[]
-            for gene_name in gene_names:
-                t = (gene_name,)
+            if gene_names:
+                ids = self.find_pathwayID_genes(gene_names)
+                if ids:
+                    pathlist.extend(ids)
+                else:
+                    raise PathwayNotFoundException
+            #Take OR operation on family members
+            if fmembers:
+                fnum = len(fmembers)
+                ids = self.find_pathwayID_families(fmembers)
+                if ids:
+                    pathlist.extend(ids)
+                else:
+                    raise PathwayNotFoundException
+            #Take intersection
+            id_count = Counter(pathlist)
+            for id in id_count:
+                if id_count[id] == (len(gene_names) + fnum):
+                    t = (id,)
+                    res = self.tfdb.execute("SELECT pathwayName,dblink FROM pathwayInfo "
+                                            "WHERE Id = ? ", t).fetchall()
+                    pathwayName.extend([r[0] for r in res])
+                    dblink.extend([r[1] for r in res])
+            if pathwayName:
+                pathwayName,dblink = list(zip(*sorted(zip(pathwayName,dblink))))
+            else:
+                raise PathwayNotFoundException
+        return pathwayName,dblink
+    
+    def find_pathwayID_genes(self, gene_names):
+        ids = []
+        for gene_name in gene_names:
+            t = (gene_name,)
+            res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
+                                     "WHERE genesymbol = ? ", t).fetchall()
+            if res1:
+                ids.extend([r[0] for r in res1])
+            else:
+                return None
+        return ids
+    
+    def find_pathwayID_families(self, fmembers):
+        """
+        Take OR operation for family members.
+        
+        parameter
+        ----------
+        fmembers: dict, family name as key and list of Agent for members as value
+        """
+        ids = []
+        for f in fmembers:
+            fid = set()
+            for m in fmembers[f]:
+                t = (m.name, )
                 res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
                                          "WHERE genesymbol = ? ", t).fetchall()
                 if res1:
-                    pathlist = pathlist+[r[0] for r in res1]
-                else:
-                    raise PathwayNotFoundException
-             #intersection
-            if len(gene_names)>1:
-                pathIDs=[]
-                for pth in set(pathlist):
-                    if pathlist.count(pth) == len(gene_names):
-                        pathIDs.append(pth)
+                    fid = fid.union(set([r[0] for r in res1]))
+            if fid:
+                ids.extend(list(fid))
             else:
-                pathIDs = pathlist
-            if len(pathIDs):
-                for pth in pathIDs:
-                    t = (pth,)
-                    res = self.tfdb.execute("SELECT pathwayName,dblink FROM pathwayInfo "
-                                            "WHERE Id = ? ", t).fetchall()
-                    #pathwayId = pathwayId + [r[0] for r in res]
-                    pathwayName = pathwayName + [r[0] for r in res]
-                    #externalId = externalId + [r[2] for r in res]
-                    #source = source + [r[3] for r in res]
-                    dblink = dblink + [r[1] for r in res]
-                #sort
-                pathwayName,dblink = \
-                    list(zip(*sorted(zip(pathwayName,dblink))))
-            else:
-                raise PathwayNotFoundException	
-        return pathwayName,dblink
+                return None
+        return ids
+        
 
-    def Is_pathway_gene(self, pathway_names, gene_names):
+    def Is_pathway_gene(self, pathway_names, gene_names, fmembers=None):
         """
         Return pathways which contain the given genes and whose name contain substring of pathway_name
         """
-        pname = dict()
-        plink = dict()
         fpname = []
         fdblink = []
         if self.tfdb is not None:
-            pids = []
-            pn = []
-            dl = []
+            pn = dict()
+            dl = dict()
             for pathway_name in pathway_names:
                 regstr = '%' + pathway_name + '%'
                 t = (regstr,)
                 res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
                                     "WHERE pathwayName LIKE ? ", t).fetchall()
                 if res:
-                    pids = pids + [r[0] for r in res]
-                    pn = pn + [r[1] for r in res]
-                    dl = dl + [r[2] for r in res]
+                    for r in res:
+                        pn[r[0]] = r[1]
+                        dl[r[0]] = r[2]
                     
-            if len(pids):
-                for id,n,l in zip(pids,pn,dl):
-                    pname[id] = n
-                    plink[id] = l
-            else:
-                raise PathwayNotFoundException
-                    
-            upid = list(set(pids))
-            for pthID in upid:
-                t = (pthID,)
-                res1 = self.tfdb.execute("SELECT DISTINCT genesymbol FROM pathway2Genes "
-                                        "WHERE pathwayID = ? ORDER BY genesymbol", t).fetchall()
-                genes = [r[0] for r in res1]
-                overlap_genes = list(set(gene_names) & set(genes))
-                if len(overlap_genes) == len(gene_names):
-                    fpname.append(pname[pthID])
-                    fdblink.append(plink[pthID])
+            if pn:
+                for pthID in pn:
+                    t = (pthID,)
+                    res1 = self.tfdb.execute("SELECT DISTINCT genesymbol FROM pathway2Genes "
+                                             "WHERE pathwayID = ? ", t).fetchall()
+                    genes = [r[0] for r in res1]
+                    #check if genes overlap with all gene_names and any member in each family
+                    num = len(set(gene_names) & set(genes))
+                    if fmembers:
+                        if all([num == len(gene_names), _check_overlap(set(genes), fmembers)]):
+                            fpname.append(pn[pthID])
+                            fdblink.append(dl[pthID])
+                    elif num == len(gene_names):
+                        fpname.append(pn[pthID])
+                        fdblink.append(dl[pthID])
+    
             if not len(fpname):
                 raise PathwayNotFoundException
         return fpname, fdblink
 
-    def find_pathway_gene_keyword(self,gene_names, keyword):
+    def find_pathway_gene_keyword(self,gene_names, keyword, fmembers=None):
         """
         return pathways having given genes and some information in pathway name
         """
-        pathwayId = []
         pathwayName1 = []
-        externalId = []
-        source = []
         dblink = []
+        fnum = 0
         if self.tfdb is not None:
             pathlist = []
-            for gene_name in gene_names:
-                t = (gene_name,)
-                res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
-                                         "WHERE genesymbol = ? ", t).fetchall()
-                if res1:
-                    pathlist = pathlist + [r[0] for r in res1]
+            if gene_names:
+                ids = self.find_pathwayID_genes(gene_names)
+                if ids:
+                    pathlist.extend(ids)
                 else:
                     raise PathwayNotFoundException
+                
+            #Take OR operation on family members
+            if fmembers:
+                fnum = len(fmembers)
+                ids = self.find_pathwayID_families(fmembers)
+                if ids:
+                    pathlist.extend(ids)
+                else:
+                    raise PathwayNotFoundException
+                        
             #intersection
-            pathIDs = []
-            for pth in set(pathlist):
-                if pathlist.count(pth) == len(gene_names):
-                    pathIDs.append(pth)
-            if len(pathIDs)>0:
-                regstr = '%' + keyword + '%'
-                for pth in pathIDs:
-                    t = (pth, regstr)
-                    res = self.tfdb.execute("SELECT * FROM pathwayInfo "
-                                            "WHERE Id = ? AND pathwayName LIKE ? ", t).fetchall()                    
+            id_count = Counter(pathlist)
+            regstr = '%' + keyword + '%'
+            for id in id_count:
+                if id_count[id] == (len(gene_names) + fnum):
+                    t = (id, regstr)
+                    res = self.tfdb.execute("SELECT pathwayName,dblink FROM pathwayInfo "
+                                            "WHERE Id = ? AND pathwayName LIKE ? ", t).fetchall()
                     if res:
-                        pathwayId = pathwayId + [r[0] for r in res]
-                        pathwayName1 = pathwayName1 + [r[1] for r in res]
-                        externalId = externalId + [r[2] for r in res]
-                        source = source + [r[3] for r in res]
-                        dblink = dblink + [r[4] for r in res]
-                #sort
-                if len(pathwayId):
-                    pathwayName1,pathwayId,externalId,source,dblink = \
-                        list(zip(*sorted(zip(pathwayName1,pathwayId,externalId,source,dblink))))
-                else:
-                    raise PathwayNotFoundException
+                        pathwayName1.extend([r[0] for r in res])
+                        dblink.extend([r[1] for r in res])
+            
+            if len(dblink):
+                pathwayName1,dblink = list(zip(*sorted(zip(pathwayName1,dblink))))
             else:
-                raise PathwayNotFoundException    
+                raise PathwayNotFoundException
+        else:
+            raise PathwayNotFoundException
         return pathwayName1, dblink
 
     def find_pathway_keyword(self, keyword):
@@ -707,60 +676,16 @@ class TFTA:
             raise PathwayNotFoundException
         return newpathwayName,tflist,newdblink
 
-    def find_pathway_count_genes(self, gene_names):
-        """
-        For a given gene list, find the pathways containing one of the genes,
-        and the frequency of the pathways 
-        """
-        pathwayName = []
-        externalId = []
-        source = []
-        dblink = []
-        counts = []
-        if self.tfdb is not None:
-            pathlist = []
-            for gene_name in gene_names:
-                t = (gene_name,)
-                res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
-                                         "WHERE genesymbol = ? ", t).fetchall()
-                if res1:
-                    pathlist = pathlist + [r[0] for r in res1]
-            #pathway frequency
-            uniq_path = list(set(pathlist))
-            if len(uniq_path) and len(gene_names)>1:
-                uniq_path2 = []
-                for pth in uniq_path:
-                    ct = pathlist.count(pth)
-                    if ct > 1:
-                        counts.append(ct)
-                        uniq_path2.append(pth)
-            else:
-                uniq_path2 = uniq_path
-                counts = np.ones(len(uniq_path2), dtype=np.int)
-
-            if len(uniq_path2):
-                for pth in uniq_path2:
-                    t = (pth,)
-                    res = self.tfdb.execute("SELECT * FROM pathwayInfo "
-                                            "WHERE Id = ? ", t).fetchall()
-                    pathwayName = pathwayName + [r[1] for r in res]
-                    externalId = externalId + [r[2] for r in res]
-                    source = source + [r[3] for r in res]
-                    dblink = dblink + [r[4] for r in res]
-                #sort
-                counts,pathwayName,externalId,source,dblink = \
-                    list(zip(*sorted(zip(counts,pathwayName,externalId,source,dblink),reverse=True)))
-            else:
-                raise PathwayNotFoundException
-        return pathwayName,externalId,source,dblink,counts
-
-    def find_common_pathway_genes(self, gene_names):
+    def find_common_pathway_genes(self, gene_names, fmembers=None, limit=30):
         """
         For a given gene list, find the pathways containing some of the genes,
-        and the corresponding genes contained in each of the pathways 
+        and the corresponding genes contained in each of the pathways
+        
+        parameter
+        -----------
+        gene_names: list of genes
+        fmembers: dict, family name as key, the list of Agent for members as value
         """
-        #set limit to reduce response time
-        limit = 50
         num = 0
         pathwayName = dict()
         dblink = dict()
@@ -768,50 +693,47 @@ class TFTA:
         fgenes = defaultdict(list)
         counts = defaultdict(int)
         if self.tfdb is not None:
-            gene_names = list(set(gene_names))
-            thr1 = max(2, math.ceil(len(gene_names)/2))
-            thr2 = max(2, math.ceil(math.sqrt(len(gene_names))))
-            for gene_name in gene_names:
-                t = (gene_name,)
-                res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
-                                         "WHERE genesymbol = ? ", t).fetchall()
-                if res1:
-                    pids = [r[0] for r in res1]
-                    for pid in pids:
-                        genes[pid].append(gene_name)
-                        counts[pid] += 1
+            if gene_names:
+                gene_names = list(set(gene_names))
+                for gene_name in gene_names:
+                    t = (gene_name,)
+                    res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
+                                             "WHERE genesymbol = ? ", t).fetchall()
+                    if res1:
+                        pids = [r[0] for r in res1]
+                        for pid in pids:
+                            genes[pid].append(gene_name)
+                            counts[pid] += 1
+            #logger.info('tfta:find_common_pathway_genes:before: genes=' + str(genes))
+            
+            if fmembers:
+                #OR operation on members of one family
+                gene1,count1 = self.get_pathwayID_families(fmembers)
+                logger.info('tfta:find_common_pathway_genes:gene1=' + str(gene1))
+                if gene1:
+                    genes = merge_dict_sum(gene1, genes)
+                if count1:
+                    counts = merge_dict_sum(count1, counts)
+            #logger.info('tfta:find_common_pathway_genes:after: genes=' + str(genes))
+            
             if len(genes):
                 max_count = max(counts.values())
                 sorted_counts = sorted(counts.items(),key=lambda kv: kv[1], reverse=True)
-                if max_count >= thr1:
-                    #only consider pathways which contain at least thr1 given genes
+                if max_count >= 2:
                     for pth, ct in sorted_counts:
-                        num += 1
-                        if num > limit:
-                            break
-                        if ct >= thr1:
-                            fgenes[pth] = genes[pth]
-                elif max_count >= thr2:
-                    for pth, ct in sorted_counts:
-                        num += 1
-                        if num > limit:
-                            break
-                        if ct >= thr2:
-                            fgenes[pth] = genes[pth]
-                elif max_count >= 2:
-                    #consider pathways which contain at least 2 given genes
-                    for pth, ct in sorted_counts:
-                        num += 1
-                        if num > limit:
-                            break
                         if ct >= 2:
+                            num += 1
+                            if num > limit:
+                                break
                             fgenes[pth] = genes[pth]
+                        else:
+                            break
                 else:
                     raise PathwayNotFoundException
             else:
                 raise PathwayNotFoundException
             if len(fgenes):
-                for pth in fgenes.keys():
+                for pth in fgenes:
                     t = (pth,)
                     res = self.tfdb.execute("SELECT pathwayName, dblink FROM pathwayInfo "
                                             "WHERE Id = ? ", t).fetchone()
@@ -819,271 +741,197 @@ class TFTA:
                     dblink[pth] = res['dblink']
             else:
                 raise PathwayNotFoundException
-        return pathwayName, dblink, fgenes
-        
-    def find_common_pathway_genes_keyword(self, gene_names, keyword):
+        return pathwayName,dblink,fgenes
+    
+    def get_pathwayID_families(self, fmembers):
+        gene = defaultdict(list)
+        count = defaultdict(int)
+        for f in fmembers:
+            fid = set()
+            for m in fmembers[f]:
+                t = (m.name,)
+                logger.info('get_pathwayID_families: m.name=' + m.name)
+                res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
+                                         "WHERE genesymbol = ? ", t).fetchall()
+                if res1:
+                    fid.union(set([r[0] for r in res1]))
+            if fid:
+                for id in fid:
+                    gene[id].append(f)
+                    count[id] += 1
+        return gene,count
+    
+    def find_common_pathway_genes_keyword(self, gene_names, keyword, fmembers=None, limit=30):
         """
         For a given gene list and keyword, find the pathways containing some of the genes,
         and return the corresponding given genes in each of the pathways 
         """
-        limit = 50
         num = 0
         pathwayName = dict()
         dblink = dict()
         counts = defaultdict(int)
         genes = defaultdict(list)
         fgenes = dict()
-        final_genes = dict()
         if self.tfdb is not None:
-            gene_names = list(set(gene_names))
-            thr1 = max(2, math.ceil(len(gene_names)/2))
-            thr2 = max(2, math.ceil(math.sqrt(len(gene_names))))
-            for gene_name in gene_names:
-                t = (gene_name,)
-                res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
-                                         "WHERE genesymbol = ? ", t).fetchall()
-                if res1:
-                    pids = [r[0] for r in res1]
-                    for pid in pids:
-                        genes[pid].append(gene_name)
-                        counts[pid] += 1
+            if gene_names:
+                gene_names = list(set(gene_names))
+                for gene_name in gene_names:
+                    t = (gene_name,)
+                    res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
+                                             "WHERE genesymbol = ? ", t).fetchall()
+                    if res1:
+                        pids = [r[0] for r in res1]
+                        for pid in pids:
+                            genes[pid].append(gene_name)
+                            counts[pid] += 1
+            if fmembers:
+                #OR operation on members of one family
+                gene1,count1 = self.get_pathwayID_families(fmembers)
+                logger.info('tfta:find_common_pathway_genes_keyword:gene1=' + str(gene1))
+                if gene1:
+                    genes = merge_dict_sum(gene1, genes)
+                if count1:
+                    counts = merge_dict_sum(count1, counts)
+            
             if len(genes):
                 max_count = max(counts.values())
                 sorted_counts = sorted(counts.items(),key=lambda kv: kv[1], reverse=True)
-                if max_count >= thr1:
-                    #only consider pathways which contain at least thr given genes
-                    for pth, ct in sorted_counts:
-                        if ct >= thr1:
-                            fgenes[pth] = genes[pth]
-                elif max_count >= thr2:
-                    for pth, ct in sorted_counts:
-                        if ct >= thr2:
-                            fgenes[pth] = genes[pth]
-                elif max_count >= 2:
-                    #consider pathways which contain at least 2 given genes
+                if max_count >= 2:
+                    regstr = '%' + keyword + '%'
                     for pth, ct in sorted_counts:
                         if ct >= 2:
-                            fgenes[pth] = genes[pth]
+                            t = (pth, regstr)
+                            res = self.tfdb.execute("SELECT pathwayName, dblink FROM pathwayInfo "
+                                            "WHERE Id = ? AND pathwayName LIKE ?", t).fetchone()
+                            if res:
+                                pathwayName[pth] = res['pathwayName']
+                                dblink[pth] = res['dblink']
+                                fgenes[pth] = genes[pth]
+                                num += 1
+                                if num > limit:
+                                    break
+                        else:
+                            break
                 else:
                     raise PathwayNotFoundException
             else:
                 raise PathwayNotFoundException
-            if len(fgenes):
-                regstr = '%' + keyword + '%'
-                #pths = genes.keys()
-                for pth in fgenes.keys():
-                    t = (pth, regstr)
-                    res = self.tfdb.execute("SELECT pathwayName, dblink FROM pathwayInfo "
-                                            "WHERE Id = ? AND pathwayName LIKE ?", t).fetchone()
-                    if res:
-                        pathwayName[pth] = res['pathwayName']
-                        dblink[pth] = res['dblink']
-                        final_genes[pth] = fgenes[pth]
-                        num += 1
-                        if num > limit:
-                            break
-            else:
-                raise PathwayNotFoundException
-            if not len(final_genes):
-                raise PathwayNotFoundException
-        return pathwayName, dblink, final_genes
+        return pathwayName,dblink,fgenes
         
-    def find_common_pathway_genes_db(self, gene_names, db_name):
+    def find_common_pathway_genes_db(self, gene_names, db_name, fmembers=None, limit=30):
         """
         For a given gene list and db name, find the pathways containing at least two of 
         the genes, and return the corresponding given genes in each of the pathways 
         """
-        limit = 50
         num = 0
         pathwayName = dict()
         dblink = dict()
         counts = defaultdict(int)
         genes = defaultdict(list)
         fgenes = dict()
-        final_genes = dict()
         if self.tfdb is not None:
-            gene_names = list(set(gene_names))
-            thr1 = max(2, math.ceil(len(gene_names)/2))
-            thr2 = max(2, math.ceil(math.sqrt(len(gene_names))))
-            for gene_name in gene_names:
-                t = (gene_name,)
-                res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
+            if gene_names:
+                gene_names = list(set(gene_names))
+                for gene_name in gene_names:
+                    t = (gene_name,)
+                    res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
                                          "WHERE genesymbol = ? ", t).fetchall()
-                if res1:
-                    pids = [r[0] for r in res1]
-                    for pid in pids:
-                        genes[pid].append(gene_name)
-                        counts[pid] += 1
+                    if res1:
+                        pids = [r[0] for r in res1]
+                        for pid in pids:
+                            genes[pid].append(gene_name)
+                            counts[pid] += 1
+            if fmembers:
+                #OR operation on members of one family
+                gene1,count1 = self.get_pathwayID_families(fmembers)
+                logger.info('tfta:find_common_pathway_genes_db:gene1=' + str(gene1))
+                if gene1:
+                    genes = merge_dict_sum(gene1, genes)
+                if count1:
+                    counts = merge_dict_sum(count1, counts)
+            
             if len(genes):
                 max_count = max(counts.values())
-                sorted_counts = dict(sorted(counts.items(),key=lambda kv: kv[1], reverse=True))
-                if max_count >= thr1:
-                    #only consider pathways which contain at least thr1 given genes
-                    for pth, ct in sorted_counts.items():
-                        if ct >= thr1:
-                            fgenes[pth] = genes[pth]
-                elif max_count >= thr2:
-                    for pth, ct in sorted_counts.items():
-                        if ct >= thr2:
-                            fgenes[pth] = genes[pth]
-                elif max_count >= 2:
-                    #consider pathways which contain at least 2 given genes
-                    for pth, ct in sorted_counts.items():
+                sorted_counts = sorted(counts.items(),key=lambda kv: kv[1], reverse=True)
+                if max_count >= 2:
+                    for pth, ct in sorted_counts:
                         if ct >= 2:
-                            fgenes[pth] = genes[pth]
-                else:
-                    raise PathwayNotFoundException
-            else:
-                raise PathwayNotFoundException
-            if len(fgenes):
-                for pth in list(fgenes.keys()):
-                    t = (pth, db_name)
-                    res = self.tfdb.execute("SELECT pathwayName, dblink FROM pathwayInfo "
+                            t = (pth, db_name)
+                            res = self.tfdb.execute("SELECT pathwayName, dblink FROM pathwayInfo "
                                             "WHERE Id = ? AND source LIKE ?", t).fetchone()
-                    if res:
-                        pathwayName[pth] = res['pathwayName']
-                        dblink[pth] = res['dblink']
-                        final_genes[pth] = fgenes[pth]
-                        num += 1
-                        if num > limit:
+                            if res:
+                                pathwayName[pth] = res['pathwayName']
+                                dblink[pth] = res['dblink']
+                                fgenes[pth] = genes[pth]
+                                num += 1
+                                if num > limit:
+                                    break
+                        else:
                             break
-            else:
-                raise PathwayNotFoundException
-            if not len(final_genes):
-                raise PathwayNotFoundException
-        return pathwayName, dblink, final_genes
-
-    def find_pathway_count_genes_keyword(self, gene_names, keyword):
-        """
-        For a given gene list and keyword, find the pathways containing one of the genes,
-        and the frequency of the pathways 
-        """
-        pathwayName = []
-        externalId = []
-        source = []
-        dblink = []
-        counts = []
-        if self.tfdb is not None:
-            pathlist = []
-            for gene_name in gene_names:
-                t = (gene_name,)
-                res1 = self.tfdb.execute("SELECT DISTINCT pathwayID FROM pathway2Genes "
-                                         "WHERE genesymbol = ? ", t).fetchall()
-                if res1:
-                    pathlist = pathlist + [r[0] for r in res1]
-            #pathway frequency
-            uniq_path = list(set(pathlist))
-            if len(uniq_path):
-                uniq_path2 = []
-                for pth in uniq_path:
-                    ct = pathlist.count(pth)
-                    if ct > 1:
-                        #counts.append(ct)
-                        uniq_path2.append(pth)
-            if len(uniq_path2):
-                regstr = '%' + keyword + ' %'
-                for pth in uniq_path2:
-                    t = (pth, regstr)
-                    res = self.tfdb.execute("SELECT * FROM pathwayInfo "
-                                            "WHERE Id = ? AND pathwayName LIKE ?", t).fetchall()
-                    if res:
-                        pathwayName = pathwayName + [r[1] for r in res]
-                        externalId = externalId + [r[2] for r in res]
-                        source = source + [r[3] for r in res]
-                        dblink = dblink + [r[4] for r in res]
-                        counts.append(pathlist.count(pth))
-                #sort
-                if len(counts):
-                    counts,pathwayName,externalId,source,dblink = \
-                        list(zip(*sorted(zip(counts,pathwayName,externalId,source,dblink),reverse=True)))
                 else:
                     raise PathwayNotFoundException
             else:
                 raise PathwayNotFoundException
-        return pathwayName,externalId,source,dblink,counts
+        return pathwayName, dblink, fgenes
 
-    def find_targets(self,tf_names):
+    def find_targets(self,tf_names, fmembers=None):
         """
         Return Targets regulated by the tf or tf list
         """
         dbname = dict()
+        target_names = []
         if self.tfdb is not None:
-            t = (tf_names[0],)
-            res = self.tfdb.execute("SELECT DISTINCT Target,dbnames FROM CombinedDB "
-                                    "WHERE TF = ? ", t).fetchall()
-            if res:
-                target_names = [r[0] for r in res]
-                for r in res:
-                    dbname[(tf_names[0],r[0])] = r[1]
-            else:
-                raise TFNotFoundException
-                
-            if len(tf_names) > 1:
-                for i in range(1,len(tf_names)):
-                    t = (tf_names[i],)
-                    res = self.tfdb.execute("SELECT DISTINCT Target,dbnames FROM CombinedDB "
-                                            "WHERE TF = ? ", t).fetchall()
-                    if res:
-                        target_names = list(set(target_names) & set([r[0] for r in res]))
-                        for r in res:
-                            dbname[(tf_names[i],r[0])] = r[1]
-                    else:
-                        raise TFNotFoundException
-            if len(target_names):
-                target_names.sort()
-        else:
-            target_names = []
-        return target_names,dbname
-
-    def find_overlap_targets_tfs_genes(self,tf_names,target_names):
-        """
-        Return Targets which are regulated by all the given tfs and are 
-        also in the given target list
-        """
-        if self.tfdb is not None:
-            targets = []
-            for tf_name in tf_names:
-                t = (tf_name,)
-                res = self.tfdb.execute("SELECT DISTINCT Target FROM CombinedDB "
+            if tf_names:
+                t = (tf_names[0],)
+                res = self.tfdb.execute("SELECT DISTINCT Target,dbnames FROM CombinedDB "
                                         "WHERE TF = ? ", t).fetchall()
                 if res:
-                    targets = targets + [r[0] for r in res]
+                    target_names = [r[0] for r in res]
+                    for r in res:
+                        dbname[(tf_names[0],r[0])] = r[1]
                 else:
                     raise TFNotFoundException
-            #common regulated targets by the given tf list
-            com_targets = []
-            for target in set(targets):
-                if targets.count(target) == len(tf_names):
-                    com_targets.append(target)
-            #overlap with the given target list
-            overlap_targets = list(set(com_targets) & set(target_names))
-            if len(overlap_targets):
-                overlap_targets.sort()
-        else:
-            overlap_targets = []
-        return overlap_targets
+                if len(tf_names) > 1:
+                    for i in range(1,len(tf_names)):
+                        t = (tf_names[i],)
+                        res = self.tfdb.execute("SELECT DISTINCT Target,dbnames FROM CombinedDB "
+                                                "WHERE TF = ? ", t).fetchall()
+                        if res:
+                            target_names = list(set(target_names) & set([r[0] for r in res]))
+                            for r in res:
+                                dbname[(tf_names[i],r[0])] = r[1]
+                        else:
+                            raise TFNotFoundException
+            #For families, not consider dbname for now
+            if fmembers:
+                for f in fmembers:
+                    ftarget = set()
+                    for m in fmembers[f]:
+                        t = (m.name,)
+                        res = self.tfdb.execute("SELECT DISTINCT Target FROM CombinedDB "
+                                                "WHERE TF = ? ", t).fetchall()
+                        if res:
+                            ftarget = ftarget.union(set([r[0] for r in res]))
+                    if ftarget:
+                        target_names = list(set(target_names) & ftarget)
+                    else:
+                        raise TFNotFoundException
+        return target_names,dbname
 
     def find_targets_tissue(self,tf_names, tissue_name):
         """
         Return Targets regulated by the tf list in a given tissue
         """
-        target_names = []
+        target_names = set()
         if self.tfdb is not None:
             regstr = '%' + tissue_name + '%'
             t = (tf_names[0], regstr)
             res = self.tfdb.execute("SELECT DISTINCT Target FROM Target2TF2Tissue "
                                     "WHERE TF = ? AND Tissue LIKE ? ", t).fetchall()
             if res:
-                target_names = [r[0] for r in res]
+                target_names = set([r[0] for r in res])
             else:
-                #check if the TF is in the database
-                t = (tf_names[0],)
-                res = self.tfdb.execute("SELECT DISTINCT Target FROM Target2TF2Tissue "
-                                    "WHERE TF = ? ", t).fetchall()
-                if res:
-                    return target_names
-                else:
-                    raise TFNotFoundException
+                return []
                 
             if len(tf_names) > 1:
                 for i in range(1,len(tf_names)):
@@ -1091,47 +939,10 @@ class TFTA:
                     res = self.tfdb.execute("SELECT DISTINCT Target FROM Target2TF2Tissue "
                                             "WHERE TF = ? AND Tissue LIKE ? ", t).fetchall()
                     if res:
-                        target_names = list(set(target_names) & set([r[0] for r in res]))
+                        target_names = set(target_names) & set([r[0] for r in res])
                     else:
-                        #check if the TF is in the database
-                        t = (tf_names[i],)
-                        res = self.tfdb.execute("SELECT DISTINCT Target FROM Target2TF2Tissue "
-                                                "WHERE TF = ? ", t).fetchall()
-                        if res:
-                            return target_names
-                        else:
-                            raise TFNotFoundException	
-            if len(target_names):
-                target_names.sort()
+                        return []
         return target_names
- 
-    def find_targets_1(self,tf_name):
-        """
-        Return Targets regulated by the tf
-        Accept only one tf name
-        """
-        if self.tfdb is not None:
-            t = (tf_name,)
-            res = self.tfdb.execute("SELECT DISTINCT Target FROM CombinedDB "
-                                    "WHERE TF = ? ORDER BY Target", t).fetchall()
-            target_names = [r[0] for r in res]
-        else:
-            target_names = []
-        return target_names
-
-    def find_tfs_1(self,target_name):
-        """
-        Return TFs regulating the target in a given tissue
-        Accept only one target
-        """
-        if self.tfdb is not None:
-            t = (target_name,)
-            res = self.tfdb.execute("SELECT DISTINCT TF FROM CombinedDB "
-                                    "WHERE Target = ? ORDER BY TF", t).fetchall()
-            tf_names = [r[0] for r in res]
-        else:
-            tf_names = []
-        return tf_names
 
     def find_genes_GO_tf(self, go_name, tf_names):
         """
@@ -1239,27 +1050,7 @@ class TFTA:
                         res_go_genes[go_ids[i]] = tmp
         return res_go_ids,res_go_types,res_go_names,res_go_genes
 
-    def Is_miRNA_target(self, miRNA_name, target_name):
-        """
-        Return True if the miRNA regulates the target, and False if not
-        query example: Does miR-20b-5p target STAT3?
-        """
-        if self.tfdb is not None:
-             t = (miRNA_name,)
-             res = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo WHERE mirna LIKE ? ", t).fetchall()
-             if not res:
-                 raise miRNANotFoundException
-             for r in res:
-                 if r[0].upper() == target_name.upper():
-                     return True
-             #check if target_name in the database
-             t = (target_name,)
-             res = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo WHERE target = ? ", t).fetchall()
-             if not res:
-                 raise TargetNotFoundException       
-        return False
-        
-    def Is_miRNA_target2(self, miRNA_name_dict, target_name):
+    def Is_miRNA_target(self, miRNA_name_dict, target_name):
         """
         Return True if the miRNA regulates the target, and False if not;
         also return evidence for provenance support
@@ -1292,6 +1083,10 @@ class TFTA:
         """
         Return miRNAs regulating all the given targets
         example: What microRNAs target STAT3?
+        
+        parameter
+        ----------
+        target_names: list
         """
         miRNAs = []
         if self.tfdb is not None:
@@ -1312,14 +1107,16 @@ class TFTA:
                         miRNAs = list(set(miRNAs) & set([r[0] for r in res]))
                     else:
                         raise TargetNotFoundException
-            #if len(miRNAs):
-                #miRNAs.sort()
         return miRNAs
         
     def find_target_miRNA(self, miRNA_name_dict):
         """
         Return Targets regulated by the given miRNAs
         example: What genes does miR-20b-5p target?
+        
+        parameter
+        ------------
+        miRNA_name_dict: dict
         """
         miRNA_mis = dict()
         target_names = []
@@ -1333,7 +1130,7 @@ class TFTA:
             else:
                 #raise miRNANotFoundException
                 miRNA_mis[miRNA_names[0]] = miRNA_name_dict[miRNA_names[0]]
-                return target_names,miRNA_mis 
+                return [],miRNA_mis 
             if len(miRNA_names)>1:
                 for i in range(1, len(miRNA_names)):
                     t = (miRNA_names[i],)
@@ -1344,17 +1141,20 @@ class TFTA:
                     else:
                         #raise miRNANotFoundException
                         miRNA_mis[miRNA_names[i]] = miRNA_name_dict[miRNA_names[i]]
-                        return target_names,miRNA_mis
-                    if not len(target_names):
+                        return [],miRNA_mis
+                    if not target_names:
                         break
-            if len(target_names):
-                target_names.sort()
         return target_names,miRNA_mis
         
     def find_target_miRNA_strength(self, miRNA_name_dict, evidence_strength):
         """
         Return Targets regulated by the given miRNAs
         example: What genes does miR-20b-5p target?
+        
+        parameters
+        ------------
+        miRNA_name_dict: dict
+        evidence_strength: string
         """
         miRNA_mis = dict()
         target_names = []
@@ -1384,7 +1184,7 @@ class TFTA:
                             if self.check_mirna_not_in_db(miRNA_names[i]):
                                 miRNA_mis[miRNA_names[i]] = miRNA_name_dict[miRNA_names[i]]
                             return [],miRNA_mis
-                        if not len(target_names):
+                        if not target_names:
                             break
             else:
                 t = (miRNA_names[0], '%Weak%')
@@ -1409,10 +1209,8 @@ class TFTA:
                             if self.check_mirna_not_in_db(miRNA_names[i]):
                                 miRNA_mis[miRNA_names[i]] = miRNA_name_dict[miRNA_names[i]]
                             return [],miRNA_mis
-                        if not len(target_names):
+                        if not target_names:
                             break
-            if len(target_names):
-                target_names.sort()
         return target_names,miRNA_mis
     
     def check_mirna_not_in_db(self, miRNA_name):
@@ -1434,29 +1232,26 @@ class TFTA:
         target_names,miRNA_mis = self.find_target_miRNA(miRNA_names)
         tf_names = []
         if not miRNA_mis:
-            if len(target_names):
+            if target_names:
                 if not self.trans_factor:
                     if self.tfdb is not None:
                         res = self.tfdb.execute("SELECT DISTINCT tf FROM transFactor").fetchall()
                         self.trans_factor = set([r[0] for r in res])
                 tf_names = list(set(target_names) & self.trans_factor)
-            else:
-                raise TFNotFoundException
-            if len(tf_names):
-                tf_names.sort()
-            else:
-                raise TFNotFoundException
-        else:
-            return tf_names,miRNA_mis
         return tf_names,miRNA_mis
         
     def find_evidence_miRNA_target(self, miRNA_name_dict, target_name):
         """
-        miRNA_name: str
+        
         Return experimental evidence that the given miRNA regulates the target
         example: What is the evidence that miR-148a-3p targets DNMT1?
+        
+        parameter
+        --------------
+        miRNA_name_dict: str
+        target_name: str
         """
-        miRNA_mis = dict()
+        miRNA_mis = {}
         experiments = []
         support_types = []
         pmid_link = []
@@ -1478,58 +1273,62 @@ class TFTA:
                     miRNA_mis[miRNA_name] = miRNA_name_dict[miRNA_name]
         return experiments, support_types, pmid_link, miRNA_mis
 
-    def find_miRNA_count_gene(self, gene_names):
+    def find_miRNA_count_gene(self, gene_names, of_those=None, limit=30):
         """
         For a given gene list, find the miRNAs regulate one of the genes, and the
         frequency of the miRNAs
-        What mirs most frequently or commonly regulate a list of genes
+        What(which of those) mirs most frequently or commonly regulate a list of genes
         """
-        mirna = []
-        counts = []
+        mirna_count = dict()
         temp = []
-        targets = defaultdict(list)
+        mir_targets = defaultdict(list)
         if self.tfdb is not None:
             for gene_name in gene_names:
                 t = (gene_name,)
                 res1 = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo "
                                          "WHERE target = ? ", t).fetchall()
                 if res1:
-                    temp = temp + [r[0] for r in res1]
-                    for m in [r[0] for r in res1]:
-                        targets[m].append(gene_name)
-            #handle the case that all input targets are not in the database
-            if not len(temp):
-                raise TargetNotFoundException 
-            else:               
-                #miRNA count
-                um = list(set(temp))
-                if len(gene_names)>1:
-                    for u in um:
-                        ct = temp.count(u)
-                        if ct > 1:
-                            mirna.append(u)
-                            counts.append(ct)
-                    #sort
-                    if len(mirna) > 1:
-                        counts, mirna = list(zip(*sorted(zip(counts,mirna), reverse=True)))
+                    temp.extend([r[0].upper() for r in res1])
+                    for mir in [r[0].upper() for r in res1]:
+                        mir_targets[mir].append(gene_name)
+            if temp:
+                mcount = Counter(temp)
+                sorted_c = sorted(mcount.items(), key=operator.itemgetter(1), reverse=True)
+                num = 0
+                if of_those:
+                    for mir,count in sorted_c:
+                        if num < limit:
+                            if mir in of_those and count > 1:
+                                mirna_count[mir] = count
+                                num += 1
+                        else:
+                            break
                 else:
-                    mirna = um
-                    counts = np.ones(len(um), dtype=np.int)
-            if not len(mirna):
-                raise miRNANotFoundException
-        return mirna,counts,targets
+                    for mir,count in sorted_c:
+                        if num < limit:
+                            if count > 1:
+                                mirna_count[mir] = count
+                                num += 1
+                        else:
+                            break
+        return mirna_count,mir_targets
                          
-    def find_gene_count_miRNA(self, miRNA_name_dict):
+    def find_gene_count_miRNA(self, miRNA_name_dict, of_those=None, limit=30):
         """
         For a given miRNA list, find the genes regulated by one of the miRNAs, and the
         frequency of the genes
-        What genes are most frequently (or commonly) regulated by a list of mIRs?
+        What genes are most frequently (or commonly) regulated by a list of microRNAs?
+        
+        parameters
+        ----------------
+        miRNA_name_dict:dict
+        of_those: list of gene names or None
+        limit: int
         """
-        genes = []
-        counts = dict()
+        gene_count = dict()
         temp = []
-        mrna = defaultdict(list)
-        miRNA_mis = dict()
+        target_mirna = defaultdict(list)
+        miRNA_mis = {}
         miRNA_names = list(miRNA_name_dict.keys())
         if self.tfdb is not None:
             for mir in miRNA_names:
@@ -1537,28 +1336,32 @@ class TFTA:
                 res1 = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo "
                                          "WHERE mirna LIKE ? ", t).fetchall()
                 if res1:
-                    temp = temp + [r[0] for r in res1]
-                    for m in [r[0] for r in res1]:
-                        mrna[m].append(mir)
+                    temp.extend([r[0] for r in res1])
+                    for target in [r[0] for r in res1]:
+                        target_mirna[target].append(mir)
                 else:
                      miRNA_mis[mir] = miRNA_name_dict[mir]
-            if temp:        
-                ug = list(set(temp))
-                if len(miRNA_names) > 1:
-                    for u in ug:
-                        ct = temp.count(u)
-                        if ct > 1:
-                            genes.append(u)
-                            counts[u] = ct
+            if temp:
+                c = Counter(temp)
+                sorted_c = sorted(c.items(), key=operator.itemgetter(1), reverse=True)
+                num = 0
+                if of_those:
+                    for gene,count in sorted_c:
+                        if num < limit:
+                            if gene in of_those and count > 1:
+                                gene_count[gene] = count
+                                num += 1
+                        else:
+                            break
                 else:
-                    genes = ug
-                    for u in ug:
-                        counts[u] = 1
-                    #counts = np.ones(len(ug), dtype=np.int)
-                #sort
-                #if len(genes) > 1:
-                    #counts, genes = list(zip(*sorted(zip(counts,genes), reverse=True)))
-        return genes,counts,mrna,miRNA_mis
+                    for gene,count in sorted_c:
+                        if num < limit:
+                            if count > 1:
+                                gene_count[gene] = count
+                                num += 1
+                        else:
+                            break
+        return gene_count,target_mirna,miRNA_mis
 
     def find_pathway_db_keyword(self, db_source, pathway_names):
         """
@@ -1579,9 +1382,9 @@ class TFTA:
                 res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
                                         "WHERE pathwayName LIKE ? AND source LIKE ?", t).fetchall()
                 if res:
-                    pids = pids + [r[0] for r in res]
-                    pn = pn + [r[1] for r in res]
-                    plink = plink + [r[2] for r in res]
+                    pids.extend([r[0] for r in res])
+                    pn.extend([r[1] for r in res])
+                    plink.extend([r[2] for r in res])
             if len(pids):
                 pathwayId = list(set(pids))
                 for i in range(len(pids)):
@@ -1616,9 +1419,9 @@ class TFTA:
         
     def get_similar_miRNAs(self, miRNA_name):
         """
-        return a list of miRNAs beginning with the given miRNA which 
+        For each miRNA, return a list of miRNAs beginning with the given miRNA which 
         is not in the database, for user clarification purpose
-        miRNA_name is the given miRNA name
+        miRNA_name: str, miRNA name
         """
         clari_miRNA = []
         if self.tfdb is not None:
@@ -1628,27 +1431,6 @@ class TFTA:
                                     "WHERE mirna LIKE ? ", t).fetchall()
             if res:
                 clari_miRNA = [r[0] for r in res]
-            else:
-                raise miRNANotFoundException
-        return clari_miRNA
-        
-    def get_similar_miRNAs2(self, miRNA_names):
-        """
-        For each miRNA, return a list of miRNAs beginning with the given miRNA which 
-        is not in the database, for user clarification purpose
-        miRNA_names is a list of given miRNA name
-        """
-        clari_miRNA = dict()
-        if self.tfdb is not None:
-            for miRNA_name in miRNA_names:
-                regstr = miRNA_name + '-%'
-                t = (regstr,)
-                res = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo "
-                                    "WHERE mirna LIKE ? ", t).fetchall()
-                if res:
-                    clari_miRNA[miRNA_name] = [r[0] for r in res]
-            if not clari_miRNA:
-                raise miRNANotFoundException
         return clari_miRNA
 
     def find_tissue_gene(self, gene_name):
@@ -1666,7 +1448,60 @@ class TFTA:
             else:
                 raise TissueNotFoundException
         return tissue_names
+    
+    def find_target_kinase(self, kinase_names):
+        """
+        For given kinases, return the genes regulated by them
+        """
+        gene_names = set()
+        if self.tfdb is not None:
+            t = (kinase_names[0],)
+            res = self.tfdb.execute("SELECT DISTINCT target FROM kinaseReg "
+                                    "WHERE kinase = ? ", t).fetchall()
+            if res:
+                gene_names = set([r[0] for r in res])
+            else:
+                raise TargetNotFoundException 
+            if len(kinase_names)>1:
+                for i in range(1,len(kinase_names)):
+                    t = (kinase_names[i],)
+                    res = self.tfdb.execute("SELECT DISTINCT target FROM kinaseReg "
+                                            "WHERE kinase = ? ", t).fetchall()
+                    if res:
+                        gene_names = set(gene_names) & set([r[0] for r in res])
+                    else:
+                        raise TargetNotFoundException
+        if not gene_names:
+            raise TargetNotFoundException
         
+        return gene_names
+        
+    def find_target_kinase_keyword(self, kinase_names, keyword):
+        """
+        For given kinases, return the genes regulated by them
+        """
+        gene_names = set()
+        if self.tfdb is not None:
+            t = (kinase_names[0], keyword)
+            res = self.tfdb.execute("SELECT DISTINCT target FROM kinaseReg "
+                                    "WHERE kinase = ? AND direction LIKE ? ", t).fetchall()
+            if res:
+                gene_names = set([r[0] for r in res])
+            else:
+                raise TargetNotFoundException 
+            if len(kinase_names)>1:
+                for i in range(1,len(kinase_names)):
+                    t = (kinase_names[i], keyword)
+                    res = self.tfdb.execute("SELECT DISTINCT target FROM kinaseReg "
+                                            "WHERE kinase = ? AND direction LIKE ? ", t).fetchall()
+                    if res:
+                        gene_names = set(gene_names) & set([r[0] for r in res])
+                    else:
+                        raise TargetNotFoundException
+        if not gene_names:
+            raise TargetNotFoundException
+        return gene_names
+    
     def find_kinase_target(self, target_names):
         """
         For given genes, return the kinases that regulate them
@@ -1689,10 +1524,6 @@ class TFTA:
                         kinase_names = list(set(kinase_names) & set([r[0] for r in res]))
                     else:
                         raise KinaseNotFoundException
-            if len(kinase_names):
-                kinase_names.sort()
-            else:
-                raise KinaseNotFoundException
         return kinase_names
         
     def find_kinase_target_keyword(self, target_names, keyword_name):
@@ -1717,10 +1548,6 @@ class TFTA:
                         kinase_names = list(set(kinase_names) & set([r[0] for r in res]))
                     else:
                         raise KinaseNotFoundException
-            if len(kinase_names):
-                kinase_names.sort()
-            else:
-                raise KinaseNotFoundException
         return kinase_names
         
     def find_gene_tissue(self, tissue_name):
@@ -1737,9 +1564,6 @@ class TFTA:
                 gene_names = [r[0] for r in res]
             else:
                 raise TissueNotFoundException
-        #gene_names = list(set(gene_names) & hgnc_genes_set)
-        if len(gene_names):
-            gene_names.sort()
         return gene_names
         
     def find_gene_tissue_exclusive(self, tissue_name):
@@ -1751,9 +1575,6 @@ class TFTA:
             self.tissue_gene_exclusive = self.map_exclusive_tissue_gene()
         if tissue_name in self.tissue_gene_exclusive:
             gene_names = list(self.tissue_gene_exclusive[tissue_name])
-        #gene_names = list(set(gene_names) & hgnc_genes_set)
-        if len(gene_names):
-            gene_names.sort()
         return gene_names
         
     def is_tissue_gene(self, tissue_name, gene_name):
@@ -1798,8 +1619,6 @@ class TFTA:
             res = self.tfdb.execute("SELECT DISTINCT tissue FROM geneTissue "
                                     "WHERE enrichment > ? ", t).fetchall()
             tissues = [r[0] for r in res]
-            #print('tissues: ', ','.join(tissues))
-            #print('number of tissues: ', len(tissues))
             for tiss in tissues:
                 t = (tiss, EXP_THR)
                 res = self.tfdb.execute("SELECT DISTINCT genesymbol FROM geneTissue "
@@ -1836,6 +1655,7 @@ class TFTA:
         Return the genes which are in the category of go_name
         """
         go_genes = []
+        go_name = go_name.lower()
         if go_name in ['tf', 'transcription factor']:
             if not self.trans_factor:
                 if self.tfdb is not None:
@@ -1851,7 +1671,7 @@ class TFTA:
                 for go in goids:
                     t = (go, )
                     res = self.tfdb.execute("SELECT geneSymbol FROM go2Genes WHERE termId = ? ", t).fetchall()
-                    go_genes += [r[0] for r in res]
+                    go_genes.extend([r[0] for r in res])
                 go_genes = set(go_genes)
         return go_genes
         
@@ -1887,7 +1707,7 @@ class TFTA:
                 if len(stmts):
                     stmts_filtered = filter_evidence_source(stmts, ['reach'], policy='one')
                     if len(stmts_filtered):
-                        statements += stmts_filtered
+                        statements.extend(stmts_filtered)
         except Exception as e:
             #print(e)
             return statements,False
@@ -1942,7 +1762,7 @@ class TFTA:
         targets = list(stmts_d.keys())
         stmt_list = []
         for t in targets:
-            stmt_list += stmts_d[t]
+            stmt_list.extend(stmts_d[t])
         genes = self.find_regulator_indra_gene(stmts_d[targets[0]])
         if len(targets) > 1:
             for i in range(1,len(targets)):
@@ -1978,7 +1798,7 @@ class TFTA:
         targets = list(stmts_d.keys())
         stmt_list = []
         for t in targets:
-            stmt_list += stmts_d[t]
+            stmt_list.extend(stmts_d[t])
         genes = self.find_regulator_indra_gene(stmts_d[targets[0]], of_those=of_those)
         
         if target_type:
@@ -2024,13 +1844,15 @@ class TFTA:
         regulators = list(stmts_d.keys())
         stmt_list = []
         for r in regulators:
-            stmt_list += stmts_d[r]
+            stmt_list.extend(stmts_d[r])
         genes = self.find_target_indra(stmts_d[regulators[0]])
         
         if of_those:
             genes = genes.intersection(of_those)
             
-        if target_type:
+        if target_type and isinstance(target_type, set):
+            genes = genes.intersection(target_type)
+        else:
             try:
                 target_type_set = self.get_onto_set(target_type)
             except Exception as e:
@@ -2079,7 +1901,7 @@ class TFTA:
         targets = list(stmts_d.keys())
         stmt_list = []
         for t in targets:
-            stmt_list += stmts_d[t]
+            stmt_list.extend(stmts_d[t])
         tfs = self.find_tf_indra(stmts_d[targets[0]])
         if len(targets) > 1:
             for i in range(1, len(targets)):
@@ -2112,27 +1934,41 @@ class TFTA:
                 evidences.add((source_api, pmid, text))
         return evidences
         
-    def find_members(self, term_id):
+    def find_member(self, agent):
         """
         Find members for a collection
         
         Parameters
         -------------
-        term_id: dict
-        Its key is term id
+        agent: Agent
+
+        Returns
+        ------------
+        magents: list of Agent
+        """
+        magents = _get_members(agent)
+        return magents
+        
+    def find_members(self, agents):
+        """
+        Find members for a collection
+        
+        Parameters
+        -------------
+        agents: list of Agent
         Value is indra.statements.Agent
         
         Returns
         ------------
         members: dict
-        Its key is term id
+        Its key is family name
         Value is list[indra.statements.Agent]
         """
         members = dict()
-        for id, agent in term_id.items():
+        for agent in agents:
             magents = _get_members(agent)
             if magents:
-                members[id] = magents
+                members[agent.name] = magents
         return members
             
 def _get_members(agent):
@@ -2145,6 +1981,23 @@ def _get_members(agent):
     children_agents = [expand_families._agent_from_uri(uri)
                         for uri in children_uris]
     return children_agents
+    
+def _check_overlap(genes, fmembers):
+    """
+    If genes overlap with any member of each family in fmembers, return True, otherwise False
+        
+    parameter
+    --------------
+    genes: set
+    fmembers: defaultdict(list)
+    """
+    ind = []
+    for f in fmembers:
+        fg = set()
+        for m in fmembers[f]:
+            fg.add(m.name)
+        ind.append(len(genes.intersection(fg)))
+    return all(ind)
         
 #test functions
 #if __name__ == "__main__":
