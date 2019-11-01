@@ -956,7 +956,7 @@ class TestFindEvidence4(_IntegrationTest):
         print("len(output.get('evidence'))=", str(len(output.get('evidence'))))
         print("len(output.get('evidence').get('literature'))=", str(len(output.get('evidence').get('literature'))))
         assert len(output.get('evidence')) == 2, output
-        assert len(output.get('evidence').get('literature')) == 10, output
+        assert len(output.get('evidence').get('literature')) == 9, output
         
 ##Show me the evidence that SRF binds to the FOS gene.
 class TestFindEvidence5(_IntegrationTest):
