@@ -606,7 +606,7 @@ class TestFindMirnaCountGene2(_IntegrationTest):
         print("len(output.get('miRNAs'))=", len(output.get('miRNAs')))
         assert len(output.get('miRNAs')) == 7, output
 
-#which of those miRNAs most frequently regulate EGFR, SRF, STAT3, JAK2, and SMAD3?
+#which of those miRNAs most frequently regulate EGFR, and AKT?
 #(subtask: FIND-MIRNA-COUNT-GENE)
 class TestFindMirnaCountGene3(_IntegrationTest):
     def __init__(self, *args):
