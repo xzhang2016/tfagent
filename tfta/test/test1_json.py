@@ -967,6 +967,30 @@ class TestFindTarget14(_IntegrationTest):
         assert len(output.get('targets')) == 2, output
         assert len(output.get('targets').get('target-db')) == 117, output
         
+#what genes are regulated by stat3? (don't consider :literature)
+class TestFindTarget15(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindTarget15, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        regulator = agent_clj_from_text('stat3')
+        
+        content = KQMLList('FIND-TARGET')
+        content.set('regulator', regulator)
+        content.set('literature', 'NIL')
+        content.set('keyword', 'regulate')
+        content.set('target-type', 'gene')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('targets'))=", str(len(output.get('targets'))))
+        print("len(output.get('targets').get('target-db'))=", str(len(output.get('targets').get('target-db'))))
+        assert len(output.get('targets')) == 2, output
+        assert len(output.get('targets').get('target-db')) == 421, output
+
+        
 ##########################################################################
 # TEST FIND-REGULATION
 ###what regulate myc? 
