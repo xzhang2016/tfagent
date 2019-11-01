@@ -160,6 +160,7 @@ class TestFindMirnaDisease2(_IntegrationTest):
         of_those = make_mirna_cljson('mir-200c, mir-195,mir-188,mir-181a')
         content = KQMLList('FIND-MIRNA-DISEASE')
         content.set('disease', disease)
+        content.set('of-those', of_those)
         return get_request(content), content
         
     def check_response_to_message(self, output):
@@ -184,7 +185,7 @@ class TestFindDiseaseMirna1(_IntegrationTest):
     def check_response_to_message(self, output):
         assert output.head() == 'SUCCESS', output
         print("len(output.get('disease'))=", len(output.get('disease')))
-        assert len(output.get('disease')) == 3, output
+        assert len(output.get('disease')) == 93, output
 
 #what diseases are associated with mir-200c and mir-195?
 class TestFindDiseaseMirna2(_IntegrationTest):
@@ -220,4 +221,20 @@ class TestFindDiseaseMirna3(_IntegrationTest):
         print("len(output.get('disease'))=", len(output.get('disease')))
         assert len(output.get('disease')) == 894, output
 
-
+#test invalid mirna name
+#what diseases are associated with mir-20-3p?
+class TestFindDiseaseMirna4(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindDiseaseMirna4, self).__init__(TFTA_Module)
+        
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        mirna = make_mirna_cljson('mir-20-3p')
+        content = KQMLList('FIND-DISEASE-MIRNA')
+        content.set('mirna', mirna)
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'SUCCESS', output
+        print("len(output.get('disease'))=", len(output.get('disease')))
+        assert output.get('disease') == 'NIL', output
