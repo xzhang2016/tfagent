@@ -15,4 +15,4 @@ meant to be launched in the context of a communication system.
 
 Note
 =======================
-The master branch is using EKB XML as input format, while the dev branch is using JSON as input and output format. Enrichment is only at dev branch.
+The master was merged with dev branch and now it's using JSON as input and output format. (merged on Nov. 1, 2019)
