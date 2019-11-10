@@ -39,24 +39,25 @@ class GOEnrich:
         
         self.assoc = self.get_assoc_gene_go()
         
-        #load go_gene.db
-        db_file = os.path.join(_resource_dir, 'go_gene.db')
-        #check file size to determine if it need regenerate
-        if os.path.isfile(db_file):
-            statinfo = os.stat(db_file)
-        else:
-            statinfo = None
+        #load go_gene.db. Comment out for now since it's not used.
+        #db_file = os.path.join(_resource_dir, 'go_gene.db')
         
-        if statinfo and statinfo.st_size > 13000000:
-            self.godb = sqlite3.connect(db_file, check_same_thread=False)
-            logger.info('GOEnrich loaded go_gene database.')
-        else:
-            num = self.generate_go2gene_db(db_file)
-            if os.path.isfile(db_file):
-                self.godb = sqlite3.connect(db_file, check_same_thread=False)
-            else:
-                logger.error('GOEnrich could not load go_gene database.')
-                self.godb = None;
+        #check file size to determine if it need regenerate
+        #if os.path.isfile(db_file):
+        #    statinfo = os.stat(db_file)
+        #else:
+        #    statinfo = None
+        
+        #if statinfo and statinfo.st_size > 13000000:
+        #    self.godb = sqlite3.connect(db_file, check_same_thread=False)
+        #    logger.info('GOEnrich loaded go_gene database.')
+        #else:
+        #    num = self.generate_go2gene_db(db_file)
+        #    if os.path.isfile(db_file):
+        #        self.godb = sqlite3.connect(db_file, check_same_thread=False)
+        #    else:
+        #        logger.error('GOEnrich could not load go_gene database.')
+        #        self.godb = None
     
     def read_go(self, go_obo_url=None, data_folder=_resource_dir):
         if not go_obo_url:
@@ -210,6 +211,8 @@ class GOEnrich:
             if x.p_bonferroni <= p_bonferroni:
                 res.append(x)
                 num += 1
+            else:
+                break
         return res
     
     def get_assoc_gene_go(self):
