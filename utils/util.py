@@ -1,4 +1,4 @@
-
+import urllib.request
 
 
 def merge_dict_sum(dict1, dict2):
@@ -21,3 +21,17 @@ def merge_dict_list(dict1, dict2):
         if key in dict1 and key in dict2:
             dict3[key] = [value, dict1[key]]
     return dict3
+
+def download_file_dropbox(url, fout_name):
+    """
+    Download file from dropbox
+    """
+    u = urllib.request.urlopen(url)
+    data = u.read()
+    u.close()
+    
+    #save
+    with open(fout_name, 'wb') as fw:
+        fw.write(data)
+        
+
