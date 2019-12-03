@@ -189,7 +189,8 @@ class PathwayEnrich():
                 res = pickle.load(pickle_in)
             return res
         elif url:
-            #download data. 
+            #download data
+            logger.info('Downloading data...')
             download_file_dropbox(url, fn)
             if os.path.isfile(fn):
                 with open(fn, 'rb') as pickle_in:
