@@ -239,6 +239,7 @@ class GOEnrich:
         
         # Check if the file exists already
         if not os.path.isfile(os.path.join(data_folder, file_name)):
+            logger.info('Downloading data...')
             downloaded_file = wget.download(url, os.path.join(data_folder, file_name))
         else:
             downloaded_file = os.path.join(data_folder, file_name)
@@ -253,6 +254,7 @@ class GOEnrich:
             ebi_ftp.login() # Logs in anonymously
             
             # Download
+            logger.info('Downloading data...')
             with open(gaf,'wb') as fp:
                 ebi_ftp.retrbinary('RETR {}'.format(gaf_uri), fp.write)
                 
@@ -288,6 +290,7 @@ class GOEnrich:
         """
         Generate a sqlite db file which contains GO id and its associated genes.
         """
+        logger.info('Generating db file...')
         t0 = time.perf_counter()
         
         db_file = os.path.join(data_folder, go_file_name)
