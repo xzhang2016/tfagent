@@ -11,6 +11,7 @@ import math
 from indra import has_config
 from indra.tools import expand_families
 from utils.util import merge_dict_sum, merge_dict_list
+import pickle
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
@@ -27,6 +28,7 @@ else:
     CAN_CHECK_STATEMENTS = False
  
 _resource_dir = os.path.dirname(os.path.realpath(__file__)) + '/../resources/'
+_enrich_dir = os.path.dirname(os.path.realpath(__file__)) + '/../enrichment/data'
 
 pmid_sublink = "https://www.ncbi.nlm.nih.gov/pubmed/"
  
@@ -77,11 +79,21 @@ mirna_indra_set = _get_mirna_indra()
 
 #hgnc official symbol to id mapping
 def _get_hgnc_genes():
-    lines = open(_resource_dir + 'hgnc_symbol_id_20190225.txt', 'rt').readlines()
     hgnc_genes = dict()
-    for line in lines:
-        s = line.strip().split('\t')
-        hgnc_genes[s[1]] = s[0]
+    #check if the pickle file exist
+    fn = os.path.join(_resource_dir, 'hgnc_symbol_id.pickle')
+    if os.path.isfile(fn):
+        with open(fn, 'rb') as pickle_in:
+            hgnc_genes = pickle.load(pickle_in)
+    else:
+        with open(_resource_dir + 'hgnc_symbol_id_20190225.txt', 'rt') as fr:
+            lines = fr.readlines()
+        for line in lines:
+            s = line.strip().split('\t')
+            hgnc_genes[s[1]] = s[0]
+        #save to file
+        with open(fn, 'wb') as pickle_out:
+            pickle.dump(hgnc_genes, pickle_out)
     return hgnc_genes
 
 hgnc_symbol_id = _get_hgnc_genes()
@@ -1677,7 +1689,10 @@ class TFTA:
         
     def get_hgnc_mapping(self):
         return hgnc_symbol_id
-        
+    
+    def get_hgnc_symbols(self):
+        return hgnc_genes_set
+    
     def get_tf_set(self):
         tf_set = set()
         if not self.trans_factor:
@@ -1688,6 +1703,39 @@ class TFTA:
         else:
             tf_set = self.trans_factor
         return tf_set
+        
+    def get_pathway_genes(self, db_source):
+        """
+        Return pathway-gene dict. 
+        """
+        p_genes = defaultdict(dict)
+        fn = os.path.join(_enrich_dir, db_source.lower() + '.pickle')
+        if os.path.isfile(fn):
+            with open(fn, 'rb') as pickle_in:
+                p_genes = pickle.load(pickle_in)
+        else:
+            if self.tfdb is not None:
+                pathw = defaultdict(dict)
+                reg_str = db_source + '%'
+                t = (reg_str,)
+                res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
+                                        "WHERE source LIKE ?", t).fetchall()
+                for r in res:
+                    pathw[r[0]]['name'] = r[1]
+                    pathw[r[0]]['dblink'] = r[2]
+                
+                for id in pathw.keys():
+                    t = (id,)
+                    res = self.tfdb.execute("SELECT DISTINCT genesymbol FROM pathway2Genes "
+                                             "WHERE pathwayID = ? ", t).fetchall()
+                    p_genes[pathw[id]['name']]['gene'] = [r[0] for r in res]
+                    p_genes[pathw[id]['name']]['dblink'] = pathw[id]['dblink']
+                #save to file
+                with open(fn, 'wb') as pickle_out:
+                    pickle.dump(p_genes, pickle_out)
+        return p_genes
+                
+            
     
     #---------------------------------------------#
     #--------methods for querying indra database--#
