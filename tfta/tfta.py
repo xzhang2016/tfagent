@@ -11,7 +11,9 @@ import math
 from indra import has_config
 from indra.tools import expand_families
 from utils.util import merge_dict_sum, merge_dict_list
+from utils.util import download_file_dropbox
 import pickle
+
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
@@ -107,9 +109,11 @@ class TFTA:
     trans_factor = set()
     
     def __init__(self):
-        logger.debug('Using resource folder: %s' % _resource_dir)
         #Load TF_target database
-        tf_db_file = _resource_dir + 'TF_target_v7_1.db'
+        self.tfdb = self.load_db()
+        if self.tfdb:
+            self.tfdb.row_factory = sqlite3.Row
+        """
         if os.path.isfile(tf_db_file):
             self.tfdb = sqlite3.connect(tf_db_file, check_same_thread=False)
             logger.info('TFTA loaded TF-target database')
@@ -117,6 +121,7 @@ class TFTA:
         else:
             logger.error('TFTA could not load TF-target database.')
             self.tfdb = None;
+        """
         #for exclusive query
         self.tissue_gene_exclusive = defaultdict(set)
             
@@ -2018,6 +2023,25 @@ class TFTA:
             if magents:
                 members[agent.name] = magents
         return members
+    
+    #-------------------------------------------------------------------------------------
+    @staticmethod
+    def load_db():
+        logger.debug('Using resource folder: %s' % _resource_dir)
+        #Load TF_target database
+        tf_db_file = _resource_dir + 'TF_target_20191224.db'
+        if not os.path.exists(tf_db_file):
+            logger.info('Downloading TF_target db file...')
+            url = 'https://www.dropbox.com/s/gjoal1xe420je6o/TF_target_20191224.db?dl=1'
+            download_file_dropbox(url, tf_db_file)
+            
+        if os.path.isfile(tf_db_file):
+            tfdb = sqlite3.connect(tf_db_file, check_same_thread=False)
+            logger.info('TFTA loaded TF-target database')
+        else:
+            logger.error('TFTA could not load TF-target database.')
+            tfdb = None;
+        return tfdb
             
 def _get_members(agent):
     dbname, dbid = agent.get_grounding()
