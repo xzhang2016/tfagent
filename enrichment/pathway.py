@@ -4,9 +4,8 @@ import os
 import pickle
 import operator
 from collections import defaultdict
-from tfta.tfta import TFTA
+#from tfta.tfta import TFTA
 from utils.util import download_file_dropbox
-
 import logging
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
@@ -15,7 +14,7 @@ logger = logging.getLogger('TFTA-pathwayEnrich')
 _enrich_dir = os.path.dirname(os.path.realpath(__file__)) + '/../enrichment/data'
 
 class PathwayEnrich():
-    pathway_db = ['kegg', 'reactome', 'wikipathway']
+    pathway_db = ['kegg', 'reactome', 'wikipathway', 'msigdb']
     disease_db = ['ctd', 'disgenet']
     disease_link = {'ctd': 'https://www.dropbox.com/s/tim3ywltd4eg7dx/ctd.pickle?dl=1',
                     'disgenet': 'https://www.dropbox.com/s/x7usg4qh3frthjw/disgenet.pickle?dl=1'}
