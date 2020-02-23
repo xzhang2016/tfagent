@@ -10,7 +10,7 @@ def main():
           author='Xue Zhang',
           author_email='xue.zhang@tufts.edu',
           url='https://github.com/xzhang2016/tfagent',
-          packages=['tfta'],
+          packages=['tfta','enrichment'],
           install_requires=['pysb', 'indra', 'pykqml', 'objectpath', 'rdflib',
                             'functools32', 'requests', 'lxml',
                             'pandas', 'suds'],
