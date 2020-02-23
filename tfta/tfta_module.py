@@ -475,7 +475,7 @@ class TFTA_Module(Bioagent):
         of_targets_names,nouse = self._get_targets(content, descr='of-those')
         
         #consider an optional parameter to only return given type of genes
-        target_type_set = self.get_target_type_set(content)
+        target_type_set,target_type = self.get_target_type_set(content)
         
         try:
             target_names,dbname = self.tfta.find_targets(tf_names)
@@ -499,7 +499,7 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
         
         #provenance support
-        self.send_background_support_db(tf_names, target_names, dbname, find_target=True)
+        self.send_background_support_db(tf_names, target_names, dbname, find_target=True, target_type=target_type)
         
         return reply
         
@@ -566,7 +566,7 @@ class TFTA_Module(Bioagent):
         of_targets_names,_ = self._get_targets(content, descr='of-those')
         
         #consider an optional parameter to only return given types of genes
-        target_type_set = self.get_target_type_set(content)
+        target_type_set,target_type = self.get_target_type_set(content)
         
         target_names = self.tfta.find_targets_tissue(tf_names, tissue_name)
             
@@ -1329,7 +1329,7 @@ class TFTA_Module(Bioagent):
         of_those_names,nouse = self._get_targets(content, descr='of-those')
         
         #consider an optional parameter to only return given type of genes
-        target_type_set = self.get_target_type_set(content)
+        target_type_set,target_type = self.get_target_type_set(content)
         
         target_names,miRNA_mis = self.tfta.find_target_miRNA_strength(miRNA_names, strength_name)
         #check if it's necessary for user clarification
@@ -1362,7 +1362,7 @@ class TFTA_Module(Bioagent):
         of_those_names,nouse = self._get_targets(content, descr='of-those')
         
         #consider an optional parameter to only return given type of genes
-        target_type_set = self.get_target_type_set(content)
+        target_type_set,target_type = self.get_target_type_set(content)
         
         target_names,miRNA_mis = self.tfta.find_target_miRNA(miRNA_names)
         #check if it's necessary for user clarification
@@ -1769,7 +1769,7 @@ class TFTA_Module(Bioagent):
         #consider an optional parameter for subsequent query
         of_those,_ = self._get_targets(content, 'of-those')
         #consider an optional parameter to only return given type of genes
-        target_type_set = self.get_target_type_set(content)
+        target_type_set,target_type = self.get_target_type_set(content)
         
         if source_name == 'literature':
             try:
@@ -1791,7 +1791,7 @@ class TFTA_Module(Bioagent):
                                              target_type=target_type_set, out_gene=False)
         else:
             #by default go to tf-db
-            reply = self.find_target_tf(reg_names, of_those=of_those, target_type=target_type_set,
+            reply = self.find_target_tf(reg_names, of_those=of_those, target_type=(target_type_set, target_type),
                                           out_gene=False)
         return reply
     
@@ -1817,11 +1817,11 @@ class TFTA_Module(Bioagent):
         #consider an optional parameter for subsequent query
         of_those,_ = self._get_targets(content, 'of-those')
         #consider an optional parameter to only return given type of genes
-        target_type_set = self.get_target_type_set(content)
+        target_type_set,target_type = self.get_target_type_set(content)
         
         #results from tf-db
         if keyword_name == 'regulate':
-            targets_tfdb = self.find_target_tf(reg_names, of_those=of_those, target_type=target_type_set)
+            targets_tfdb = self.find_target_tf(reg_names, of_those=of_those, target_type=(target_type_set,target_type))
         else:
             targets_tfdb = set()
         
@@ -1853,6 +1853,7 @@ class TFTA_Module(Bioagent):
             reply.set('targets', tmess)
         else:
             reply = KQMLList.from_string('(SUCCESS :targets NIL)')
+        
         return reply
     
     def find_target_tf(self, tf_names, of_those=None, target_type=None, out_gene=True):
@@ -1873,11 +1874,11 @@ class TFTA_Module(Bioagent):
             target_names = set(of_those) & set(target_names)
         
         #check if it requires returning a type of genes
-        if target_type:
-            target_names = target_type & set(target_names)
+        if target_type[0]:
+            target_names = target_type[0] & set(target_names)
             
         #provenance support
-        self.send_background_support_db(tf_names, target_names, dbname, find_target=True)
+        self.send_background_support_db(tf_names, target_names, dbname, find_target=True, target_type=target_type[1])
         
         if out_gene:
             return target_names
@@ -2734,9 +2735,12 @@ class TFTA_Module(Bioagent):
         html_str += '</table> <hr>'
         content = KQMLList('add-provenance')
         content.sets('html', html_str)
+        
+        logger.info('html_str={}'.format(html_str))
+        
         return self.tell(content)
         
-    def send_background_support_db(self, tf_name, target_name, dbname, tissue=None, find_tf=False, find_target=False):
+    def send_background_support_db(self, tf_name, target_name, dbname, tissue=None, find_tf=False, find_target=False, target_type=None):
         """
         Send the evidence from the tf-target db
         """
@@ -2770,10 +2774,15 @@ class TFTA_Module(Bioagent):
                     tf_str = ', '.join(tf_name[:-1]) + ' and ' + tf_name[-1]
                 else:
                     tf_str = tf_name[0]
-                if tissue:
-                    nl = 'what genes are regulated by ' + tf_str + ' in ' + tissue + '?'
+                    
+                if target_type:
+                    t_str = str(target_type) + 's'
                 else:
-                    nl = 'what genes are regulated by ' + tf_str + '?'
+                    t_str = 'genes'
+                if tissue:
+                    nl = 'what ' + t_str + ' are regulated by ' + tf_str + ' in ' + tissue + '?'
+                else:
+                    nl = 'what ' + t_str + ' are regulated by ' + tf_str + '?'
                 tf_list = []
                 target_list = []
                 db_list = []
@@ -2872,8 +2881,8 @@ class TFTA_Module(Bioagent):
             try:
                 target_type_set = self.tfta.get_onto_set(target_type)
             except GONotFoundException:
-                return target_type_set
-        return target_type_set
+                return target_type_set, target_type
+        return target_type_set,target_type
     
     def wrap_family_message(self, term_id, msg):
         """
