@@ -201,6 +201,13 @@ class GOEnrich:
                 num += 1
             else:
                 break
+        #when there's no enriched GO terms, return at most the top 5 GO terms anyway instead of nothing.
+        if not res:
+            nlimit = 5
+            for x in g_res:
+                res.append(x)
+                if len(res) >= nlimit:
+                    break
         return res
     
     def get_assoc_gene_go(self):
