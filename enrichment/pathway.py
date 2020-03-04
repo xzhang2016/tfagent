@@ -141,7 +141,7 @@ class PathwayEnrich():
         s_mapped = dict()
         for k, v in gene_set.items():
             sm = set(v['gene']) & set(study)
-            if len(sm) > 1:
+            if len(sm) >= 1:
                 pop_mapped[k] = set(v['gene']) & set(pop)
                 s_mapped[k] = sm
         pvalues = {}
@@ -149,19 +149,24 @@ class PathwayEnrich():
             pvalues[k] = stats.hypergeom.sf(len(s_mapped[k]) - 1, len(pop), len(pop_mapped[k]), len(study))
         
         #multiple testing correction
-        #only consider those with pvalue < 0.01
-        sig_pvalues = dict()
-        for k,v in pvalues.items():
-            if v < p_bonferroni:
-                sig_pvalues[k] = v
-        if sig_pvalues:
-            _, pv, _, _ = multicomp.multipletests(list(sig_pvalues.values()), method=adjust)
-            res_cor = {list(sig_pvalues.keys())[i]: pv[i] for i in range(len(sig_pvalues))}
+        _, pv, _, _ = multicomp.multipletests(list(pvalues.values()), method=adjust)
+        res_cor = {list(pvalues.keys())[i]: pv[i] for i in range(len(pvalues))}
+        #sorting in ascending order according to pvalues, list of tuples
+        res_sorted = sorted(res_cor.items(), key=operator.itemgetter(1))
         
-            #sorting in ascending order according to pvalues, list of tuples
-            res_sorted = sorted(res_cor.items(), key=operator.itemgetter(1))
-        else:
-            res_sorted = []
+        # only consider those with pvalue < 0.01
+#         sig_pvalues = dict()
+#         for k,v in pvalues.items():
+#             if v < p_bonferroni:
+#                 sig_pvalues[k] = v
+#         if sig_pvalues:
+#             _, pv, _, _ = multicomp.multipletests(list(sig_pvalues.values()), method=adjust)
+#             res_cor = {list(sig_pvalues.keys())[i]: pv[i] for i in range(len(sig_pvalues))}
+#         
+#             #sorting in ascending order according to pvalues, list of tuples
+#             res_sorted = sorted(res_cor.items(), key=operator.itemgetter(1))
+#         else:
+#             res_sorted = []
         
         #test purpose
         save_res(res_sorted)
@@ -179,6 +184,15 @@ class PathwayEnrich():
                     num += 1
                 else:
                     break
+            #If there's no enriched ones, return top 5 terms
+            if not res:
+                nlimit = 5
+                for pn, pv in res_sorted:
+                    res[pn]['p-bonferroni'] = pv
+                    res[pn]['dblink'] = gene_set[pn]['dblink']
+                    res[pn]['gene'] = s_mapped[pn]
+                    if len(res) >= nlimit:
+                        break
         return res
         
     @staticmethod
