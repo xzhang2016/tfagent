@@ -2736,7 +2736,7 @@ class TFTA_Module(Bioagent):
         content = KQMLList('add-provenance')
         content.sets('html', html_str)
         
-        logger.info('html_str={}'.format(html_str))
+        #logger.info('html_str={}'.format(html_str))
         
         return self.tell(content)
         
