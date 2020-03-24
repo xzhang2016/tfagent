@@ -2884,7 +2884,7 @@ class TFTA_Module(Bioagent):
                 return target_type_set, target_type
         return target_type_set,target_type
     
-    def wrap_family_message(self, term_id, msg):
+    def wrap_family_message2(self, term_id, msg):
         """
         parameter
         -------------
@@ -2912,7 +2912,16 @@ class TFTA_Module(Bioagent):
             reply = make_failure(msg)
         return reply
     
-    def wrap_family_message_pathway(self, term_id, descr='pathways', msg="PATHWAY_NOT_FOUND"):
+    def wrap_family_message(self, term_id, msg):
+        if term_id:
+            term = list(term_id.keys())[0]
+            reply = self.make_resolve_family_failure(term_id[term])
+        else:
+            reply = make_failure(msg)
+        return reply
+        
+        
+    def wrap_family_message_pathway2(self, term_id, descr='pathways', msg="PATHWAY_NOT_FOUND"):
         #term_id = _get_term_id(target_arg)
         if term_id:
             term = list(term_id.keys())[0]
@@ -2933,7 +2942,20 @@ class TFTA_Module(Bioagent):
             reply = KQMLList('SUCCESS')
             reply.set(descr, 'NIL')
         return reply
-        
+    
+    def wrap_family_message_pathway(self, term_id, descr='pathways', msg="PATHWAY_NOT_FOUND"):
+        if term_id:
+            try:
+                term = list(term_id.keys())[0]
+                reply = self.make_resolve_family_failure(term_id[term])
+            except Exception:
+                reply = KQMLList('SUCCESS')
+                reply.set(descr, 'NIL')
+        else:
+            reply = KQMLList('SUCCESS')
+            reply.set(descr, 'NIL')
+        return reply
+    
     def _wrap_pathway_genelist_message(self, pathwayName, dblink, genelist, pathway_names=None,
                                    gene_descr='tfs', of_gene_names=None, of_those=None):
         """
