@@ -48,6 +48,13 @@ def agents_clj_from_text(text):
     agents = tp.get_agents()
     clj = Bioagent.make_cljson(agents)
     return clj
+    
+def make_json(text):
+    text = text.replace(' ', '')
+    genes = text.split(',')
+    agents = [Agent(g, db_refs={'HGNC':13}) for g in genes]
+    clj = Bioagent.make_cljson(agents)
+    return clj
 
 #############################################################################
 #TEST IS-REGULATION
@@ -58,10 +65,8 @@ class TestIsRegulation1(_IntegrationTest):
 
     def create_message(self):
         # Here we create a KQML request that the TFTA needs to respond to
-        tf = agent_clj_from_text('STAT3')
-        _get_targets(tf)
-        target = agent_clj_from_text('c-fos')
-        _get_targets(target)
+        tf = make_json('STAT3')
+        target = make_json('FOS')
         content = KQMLList('IS-REGULATION')
         content.set('tf', tf)
         content.set('target', target)
@@ -817,7 +822,7 @@ class TestFindTarget8(_IntegrationTest):
         print("len(output.get('targets').get('target-db'))=", str(len(output.get('targets').get('target-db'))))
         #print("len(output.get('targets').get('target-literature'))=", str(len(output.get('targets').get('target-literature'))))
         assert len(output.get('targets')) == 2, output
-        assert len(output.get('targets').get('target-db')) == 2, output
+        assert len(output.get('targets').get('target-db')) == 5, output
         #assert len(output.get('targets').get('target-literature')) == 2, output
 
 
@@ -920,7 +925,7 @@ class TestFindTarget12(_IntegrationTest):
         print("len(output.get('targets').get('target-literature'))=", str(len(output.get('targets').get('target-literature'))))
         assert len(output.get('targets')) == 4, output
         assert len(output.get('targets').get('target-db')) == 12, output
-        assert len(output.get('targets').get('target-literature')) == 42, output
+        assert len(output.get('targets').get('target-literature')) == 43, output
 
 #what genes are regulated by smad2? (consider :literature)
 class TestFindTarget13(_IntegrationTest):
@@ -1317,6 +1322,24 @@ class TestFindRegulation12(_IntegrationTest):
         assert len(output.get('regulators').get('gene-literature')) == 3, output
         
 
+#what regulate mapk?
+class TestFindRegulation13(_IntegrationTest):
+    def __init__(self, *args):
+        super(TestFindRegulation13, self).__init__(TFTA_Module)
 
+    def create_message(self):
+        # Here we create a KQML request that the TFTA needs to respond to
+        target = agent_clj_from_text('mapk')
+        
+        content = KQMLList('FIND-REGULATION')
+        content.set('target', target)
+        content.set('keyword', 'regulate')
+        return get_request(content), content
+        
+    def check_response_to_message(self, output):
+        assert output.head() == 'FAILURE', output
+        assert output.get('reason') == 'FAMILY_NAME', output
+        print("len(output.get('clarification')=", len(output.get('clarification')))
+        assert len(output.get('clarification')) == 5, output
 
 
