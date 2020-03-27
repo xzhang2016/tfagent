@@ -136,6 +136,16 @@ class mirDisease:
             else:
                 mir2pre[mir] = [mir]
         return mir2pre
+        
+    def get_disease2mirna_mapping(self):
+        fn = os.path.join(_resource_dir, "disease_mirna_dict.pickle")
+        if os.path.isfile(fn):
+            with open(fn, "rb") as pickle_in:
+                d2m = pickle.load(pickle_in)
+            return d2m
+        else:
+            d2m = _generate_disease2mirn_dict(fn, data_folder=_resource_dir)
+            return d2m
 
 def _load_db():
     db_file = os.path.join(_resource_dir, 'mirnaDisease.db')
@@ -250,4 +260,68 @@ def _map_mirna_precursor(fn_pickle, data_folder=_resource_dir):
     
     return mirna_precursor
     
+def _map_precursor_mirna(fn_pickle, data_folder=_resource_dir):
+    """
+    Generate precursor to the matured mirna mapping file since the disease db contains the precursors
+    instead of matured mirnas.
+    Use miRNA.dat at http://www.mirbase.org/ftp.shtml. (2019-09-04)
+    
+    parameter
+    -----------
+    fn_pickle: str
+    data_folder: str
+    """
+    pre2mirna = defaultdict(set)
+    with open(os.path.join(data_folder, 'hsa_precursor_mature_mirna.txt'), 'r') as fr:
+        #skip title line
+        fr.readline()
+        lines = fr.readlines()
+        
+    for line in lines:
+        s = line.strip().split('\t')
+        pres = s[1].upper().split(',')
+        for p in pres:
+            pre2mirna[p].add(s[0].upper())
+        
+    with open(fn_pickle, 'wb') as pickle_out:
+        pickle.dump(pre2mirna, pickle_out)
+    
+    return pre2mirna
 
+def _generate_disease2mirn_dict(d2m_file, data_folder=_resource_dir):
+    """
+    Generate a disease to mirna mapping dict for enrichment analysis.
+    """
+    #load pre2mirna file
+    fn = os.path.join(_resource_dir, "precursor_mirna_dict.pickle")
+    if os.path.isfile(fn):
+        with open(fn, "rb") as pickle_in:
+            pre2mirna = pickle.load(pickle_in)
+    else:
+        pre2mirna = _map_precursor_mirna(fn)
+    logger.info('TFTA loaded precursor_mirna mapping file.')
+    
+    #read data
+    with open(os.path.join(data_folder, 'mirna_disease.txt'), 'r') as fr:
+        fr.readline()
+        lines = fr.readlines()
+        
+    d2m = defaultdict(set)
+    num = 1
+    for line in lines:
+        #tuple(ind, miran_pre, disease, pmid)
+        record = _parse_line(line, num)
+        if record:
+            #mapping precursor to mirna
+            try:
+                mirna = pre2mirna[record[1].upper()]
+                if mirna:
+                    d2m[record[2]] = d2m[record[2]].union(mirna)
+                    num += 1
+            except Exception:
+                continue
+    logger.info("The size of d2m dict: {}.".format(len(d2m)))
+    
+    with open(d2m_file, "wb") as pickle_out:
+        pickle.dump(d2m, pickle_out)
+    return d2m
