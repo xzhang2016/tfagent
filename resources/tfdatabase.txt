@@ -9,13 +9,14 @@ It combines the following datasets into one:
     TRRUST (2015)
     Marbach2016 (2016)
     
-The data can be find at https://github.com/slowkow/tftargets. But we further refined the data.
+The data can be find at https://github.com/slowkow/tftargets. But we further refined the data. The regulation relationships only in Marbach2016 are removed. Data from TRRUST are kept up-to-date.
     
 2) pathway databases
-It includes 7 pathway databases: KEGG, Wikipathways, BioCarta, Reactome, HumanCyc, PharmGKB, SMPDB
+It includes 7 pathway databases: KEGG, Wikipathways, BioCarta, Reactome, HumanCyc, PharmGKB, SMPDB. Currently some cancer related gene sets from MSigDB are also included.
 
 3) Gene Ontology database
-Currently use MSigDB and refined GO categories.
+Gene Ontology was downloaded from http://purl.obolibrary.org/obo/go/go-basic.obo.
+The annotation file was from http://current.geneontology.org/products/pages/downloads.html.
 
 4) MicroRNA database
 It's based on miRTarBase 7.0 at http://mirtarbase.mbc.nctu.edu.tw/php/index.php
@@ -24,7 +25,13 @@ It's based on miRTarBase 7.0 at http://mirtarbase.mbc.nctu.edu.tw/php/index.php
 It's based on Tiger dataset at http://bioinfo.wilmer.jhu.edu/tiger/
 
 6)Tissue specific gene regulation
-It's based on Tiger dataset and Neph2012, as well as literature search.
+It's based on Tiger dataset and Neph2012, as well as literature 
+search.
 
 7) kinase regulation
 It's based on enrichr (http://amp.pharm.mssm.edu/Enrichr/#stats)
+
+8) miRNA disease data are based on HMDD at http://www.cuilab.cn/hmdd.
+
+9)Gene disease data are based on CTD and DisGeNet.
+
