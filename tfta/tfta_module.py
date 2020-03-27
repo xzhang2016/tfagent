@@ -4,7 +4,7 @@ and to other agents in the system"""
 import sys
 import re
 import time
-import xml.etree.ElementTree as ET
+#import xml.etree.ElementTree as ET
 import logging
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
                     level=logging.INFO)
@@ -17,7 +17,7 @@ from .mirDisease import mirDisease
 from enrichment.GO import GOEnrich
 from enrichment.pathway import PathwayEnrich
 from utils.heatmap import generate_heatmap
-from indra.sources.trips.processor import TripsProcessor
+#from indra.sources.trips.processor import TripsProcessor
 from collections import defaultdict
 from bioagents import Bioagent
 from indra.statements import Agent
@@ -1277,11 +1277,16 @@ class TFTA_Module(Bioagent):
             reply = self.wrap_family_message(term_id, 'FAMILY_NAME')
             return reply
         
+        strength_name = _get_keyword_name(content, descr='strength')
+        
         ##consider another parameter for subsequent query
         of_those_names = self._get_mirnas(content, descr='of-those')
         
         try:
-            miRNA_names = self.tfta.find_miRNA_target(target_names)
+            if strength_name:
+                miRNA_names = self.tfta.find_miRNA_target_strength(target_names, strength_name)
+            else:
+                miRNA_names = self.tfta.find_miRNA_target(target_names)
         except TargetNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :miRNAs NIL)') 
             return reply
