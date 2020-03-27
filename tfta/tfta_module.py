@@ -1309,26 +1309,12 @@ class TFTA_Module(Bioagent):
         """
         Respond to FIND-TARGET-MIRNA request
         """
-        strength_arg = content.get('strength')
-        if strength_arg:
-            reply = self.find_target_miRNA_strength(content)
-        else:
-            reply = self.find_target_miRNA_all(content)
-        return reply
-
-    def find_target_miRNA_strength(self, content):
-        """
-        Respond to FIND-TARGET-MIRNA request with strength parameter
-        """
         miRNA_names = self._get_mirnas(content)
         if not miRNA_names:
             reply = make_failure('NO_MIRNA_NAME')
             return reply
             
         strength_name = _get_keyword_name(content, descr='strength')
-        if not strength_name:
-            reply = make_failure('NO_STRENGTH_NAME')
-            return reply
             
         #consider another parameter for subsequent query
         of_those_names,nouse = self._get_targets(content, descr='of-those')
@@ -1336,7 +1322,10 @@ class TFTA_Module(Bioagent):
         #consider an optional parameter to only return given type of genes
         target_type_set,target_type = self.get_target_type_set(content)
         
-        target_names,miRNA_mis = self.tfta.find_target_miRNA_strength(miRNA_names, strength_name)
+        if strength_name:
+            target_names,miRNA_mis = self.tfta.find_target_miRNA_strength(miRNA_names, strength_name)
+        else:
+            target_names,miRNA_mis = self.tfta.find_target_miRNA(miRNA_names)
         #check if it's necessary for user clarification
         if miRNA_mis:
             reply = self._get_mirna_clarification(miRNA_mis)
@@ -1344,40 +1333,6 @@ class TFTA_Module(Bioagent):
         else:
             if of_those_names:
                 target_names = set(of_those_names) & set(target_names)
-            #check if it requires returning a type of genes
-            if target_type_set:
-                target_names = target_type_set & set(target_names)
-            
-            if len(target_names):
-                reply = self.wrap_message('targets', target_names)
-            else:
-                reply = KQMLList.from_string('(SUCCESS :targets NIL)')
-        return reply
-        
-    def find_target_miRNA_all(self, content):
-        """
-        Respond to FIND-TARGET-MIRNA request without strength parameter
-        """
-        miRNA_names = self._get_mirnas(content)
-        if not miRNA_names:
-            reply = make_failure('NO_MIRNA_NAME')
-            return reply
-            
-        #consider another parameter for subsequent query
-        of_those_names,nouse = self._get_targets(content, descr='of-those')
-        
-        #consider an optional parameter to only return given type of genes
-        target_type_set,target_type = self.get_target_type_set(content)
-        
-        target_names,miRNA_mis = self.tfta.find_target_miRNA(miRNA_names)
-        #check if it's necessary for user clarification
-        if miRNA_mis:
-            reply = self._get_mirna_clarification(miRNA_mis)
-            return reply
-        else:
-            if of_those_names:
-                target_names = set(of_those_names) & set(target_names)
-                
             #check if it requires returning a type of genes
             if target_type_set:
                 target_names = target_type_set & set(target_names)
