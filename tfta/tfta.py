@@ -1125,7 +1125,52 @@ class TFTA:
                     else:
                         raise TargetNotFoundException
         return miRNAs
+    
+    def find_miRNA_target_strength(self, target_names, evidence_strength):
+        """
+        Return miRNAs regulating all the given targets
+        example: What microRNAs target STAT3?
         
+        parameter
+        ----------
+        target_names: list
+        """
+        miRNAs = []
+        if self.tfdb is not None:
+            if evidence_strength == 'strong':
+                t = (target_names[0],'%Weak%')
+                res = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo "
+                                    "WHERE target = ? AND supportType NOT LIKE ?", t).fetchall()
+            else:
+                t = (target_names[0], '%Weak%')
+                res = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo "
+                                    "WHERE target = ? AND supportType LIKE ?", t).fetchall()
+            if res:
+                miRNAs = [r[0] for r in res]
+            else:
+                raise TargetNotFoundException
+            
+            if len(target_names)>1:
+                if evidence_strength == 'strong':
+                    for i in range(1,len(target_names)):
+                        t = (target_names[i],'%Weak%')
+                        res = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo "
+                                    "WHERE target = ? AND supportType NOT LIKE ?", t).fetchall()
+                        if res:
+                            miRNAs = list(set(miRNAs) & set([r[0] for r in res]))
+                        else:
+                            raise TargetNotFoundException
+                else:
+                    for i in range(1,len(target_names)):
+                        t = (target_names[i],'%Weak%')
+                        res = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo "
+                                    "WHERE target = ? AND supportType LIKE ?", t).fetchall()
+                        if res:
+                            miRNAs = list(set(miRNAs) & set([r[0] for r in res]))
+                        else:
+                            raise TargetNotFoundException
+        return miRNAs
+    
     def find_target_miRNA(self, miRNA_name_dict):
         """
         Return Targets regulated by the given miRNAs
