@@ -2364,7 +2364,7 @@ class TFTA_Module(Bioagent):
                 mes.sets('p-bonferroni', str(results[res]['p-bonferroni']))
                 gene_agent = [Agent(g, db_refs={'TYPE':'MIRNA'}) for g in results[res]['gene']]
                 gene_json = self.make_cljson(gene_agent)
-                mes.set('genes', gene_json)
+                mes.set('mirnas', gene_json)
                 mes_json.append(mes.to_string())
             reply=KQMLList('SUCCESS')
             res_str = '(' + ' '.join(mes_json) + ')'
