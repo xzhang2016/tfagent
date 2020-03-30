@@ -55,7 +55,8 @@ class TFTA_Module(Bioagent):
              'FIND-TF-MIRNA', 'FIND-REGULATION', 'FIND-EVIDENCE', 
              'IS-GENE-TISSUE', 'FIND-KINASE-PATHWAY', 'GO-ENRICHMENT', 
              'IS-MIRNA-DISEASE', 'FIND-MIRNA-DISEASE', 'FIND-DISEASE-MIRNA',
-             'MAKE-HEATMAP', 'PATHWAY-ENRICHMENT', 'DISEASE-ENRICHMENT']
+             'MAKE-HEATMAP', 'PATHWAY-ENRICHMENT', 'DISEASE-ENRICHMENT',
+             'MIRNA-DISEASE-ENRICHMENT']
     #keep the genes from the most recent previous call, which are used to input 
     #find-gene-onto if there's no gene input 
     #gene_list = ['STAT3', 'JAK1', 'JAK2', 'ELK1', 'FOS', 'SMAD2', 'KDM4B']
@@ -66,8 +67,9 @@ class TFTA_Module(Bioagent):
         self.tfta = TFTA()
         self.go = GOEnrich()
         self.md = mirDisease()
+        self.mirna_pop = self.md.get_mirna_pop()
         self.pop = self.tfta.get_hgnc_symbols()
-        self.pw = PathwayEnrich(self.pop, self.tfta)
+        self.pw = PathwayEnrich(self.pop, self.mirna_pop, self.tfta)
         
         self.stmts_indra = dict()
         #self.hgnc_info = dict()
@@ -2343,7 +2345,35 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string('(SUCCESS :results NIL)')
             return reply
             
-            
+    def respond_mirna_disease_enrichment(self, content):
+        """
+        Respond to mirna-disease-enrichment request
+        """
+        miRNA_names = self._get_mirnas(content)
+        if not miRNA_names:
+            reply = make_failure('NO_MIRNA_NAME')
+            return reply
+        db_name = 'hmdd'
+        results = self.pw.get_ora_disease(miRNA_names, db_str=db_name)
+        mes_json = []
+        if results:
+            for res in results.keys():
+                mes = KQMLList()
+                mes.sets('name', res)
+                mes.sets('dblink', results[res]['dblink'])
+                mes.sets('p-bonferroni', str(results[res]['p-bonferroni']))
+                gene_agent = [Agent(g, db_refs={'TYPE':'MIRNA'}) for g in results[res]['gene']]
+                gene_json = self.make_cljson(gene_agent)
+                mes.set('genes', gene_json)
+                mes_json.append(mes.to_string())
+            reply=KQMLList('SUCCESS')
+            res_str = '(' + ' '.join(mes_json) + ')'
+            reply.set('results', res_str)
+            return reply
+        else:
+            reply = KQMLList.from_string('(SUCCESS :results NIL)')
+            return reply
+    
     def respond_make_heatmap(self, content):
         """
         Respond to make-heatmap request
@@ -2400,7 +2430,8 @@ class TFTA_Module(Bioagent):
                  'FIND-MIRNA-DISEASE':respond_find_mirna_disease,
                  'FIND-DISEASE-MIRNA':respond_find_disease_mirna,
                  'MAKE-HEATMAP':respond_make_heatmap, 'PATHWAY-ENRICHMENT':respond_pathway_enrichment,
-                 'DISEASE-ENRICHMENT': respond_disease_enrichment}
+                 'DISEASE-ENRICHMENT': respond_disease_enrichment,
+                 'MIRNA-DISEASE-ENRICHMENT': respond_mirna_disease_enrichment}
     
     def receive_request(self, msg, content):
         """If a "request" message is received, decode the task and
