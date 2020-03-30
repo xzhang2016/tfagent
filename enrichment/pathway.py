@@ -15,12 +15,15 @@ _enrich_dir = os.path.dirname(os.path.realpath(__file__)) + '/../enrichment/data
 
 class PathwayEnrich():
     pathway_db = ['kegg', 'reactome', 'wikipathway', 'msigdb']
-    disease_db = ['ctd', 'disgenet']
+    #hmdd is for mirna-disease; the others are for gene-disease
+    disease_db = ['ctd', 'disgenet', 'hmdd']
     disease_link = {'ctd': 'https://www.dropbox.com/s/tim3ywltd4eg7dx/ctd.pickle?dl=1',
-                    'disgenet': 'https://www.dropbox.com/s/x7usg4qh3frthjw/disgenet.pickle?dl=1'}
-    
-    def __init__(self, pop, tfta):
+                    'disgenet': 'https://www.dropbox.com/s/x7usg4qh3frthjw/disgenet.pickle?dl=1',
+                    'hmdd': 'https://www.dropbox.com/s/3elx75k1mes22oy/hmdd.pickle?dl=1'}
+   
+    def __init__(self, pop, mirna_pop, tfta):
         self.pop = pop
+        self.mirna_pop = mirna_pop
         self.tfta = tfta
         
         self.gene_sets = self.get_pathway_geneset()
@@ -29,8 +32,6 @@ class PathwayEnrich():
         else:
             logger.info('PathwayEnrich could not load pathway-genesets.')
         
-        #load disease geneset when it's needed
-        #self.disease2gene = defaultdict(dict)
         #In order to avoid long-time delay, just load the disease-genesets in advance
         self.disease2gene = self.get_disease_geneset()
         if self.disease2gene:
@@ -79,7 +80,12 @@ class PathwayEnrich():
             return None
             
         try:
-            res = self.ora(study, self.pop, gene_set)
+            if db_str.lower() == 'hmdd':
+                #logger.info('db_str is: {}'.format(db_str))
+                #logger.info('Total mirnas: {}'.format(len(self.mirna_pop)))
+                res = self.ora(study, self.mirna_pop, gene_set)
+            else:
+                res = self.ora(study, self.pop, gene_set)
             return res
         except Exception as e:
             logger.error(e)
@@ -169,7 +175,7 @@ class PathwayEnrich():
 #             res_sorted = []
         
         #test purpose
-        save_res(res_sorted)
+        #save_res(res_sorted)
         
         num = 1
         res = defaultdict(dict)
