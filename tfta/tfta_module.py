@@ -1232,9 +1232,9 @@ class TFTA_Module(Bioagent):
             gene_list_str = '(' + gene_list_str + ')'
             gn_str = '"' + gn + '"'
             gid_str = '"' + gid + '"'
-            go_list_str += '(:id %s :name %s :genes %s) ' % (gid_str, gn_str, gene_list_str)            
+            go_list_str += '(:id %s :name %s :genes %s) ' % (gid_str, gn_str, gene_list_str)
         reply = KQMLList.from_string(
-            '(SUCCESS :go-terms (' + go_list_str + '))')            
+            '(SUCCESS :go-terms (' + go_list_str + '))')
         return reply
         
     def respond_is_miRNA_target(self, content):
@@ -1251,10 +1251,15 @@ class TFTA_Module(Bioagent):
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
         
-        is_target,expr,supt,pmid,miRNA_mis = self.tfta.Is_miRNA_target(miRNA_name, target_name[0])
+        strength_name = _get_keyword_name(content, descr='strength')
+        
+        if strength_name:
+            is_target,expr,supt,pmid,miRNA_mis = self.tfta.Is_miRNA_target_strength(miRNA_name, target_name[0], strength_name)
+        else:
+            is_target,expr,supt,pmid,miRNA_mis = self.tfta.Is_miRNA_target(miRNA_name, target_name[0])
         
         #provenance support
-        #self.send_background_support_mirna(list(miRNA_name.keys())[0], target_name[0], expr, supt, pmid)
+        self.send_background_support_mirna(list(miRNA_name.keys())[0], target_name[0], expr, supt, pmid, strength=strength_name)
         
         #respond to BA
         #check if it's necessary for user clarification
@@ -2632,7 +2637,7 @@ class TFTA_Module(Bioagent):
         html_str = head_str + '<h4>Supporting information from TFTA: %s</h4>\n' % nl_question
         #html_str = '<h4>Supporting information from TFTA: %s</h4>\n' % nl_question
         html_str += '<table class = table-borders>\n'
-        row_list = ['<th class = table-borders>MiRNA</th><th class = table-borders>Target</th> \
+        row_list = ['<th class = table-borders>miRNA</th><th class = table-borders>Target</th> \
                    <th class = table-borders>Experiment</th><th class = table-borders>Support Type</th> \
                    <th class = table-borders>PMID</th>']
         for mirna,target,expe,st,pd in zip(mirna_name, target_name, experiment, support_type, pmid):
@@ -2650,7 +2655,7 @@ class TFTA_Module(Bioagent):
         content.sets('html', html_str)
         return self.tell(content)
         
-    def send_background_support_mirna(self, mirna_name, target_name, experiment, support_type, pmid, find_mirna=False, find_target=False):
+    def send_background_support_mirna(self, mirna_name, target_name, experiment, support_type, pmid, strength=None, find_mirna=False, find_target=False):
         """
         Send the evidence from the MiRNA-target database
         mirna_name: list or str
@@ -2661,7 +2666,10 @@ class TFTA_Module(Bioagent):
         """
         if pmid:
             if all([type(mirna_name).__name__ == 'str', type(target_name).__name__ == 'str']):
-                nl = 'does ' + mirna_name + ' regulate ' + target_name + '?'
+                if strength:
+                    nl = 'does ' + mirna_name + 'have ' + strength + 'evidence for targeting ' + target_name + '?'
+                else:
+                    nl = 'does ' + mirna_name + ' regulate ' + target_name + '?'
                 exp_str = ';\n'.join(experiment[target_name])
                 suptype_str = ';\n'.join(support_type[target_name])
                 pmid_str = ','.join(pmid[target_name])
@@ -2694,7 +2702,7 @@ class TFTA_Module(Bioagent):
                 return
         else:
             for_what = 'your query'
-            cause_txt = 'MiRNA-target db'
+            cause_txt = 'miRNA-target db'
             reason_txt = ''
             self.send_null_provenance(stmt=for_what, for_what=cause_txt, reason=reason_txt)
         
