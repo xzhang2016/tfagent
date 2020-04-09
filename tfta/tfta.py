@@ -1096,6 +1096,39 @@ class TFTA:
                     miRNA_mis[miRNA_name] = miRNA_name_dict[miRNA_name]
         return False, expr, supt, pmid, miRNA_mis
         
+    def Is_miRNA_target_strength(self, miRNA_name_dict, target_name, strength):
+        """
+        Return True if the miRNA regulates the target, and False if not;
+        also return evidence for provenance support
+        query example: Does miR-20b-5p target STAT3?
+        """
+        expr = defaultdict(list)
+        supt = defaultdict(list)
+        pmid = defaultdict(list)
+        miRNA_mis = dict()
+        miRNA_name = list(miRNA_name_dict.keys())[0]
+        if self.tfdb is not None:
+            t = (miRNA_name, target_name, '%Weak%')
+            if strength == 'strong':
+                res = self.tfdb.execute("SELECT * FROM mirnaInfo WHERE mirna LIKE ? "
+                                     "AND target = ? AND supportType NOT LIKE ?", t).fetchall()
+            else:
+                res = self.tfdb.execute("SELECT * FROM mirnaInfo WHERE mirna LIKE ? "
+                                     "AND target = ? AND supportType LIKE ?", t).fetchall()
+            if res:
+                for r in res:
+                    expr[target_name].append(r[3])
+                    supt[target_name].append(r[4])
+                    pmid[target_name].append(str(r[5]))
+                return True, expr, supt, pmid, miRNA_mis
+            else:
+                #check if miRNA_name in the database
+                t = (miRNA_name,)
+                res = self.tfdb.execute("SELECT * FROM mirnaInfo WHERE mirna LIKE ? ", t).fetchone()
+                if not res and (not miRNA_name[-1] in ['P', 'p']):
+                    miRNA_mis[miRNA_name] = miRNA_name_dict[miRNA_name]
+        return False, expr, supt, pmid, miRNA_mis
+        
     def find_miRNA_target(self, target_names):
         """
         Return miRNAs regulating all the given targets
@@ -1493,6 +1526,13 @@ class TFTA:
                                     "WHERE mirna LIKE ? ", t).fetchall()
             if res:
                 clari_miRNA = [r[0] for r in res]
+            else:
+                regstr = miRNA_name + '%'
+                t = (regstr,)
+                res = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo "
+                                    "WHERE mirna LIKE ? ", t).fetchall()
+                if res:
+                    clari_miRNA = [r[0] for r in res]
         return clari_miRNA
 
     def find_tissue_gene(self, gene_name):
