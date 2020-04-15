@@ -56,7 +56,7 @@ class TFTA_Module(Bioagent):
              'IS-GENE-TISSUE', 'FIND-KINASE-PATHWAY', 'GO-ENRICHMENT', 
              'IS-MIRNA-DISEASE', 'FIND-MIRNA-DISEASE', 'FIND-DISEASE-MIRNA',
              'MAKE-HEATMAP', 'PATHWAY-ENRICHMENT', 'DISEASE-ENRICHMENT',
-             'MIRNA-DISEASE-ENRICHMENT']
+             'MIRNA-DISEASE-ENRICHMENT', 'FIND-EVIDENCE-MIRNA-EXP']
     #keep the genes from the most recent previous call, which are used to input 
     #find-gene-onto if there's no gene input 
     #gene_list = ['STAT3', 'JAK1', 'JAK2', 'ELK1', 'FOS', 'SMAD2', 'KDM4B']
@@ -1355,16 +1355,19 @@ class TFTA_Module(Bioagent):
         Respond to FIND-EVIDENCE-MIRNA-TARGET request
         """
         miRNA_name = self._get_mirnas(content)
-        if not miRNA_name:
+        target_name,term_id = self._get_targets(content, descr='target')
+        strength_name = _get_keyword_name(content, descr='strength')
+        
+        if all([miRNA_name, target_name, strength_name]):
+            expe,sType,pmlink,miRNA_mis = self.tfta.find_evidence_miRNA_target_strength(miRNA_name, target_name[0], strength_name)
+        elif all([miRNA_name, target_name]):
+            expe,sType,pmlink,miRNA_mis = self.tfta.find_evidence_miRNA_target(miRNA_name, target_name[0])
+        elif target_name:
             reply = make_failure('NO_MIRNA_NAME')
             return reply
-        
-        target_name,term_id = self._get_targets(content, descr='target')
-        if not target_name:
+        else:
             reply = self.wrap_family_message(term_id, 'NO_TARGET_NAME')
             return reply
-                   
-        expe,sType,pmlink,miRNA_mis = self.tfta.find_evidence_miRNA_target(miRNA_name, target_name[0])
         
         if miRNA_mis:
             reply = self._get_mirna_clarification(miRNA_mis)
@@ -1387,6 +1390,23 @@ class TFTA_Module(Bioagent):
             reply.set('evidence', evi_str)
         else:
             reply = KQMLList.from_string('(SUCCESS :evidence NIL)')   
+        return reply
+        
+    def respond_find_evidence_miRNA_exp(self, content):
+        """
+        Respond to FIND-EVIDENCE-MIRNA-EXP request
+        """
+        strength = _get_keyword_name(content, descr='strength')
+        res = self.tfta.find_evidence_strength(strength)
+        if res:
+            reply = KQMLList('SUCCESS')
+            exp_str = ''
+            for e in res:
+                exp_str += '(:name %s )' % e
+                exp_str = '( ' + exp_str + ') '
+            reply.set('evidence', exp_str)
+        else:
+            reply = KQMLList.from_string('(SUCCESS :evidence NIL)') 
         return reply
 
     def respond_find_gene_count_miRNA(self, content):
@@ -2421,6 +2441,7 @@ class TFTA_Module(Bioagent):
                  'IS-TF-TARGET-TISSUE':respond_is_tf_target_tissue,
                  'FIND-TARGET-TF-TISSUE':respond_find_target_tfs_tissue,
                  'FIND-EVIDENCE-MIRNA-TARGET':respond_find_evidence_miRNA_target,
+                 'FIND-EVIDENCE-MIRNA-EXP':respond_find_evidence_miRNA_exp,
                  'FIND-PATHWAY-DB-KEYWORD':respond_find_pathway_db_keyword,
                  'FIND-TISSUE':respond_find_tissue_gene,
                  'FIND-KINASE-REGULATION':respond_find_kinase_regulation,
