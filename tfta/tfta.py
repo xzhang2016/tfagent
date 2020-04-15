@@ -1334,7 +1334,35 @@ class TFTA:
                         self.trans_factor = set([r[0] for r in res])
                 tf_names = list(set(target_names) & self.trans_factor)
         return tf_names,miRNA_mis
+    
+    def find_evidence_strength(self, strength, limit=30):
+        """
         
+        Return experimental evidence for certain evidence
+        example: What constitutes strong evidence?
+        
+        parameter
+        --------------
+        strength: str
+        """
+        experiments = []
+        if self.tfdb is not None:
+            t = ('%Weak%',)
+            if strength == 'strong':
+                res = self.tfdb.execute("SELECT DISTINCT experiments FROM mirnaInfo "
+                                    "WHERE supportType NOT LIKE ? ", t).fetchall()
+            elif strength == 'weak':
+                res = self.tfdb.execute("SELECT DISTINCT experiments FROM mirnaInfo "
+                                    "WHERE supportType LIKE ? ", t).fetchall()
+            else:
+                res = self.tfdb.execute("SELECT DISTINCT experiments FROM mirnaInfo ").fetchall()
+            if res:
+                for r in res:
+                    experiments.append(r[0])
+                    if len(experiments) > limit:
+                        break
+        return experiments
+    
     def find_evidence_miRNA_target(self, miRNA_name_dict, target_name):
         """
         
@@ -1343,7 +1371,7 @@ class TFTA:
         
         parameter
         --------------
-        miRNA_name_dict: str
+        miRNA_name_dict: dict
         target_name: str
         """
         miRNA_mis = {}
@@ -1365,6 +1393,44 @@ class TFTA:
                 res = self.tfdb.execute("SELECT * FROM mirnaInfo "
                                         "WHERE mirna LIKE ? ", t).fetchall()
                 if not res:
+                    miRNA_mis[miRNA_name] = miRNA_name_dict[miRNA_name]
+        return experiments, support_types, pmid_link, miRNA_mis
+        
+    def find_evidence_miRNA_target_strength(self, miRNA_name_dict, target_name, strength):
+        """
+        
+        Return experimental evidence that the given miRNA regulates the target
+        example: What is the strong (or weak) evidence that miR-148a-3p targets DNMT1?
+        
+        parameter
+        --------------
+        miRNA_name_dict: dict
+        target_name: str
+        strength: str
+        """
+        miRNA_mis = {}
+        experiments = []
+        support_types = []
+        pmid_link = []
+        miRNA_name = list(miRNA_name_dict.keys())[0]
+        if self.tfdb is not None:
+            t = (miRNA_name, target_name, '%Weak%')
+            if strength == 'strong':
+                res = self.tfdb.execute("SELECT * FROM mirnaInfo WHERE mirna LIKE ?"
+                                    " AND target = ? AND supportType NOT LIKE ?", t).fetchall()
+            else:
+                res = self.tfdb.execute("SELECT * FROM mirnaInfo WHERE mirna LIKE ?"
+                                    " AND target = ? AND supportType LIKE ?", t).fetchall()
+            if res:
+                experiments = [r[3] for r in res]
+                support_types = [r[4] for r in res]
+                pmid_link = [pmid_sublink+str(r[5]) for r in res]
+            else:
+                #check if miRNA_name in the database
+                t = (miRNA_name,)
+                res = self.tfdb.execute("SELECT * FROM mirnaInfo "
+                                        "WHERE mirna LIKE ? ", t).fetchall()
+                if not res and (not miRNA_name[-1] in ['P', 'p']):
                     miRNA_mis[miRNA_name] = miRNA_name_dict[miRNA_name]
         return experiments, support_types, pmid_link, miRNA_mis
 
