@@ -1334,20 +1334,24 @@ class TFTA_Module(Bioagent):
         target_type_set,target_type = self.get_target_type_set(content)
         
         if strength_name:
-            target_names,miRNA_mis = self.tfta.find_target_miRNA_strength(miRNA_names, strength_name)
+            target_names,miRNA_mis,expr,supt,pmid = self.tfta.find_target_miRNA_strength(miRNA_names, strength_name)
         else:
-            target_names,miRNA_mis = self.tfta.find_target_miRNA(miRNA_names)
+            target_names,miRNA_mis,expr,supt,pmid = self.tfta.find_target_miRNA(miRNA_names)
         #check if it's necessary for user clarification
         if miRNA_mis:
             reply = self._get_mirna_clarification(miRNA_mis)
             return reply
         else:
             if of_those_names:
-                target_names = set(of_those_names) & set(target_names)
+                target_names = set(of_those_names) & target_names
             #check if it requires returning a type of genes
             if target_type_set:
-                target_names = target_type_set & set(target_names)
+                target_names = target_type_set & target_names
             
+            #provenance message
+            self.send_background_support_mirna(list(miRNA_names.keys()), target_names, expr, supt, pmid, strength=strength_name, find_target=True)
+            
+            #Response to BA
             if len(target_names):
                 reply = self.wrap_message('targets', target_names)
             else:
@@ -2669,10 +2673,10 @@ class TFTA_Module(Bioagent):
             pd_list = pd.split(',')
             pd_str = ''
             for p in pd_list:
-                pd_str += '<a href=' + publink + p + ' target="_blank">' + p + '</a>;\n'
+                pd_str += '<a href=' + publink + p + ' target="_blank">' + p + '</a>;'
             row_list.append('<td class = table-borders>%s</td><td class = table-borders>%s</td> \
                              <td class = table-borders>%s</td><td class = table-borders>%s</td> \
-                             <td class = table-borders>%s</td>' % (mirna, target, expe, st, pd_str[:-2]))
+                             <td class = table-borders>%s</td>' % (mirna, target, expe, st, pd_str[:-1]))
         html_str += '\n'.join(['  <tr>%s</tr>\n' % row_str
                                for row_str in row_list])
         html_str += '</table> <hr>'
@@ -2722,17 +2726,27 @@ class TFTA_Module(Bioagent):
                         pmid_list.append(','.join(pmid[(mir,target)]))
                 self.send_table_to_provenance_mirna(mirna_list, target_list, exp_list, sup_list, pmid_list, nl)
             elif find_target:
-                nl = 'what genes are regulated by ' + mirna_name + '?'
+                if len(mirna_name) > 1:
+                    mirna_str = ', '.join(mirna_name[:-1]) + ' and ' + mirna_name[-1]
+                else:
+                    mirna_str = mirna_name[0]
+                if strength:
+                    nl = 'what genes are regulated by ' + mirna_str + ' with strong evidence?'
+                else:
+                    nl = 'what genes are regulated by ' + mirna_str + '?'
                 mirna_list = []
+                target_list = []
                 exp_list = []
                 sup_list = []
                 pmid_list = []
-                for i in range(len(target_name)):
-                    mirna_list.append(mirna_name)
-                    exp_list.append(';\n'.join(experiment[target_name[i]]))
-                    sup_list.append(';\n'.join(support_type[target_name[i]]))
-                    pmid_list.append(','.join(pmid[target_name[i]]))
-                self.send_table_to_provenance_mirna(mirna_list, target_name, exp_list, sup_list, pmid_list, nl)
+                for target in target_name:
+                    for mir in mirna_name:
+                        mirna_list.append(mir)
+                        target_list.append(target)
+                        exp_list.append(';\n'.join(experiment[(mir,target)]))
+                        sup_list.append(';\n'.join(support_type[(mir,target)]))
+                        pmid_list.append(','.join(pmid[(mir,target)]))
+                self.send_table_to_provenance_mirna(mirna_list, target_list, exp_list, sup_list, pmid_list, nl)
             else:
                 return
         else:
