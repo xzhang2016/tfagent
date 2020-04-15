@@ -1161,7 +1161,7 @@ class TFTA:
                     res = self.tfdb.execute("SELECT * FROM mirnaInfo "
                                     "WHERE target = ? ", t).fetchall()
                     if res:
-                        miRNAs = miRNAs & set([r[0] for r in res])
+                        miRNAs = miRNAs & set([r[1] for r in res])
                         for r in res:
                             expr[(r[1],target_names[i])].append(r[3])
                             supt[(r[1],target_names[i])].append(r[4])
@@ -1208,7 +1208,7 @@ class TFTA:
                         res = self.tfdb.execute("SELECT * FROM mirnaInfo "
                                     "WHERE target = ? AND supportType NOT LIKE ?", t).fetchall()
                         if res:
-                            miRNAs = miRNAs & set([r[0] for r in res])
+                            miRNAs = miRNAs & set([r[1] for r in res])
                             for r in res:
                                 expr[(r[1],target_names[i])].append(r[3])
                                 supt[(r[1],target_names[i])].append(r[4])
@@ -1221,7 +1221,7 @@ class TFTA:
                         res = self.tfdb.execute("SELECT * FROM mirnaInfo "
                                     "WHERE target = ? AND supportType LIKE ?", t).fetchall()
                         if res:
-                            miRNAs = miRNAs & set([r[0] for r in res])
+                            miRNAs = miRNAs & set([r[1] for r in res])
                             for r in res:
                                 expr[(r[1],target_names[i])].append(r[3])
                                 supt[(r[1],target_names[i])].append(r[4])
