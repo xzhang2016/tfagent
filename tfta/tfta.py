@@ -1240,37 +1240,48 @@ class TFTA:
         miRNA_name_dict: dict
         """
         miRNA_mis = dict()
-        target_names = []
+        target_names = set()
+        expr = defaultdict(list)
+        supt = defaultdict(list)
+        pmid = defaultdict(list)
         miRNA_names = list(miRNA_name_dict.keys())
         if self.tfdb is not None:
             t = (miRNA_names[0],)
-            res = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo "
+            res = self.tfdb.execute("SELECT * FROM mirnaInfo "
                                     "WHERE mirna LIKE ? ", t).fetchall()
             if res:
-                target_names = [r[0] for r in res]
+                for r in res:
+                    target_names.add(r[2])
+                    expr[(miRNA_names[0],r[2])].append(r[3])
+                    supt[(miRNA_names[0],r[2])].append(r[4])
+                    pmid[(miRNA_names[0],r[2])].append(str(r[5]))
             else:
                 #raise miRNANotFoundException
                 miRNA_mis[miRNA_names[0]] = miRNA_name_dict[miRNA_names[0]]
-                return [],miRNA_mis 
-            if len(miRNA_names)>1:
+                return [],miRNA_mis,[],[],[]
+            if len(miRNA_names) > 1:
                 for i in range(1, len(miRNA_names)):
                     t = (miRNA_names[i],)
-                    res = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo "
+                    res = self.tfdb.execute("SELECT * FROM mirnaInfo "
                                     "WHERE mirna LIKE ? ", t).fetchall()
                     if res:
-                        target_names = list(set(target_names) & set([r[0] for r in res]))
+                        target_names = target_names & set([r[2] for r in res])
+                        for r in res:
+                            expr[(miRNA_names[i],r[2])].append(r[3])
+                            supt[(miRNA_names[i],r[2])].append(r[4])
+                            pmid[(miRNA_names[i],r[2])].append(str(r[5]))
                     else:
                         #raise miRNANotFoundException
                         miRNA_mis[miRNA_names[i]] = miRNA_name_dict[miRNA_names[i]]
-                        return [],miRNA_mis
+                        return [],miRNA_mis,[],[],[]
                     if not target_names:
                         break
-        return target_names,miRNA_mis
+        return target_names,miRNA_mis,expr,supt,pmid
         
     def find_target_miRNA_strength(self, miRNA_name_dict, evidence_strength):
         """
         Return Targets regulated by the given miRNAs
-        example: What genes does miR-20b-5p target?
+        example: What genes does miR-20b-5p target with strong evidence?
         
         parameters
         ------------
@@ -1278,61 +1289,80 @@ class TFTA:
         evidence_strength: string
         """
         miRNA_mis = dict()
-        target_names = []
+        target_names = set()
+        expr = defaultdict(list)
+        supt = defaultdict(list)
+        pmid = defaultdict(list)
         miRNA_names = list(miRNA_name_dict.keys())
         if self.tfdb is not None:
             if evidence_strength == 'strong':
                 t = (miRNA_names[0], '%Weak%')
-                res = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo "
+                res = self.tfdb.execute("SELECT * FROM mirnaInfo "
                                     "WHERE mirna LIKE ? AND supportType NOT LIKE ? ", t).fetchall()
                 if res:
-                    target_names = [r[0] for r in res]
+                    for r in res:
+                        target_names.add(r[2])
+                        expr[(miRNA_names[0],r[2])].append(r[3])
+                        supt[(miRNA_names[0],r[2])].append(r[4])
+                        pmid[(miRNA_names[0],r[2])].append(str(r[5]))
                 else:
                     #raise miRNANotFoundException
                     if self.check_mirna_not_in_db(miRNA_names[0]):
                         miRNA_mis[miRNA_names[0]] = miRNA_name_dict[miRNA_names[0]]
-                    return [],miRNA_mis
+                    return [],miRNA_mis,[],[],[]
                     
                 if len(miRNA_names)>1:
                     for i in range(1, len(miRNA_names)):
                         t = (miRNA_names[i], '%Weak%')
-                        res = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo "
+                        res = self.tfdb.execute("SELECT * FROM mirnaInfo "
                                     "WHERE mirna LIKE ? AND supportType NOT LIKE ?", t).fetchall()
                         if res:
-                            target_names = list(set(target_names) & set([r[0] for r in res]))
+                            target_names = target_names.intersection(set([r[2] for r in res]))
+                            for r in res:
+                                expr[(miRNA_names[i],r[2])].append(r[3])
+                                supt[(miRNA_names[i],r[2])].append(r[4])
+                                pmid[(miRNA_names[i],r[2])].append(str(r[5]))
                         else:
                             #raise miRNANotFoundException
                             if self.check_mirna_not_in_db(miRNA_names[i]):
                                 miRNA_mis[miRNA_names[i]] = miRNA_name_dict[miRNA_names[i]]
-                            return [],miRNA_mis
+                            return [],miRNA_mis,[],[],[]
                         if not target_names:
                             break
             else:
                 t = (miRNA_names[0], '%Weak%')
-                res = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo "
+                res = self.tfdb.execute("SELECT * FROM mirnaInfo "
                                     "WHERE mirna LIKE ? AND supportType LIKE ? ", t).fetchall()
                 if res:
-                    target_names = [r[0] for r in res]
+                    for r in res:
+                        target_names.add(r[2])
+                        expr[(miRNA_names[0],r[2])].append(r[3])
+                        supt[(miRNA_names[0],r[2])].append(r[4])
+                        pmid[(miRNA_names[0],r[2])].append(str(r[5]))
                 else:
                     #raise miRNANotFoundException
                     if self.check_mirna_not_in_db(miRNA_names[0]):
                         miRNA_mis[miRNA_names[0]] = miRNA_name_dict[miRNA_names[0]]
-                    return [],miRNA_mis
+                    return [],miRNA_mis,[],[],[]
                 if len(miRNA_names)>1:
                     for i in range(1, len(miRNA_names)):
                         t = (miRNA_names[i], '%Weak%')
-                        res = self.tfdb.execute("SELECT DISTINCT target FROM mirnaInfo "
+                        res = self.tfdb.execute("SELECT * FROM mirnaInfo "
                                     "WHERE mirna LIKE ? AND supportType LIKE ?", t).fetchall()
                         if res:
-                            target_names = list(set(target_names) & set([r[0] for r in res]))
+                            target_names = target_names.intersection(set([r[2] for r in res]))
+                            for r in res:
+                                expr[(miRNA_names[i],r[2])].append(r[3])
+                                supt[(miRNA_names[i],r[2])].append(r[4])
+                                pmid[(miRNA_names[i],r[2])].append(str(r[5]))
                         else:
                             #raise miRNANotFoundException
                             if self.check_mirna_not_in_db(miRNA_names[i]):
                                 miRNA_mis[miRNA_names[i]] = miRNA_name_dict[miRNA_names[i]]
-                            return [],miRNA_mis
+                            return [],miRNA_mis,[],[],[]
                         if not target_names:
                             break
-        return target_names,miRNA_mis
+        return target_names,miRNA_mis,expr,supt,pmid
     
     def check_mirna_not_in_db(self, miRNA_name):
         if self.tfdb is not None:
