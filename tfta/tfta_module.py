@@ -1291,9 +1291,9 @@ class TFTA_Module(Bioagent):
         
         try:
             if strength_name:
-                miRNA_names = self.tfta.find_miRNA_target_strength(target_names, strength_name)
+                miRNA_names,expr,supt,pmid = self.tfta.find_miRNA_target_strength(target_names, strength_name)
             else:
-                miRNA_names = self.tfta.find_miRNA_target(target_names)
+                miRNA_names,expr,supt,pmid = self.tfta.find_miRNA_target(target_names)
         except TargetNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :miRNAs NIL)') 
             return reply
@@ -1302,7 +1302,11 @@ class TFTA_Module(Bioagent):
             res_db = set(','.join(miRNA_names).upper().split(','))
             res_of = set(','.join(of_those_names).upper().split(','))
             miRNA_names = res_db & res_of
-            
+        
+        #provenance support
+        self.send_background_support_mirna(miRNA_names, target_names, expr, supt, pmid, strength=strength_name, find_mirna=True)
+        
+        #respond to BA
         if len(miRNA_names):
             mir_agent = [Agent(mir, db_refs={'type':'MIRNA'}) for mir in miRNA_names]
             mir_json = self.make_cljson(mir_agent)
@@ -2696,17 +2700,27 @@ class TFTA_Module(Bioagent):
                 pmid_str = ','.join(pmid[target_name])
                 self.send_table_to_provenance_mirna([mirna_name], [target_name], [exp_str], [suptype_str], [pmid_str], nl)
             elif find_mirna:
-                nl = 'what miRNAs regulate ' + target_name + '?'
+                if len(target_name) > 1:
+                    target_str = ', '.join(target_name[:-1]) + ' and ' + target_name[-1]
+                else:
+                    target_str = target_name[0]
+                if strength:
+                    nl = 'what microRNAs have strong evidence for targeting ' + target_str + '?'
+                else:
+                    nl = 'what microRNAs regulate ' + target_str + '?'
                 target_list = []
                 exp_list = []
                 sup_list = []
                 pmid_list = []
-                for i in range(len(mirna_name)):
-                    target_list.append(target_name)
-                    exp_list.append(';\n'.join(experiment[mirna_name[i]]))
-                    sup_list.append(';\n'.join(support_type[mirna_name[i]]))
-                    pmid_list.append(','.join(pmid[mirna_name[i]]))
-                self.send_table_to_provenance_mirna(mirna_name, target_list, exp_list, sup_list, pmid_list, nl)
+                mirna_list = []
+                for mir in mirna_name:
+                    for target in target_name:
+                        mirna_list.append(mir)
+                        target_list.append(target)
+                        exp_list.append(';\n'.join(experiment[(mir,target)]))
+                        sup_list.append(';\n'.join(support_type[(mir,target)]))
+                        pmid_list.append(','.join(pmid[(mir,target)]))
+                self.send_table_to_provenance_mirna(mirna_list, target_list, exp_list, sup_list, pmid_list, nl)
             elif find_target:
                 nl = 'what genes are regulated by ' + mirna_name + '?'
                 mirna_list = []
