@@ -151,24 +151,6 @@ class TFTA_Module(Bioagent):
         else:
             reply = self.find_pathway_gene(content)
         return reply
-        
-    def respond_find_common_pathway_genes(self, content):
-        """
-        Respond to find-common-pathway-genes, which covers:
-        find-common-pathway-genes, find-common-pathway-genes-keyword,
-        find-common-pathway-genes-database
-        """
-        target_arg = content.get('target')
-        keyword_arg = content.get('keyword')
-        db_arg = content.get('database')
-        if all([target_arg, keyword_arg]):
-            reply = self.get_common_pathway_genes_keyword(content)
-        elif all([target_arg, db_arg]):
-            reply = self.get_common_pathway_genes_db(content)
-        else:
-            reply = self.get_common_pathway_genes(content)
-        
-        return reply
     
     def respond_find_target(self, content):
         """
@@ -1060,82 +1042,53 @@ class TFTA_Module(Bioagent):
         else:
             reply = KQMLList.from_string('(SUCCESS :tfs NIL)')
         return reply
-        
-    def get_common_pathway_genes(self, content):
+    
+    def respond_find_common_pathway_genes(self, content):
         """
-        response content to FIND-COMMON-PATHWAY-GENES request
+        Respond to find-common-pathway-genes, which covers:
+        find-common-pathway-genes, find-common-pathway-genes-keyword,
+        find-common-pathway-genes-database
         """
+        start = time.time()
+        limit = 50
         gene_names,fmembers = self._get_targets2(content, descr='target')
         if not gene_names and not fmembers:
             reply = make_failure('NO_GENE_NAME')
             return reply
-            
-        #logger.info('FIND-COMMON-PATHWAY-GENES:genes=' + str(gene_names))
-        #logger.info('FIND-COMMON-PATHWAY-GENES:fmembers=' + str(fmembers))
         
-        try:
-            pathwayName, dblink, genes = self.tfta.find_common_pathway_genes(gene_names, fmembers)
-        except PathwayNotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
-            return reply
-        
-        #logger.debug('FIND-COMMON-PATHWAY-GENES: starting wrapping message.')
-        
-        reply = self._wrap_pathway_genelist_message(pathwayName, dblink, genes, gene_descr='gene-list')
-        
-        logger.debug('FIND-COMMON-PATHWAY-GENES: sending message...')
-        return reply
-
-    def get_common_pathway_genes_keyword(self, content):
-        """
-        Response content to FIND-COMMON-PATHWAY-GENES-KEYWORD request
-        """
         keyword_name = _get_keyword_name(content, hyphen=True)
-        if not keyword_name or keyword_name in ['pathway', 'signaling pathway']:
-            reply = make_failure('NO_KEYWORD')
-            return reply
-        else:
+        if keyword_name:
             keyword_name = trim_word([keyword_name], 'pathway')
         
-        gene_names,fmembers = self._get_targets2(content, descr='target')
-        if not gene_names and not fmembers:
-            reply = make_failure('NO_GENE_NAME')
-            return reply
-            
+        db_name = _get_keyword_name(content, descr='database', low_case=False)
+        
         try:
-            pathwayName,dblink,genes = self.tfta.find_common_pathway_genes_keyword(gene_names, keyword_name[0], fmembers)
+            if all([gene_names, keyword_name]):
+                if len(gene_names) < 15:
+                    pathwayName,dblink,genes = self.tfta.find_common_pathway_genes_keyword(gene_names, keyword_name[0], fmembers)
+                else:
+                    pathwayName,dblink,genes = self.tfta.find_common_pathway_genes_keyword2(gene_names, keyword_name[0], fmembers)
+            elif all([gene_names, db_name]):
+                if len(gene_names) < limit:
+                    pathwayName,dblink,genes = self.tfta.find_common_pathway_genes_db(gene_names, db_name, fmembers)
+                else:
+                    pathwayName,dblink,genes = self.tfta.find_common_pathway_genes_db2(gene_names, db_name, fmembers)
+            elif len(gene_names) > limit:
+                db_name = 'KEGG'
+                logger.info('GO to find_common_pathway_genes_db3 for large gene list.')
+                pathwayName,dblink,genes = self.tfta.find_common_pathway_genes_db2(gene_names, db_name, fmembers)
+            else:
+                pathwayName, dblink, genes = self.tfta.find_common_pathway_genes(gene_names, fmembers)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
-            
+        
         reply = self._wrap_pathway_genelist_message(pathwayName, dblink, genes, pathway_names=keyword_name,
                                                gene_descr='gene-list')
-        return reply
         
-    def get_common_pathway_genes_db(self, content):
-        """
-        Response content to FIND-COMMON-PATHWAY-GENES-DB request
-        """
-        db_name = _get_keyword_name(content, descr='database', low_case=False)
-        if not db_name:
-            reply = make_failure('NO_DB_NAME')
-            return reply
-            
-        gene_names,fmembers = self._get_targets2(content, descr='target')
-        if not gene_names and not fmembers:
-            reply = make_failure('NO_GENE_NAME')
-            return reply
-            
-        try:
-            pathwayName,dblink,genes = \
-               self.tfta.find_common_pathway_genes_db(gene_names, db_name, fmembers)
-        except PathwayNotFoundException:
-            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
-            return reply
-            
-        reply = self._wrap_pathway_genelist_message(pathwayName, dblink, genes, gene_descr='gene-list')
+        logger.info('Used {} seconds for processing {} genes.'.format(time.time() - start, len(gene_names)))
         return reply
-
+    
     def respond_is_pathway_gene(self, content):
         """
         Respond to IS-PATHWAY-GENE request
@@ -3189,7 +3142,7 @@ class TFTA_Module(Bioagent):
                 proteins = [agents.name.upper()]
             if not proteins and 'FPLX' in agents.db_refs:
                 fmembers[agents.name.upper()] = self.tfta.find_member(agents)
-        return proteins,fmembers
+        return list(set(proteins)),fmembers
         
     def _get_of_those_pathway(self, content, descr='of-those'):
         #parse pathway names from JSON format
@@ -3328,6 +3281,9 @@ def trim_hyphen(descr):
 
 def trim_word(descr, word):
     #descr is a list
+    descr = set(descr)
+    descr = descr - set(['signaling pathway', 'pathway'])
+    
     ds = []
     if descr:
         for d in descr:
