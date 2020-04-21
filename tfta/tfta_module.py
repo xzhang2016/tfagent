@@ -1050,7 +1050,7 @@ class TFTA_Module(Bioagent):
         find-common-pathway-genes-database
         """
         start = time.time()
-        limit = 50
+        limit = 150
         gene_names,fmembers = self._get_targets2(content, descr='target')
         if not gene_names and not fmembers:
             reply = make_failure('NO_GENE_NAME')
