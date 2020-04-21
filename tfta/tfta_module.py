@@ -1050,7 +1050,7 @@ class TFTA_Module(Bioagent):
         find-common-pathway-genes-database
         """
         start = time.time()
-        limit = 150
+        limit = 50
         gene_names,fmembers = self._get_targets2(content, descr='target')
         if not gene_names and not fmembers:
             reply = make_failure('NO_GENE_NAME')
@@ -1072,11 +1072,11 @@ class TFTA_Module(Bioagent):
                 if len(gene_names) < limit:
                     pathwayName,dblink,genes = self.tfta.find_common_pathway_genes_db(gene_names, db_name, fmembers)
                 else:
-                    pathwayName,dblink,genes = self.tfta.find_common_pathway_genes_db2(gene_names, db_name, fmembers)
+                    pathwayName,dblink,genes = self.tfta.find_common_pathway_genes_db3(gene_names, db_name, fmembers)
             elif len(gene_names) > limit:
                 db_name = 'KEGG'
                 logger.info('GO to find_common_pathway_genes_db3 for large gene list.')
-                pathwayName,dblink,genes = self.tfta.find_common_pathway_genes_db2(gene_names, db_name, fmembers)
+                pathwayName,dblink,genes = self.tfta.find_common_pathway_genes_db3(gene_names, db_name, fmembers)
             else:
                 pathwayName, dblink, genes = self.tfta.find_common_pathway_genes(gene_names, fmembers)
         except PathwayNotFoundException:
