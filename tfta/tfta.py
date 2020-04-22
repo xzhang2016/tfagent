@@ -1057,6 +1057,40 @@ class TFTA:
                 raise PathwayNotFoundException
         return pathwayName, dblink, genes
 
+    def find_common_pathway_genes_db4(self, gene_names, db_name, fmembers=None, limit=30):
+        """
+        For a given gene list and db name, find the pathways containing at least two of 
+        the genes, and return the corresponding given genes in each of the pathways.
+        Check pathway source first, ignore familiy, then check genes and when it find the limit number of
+        pathways it will return instead of checking all the pathways. 
+        This method aims to handle large gene list.
+        """
+        num = 0
+        pathwayName = dict()
+        dblink = dict()
+        genes = defaultdict(list)
+        gene_names = set(gene_names)
+        if self.tfdb is not None:
+            t = (db_name,)
+            res = self.tfdb.execute("SELECT Id, pathwayName, dblink FROM pathwayInfo "
+                                    "WHERE source LIKE ? ORDER BY numGenes DESC", t).fetchall()
+            if res:
+                for r in res:
+                    t = (r[0],)
+                    res1 = self.tfdb.execute("SELECT DISTINCT genesymbol FROM pathway2Genes "
+                                             "WHERE pathwayID= ? ", t).fetchall()
+                    ovg = gene_names.intersection(set([r1[0] for r1 in res1]))
+                    if len(ovg) > 2:
+                        genes[r[0]] = ovg
+                        pathwayName[r[0]] = r[1]
+                        dblink[r[0]] = r[2]
+                        num += 1
+                        if num > limit:
+                            break
+            else:
+                raise PathwayNotFoundException
+        return pathwayName, dblink, genes
+
     def find_targets(self,tf_names, fmembers=None):
         """
         Return Targets regulated by the tf or tf list
