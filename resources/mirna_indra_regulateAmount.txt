@@ -1423,3 +1423,11 @@ mir_425
 mir_451
 mir_93
 miR-375
+Let-7b
+miR-125b
+miR-141-3p
+miR-200c-5p
+miR-200c-3p
+miR-421
+miR-483-3p
+
