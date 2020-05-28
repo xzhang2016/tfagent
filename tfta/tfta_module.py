@@ -3088,6 +3088,7 @@ class TFTA_Module(Bioagent):
         proteins = []
         family = dict()
         
+        ont1 = {"ONT::GENE", "ONT:PROTEIN", "ONT:GENE-PROTEIN"}
         target_arg = content.get(descr)
         if not target_arg:
             return None,None
@@ -3096,7 +3097,7 @@ class TFTA_Module(Bioagent):
         except Exception:
             return None,None
         if isinstance(agents, list):
-            proteins = [a.name.upper() for a in agents if a is not None and ('UP' in a.db_refs or 'HGNC' in a.db_refs or len(a.db_refs)==0)]
+            proteins = [a.name.upper() for a in agents if a is not None and ('UP' in a.db_refs or 'HGNC' in a.db_refs or len(a.db_refs)==0 or a.db_refs['TYPE'] in ont1)]
             #family = {a.db_refs['TRIPS']:a.name for a in agents if a is not None and 'FPLX' in a.db_refs and a.name not in proteins}
             #consider +trips+ as an optional id
             for a in agents:
@@ -3106,7 +3107,7 @@ class TFTA_Module(Bioagent):
                     else:
                         family[a.name.upper()] = a
         elif isinstance(agents, Agent):
-            if 'UP' in agents.db_refs or 'HGNC' in agents.db_refs or len(agents.db_refs)==0:
+            if 'UP' in agents.db_refs or 'HGNC' in agents.db_refs or len(agents.db_refs)==0 or agents.db_refs['TYPE'] in ont1:
                 proteins = [agents.name.upper()]
             if not proteins and 'FPLX' in agents.db_refs:
                 #family = {agents.db_refs['TRIPS']:agents.name}
@@ -3122,7 +3123,7 @@ class TFTA_Module(Bioagent):
         proteins = []
         family = []
         fmembers = dict()
-        
+        ont1 = {"ONT::GENE", "ONT:PROTEIN", "ONT:GENE-PROTEIN"}
         target_arg = content.get(descr)
         if not target_arg:
             return None,None
@@ -3131,14 +3132,14 @@ class TFTA_Module(Bioagent):
         except Exception:
             return None,None
         if isinstance(agents, list):
-            proteins = [a.name.upper() for a in agents if a is not None and ('UP' in a.db_refs or 'HGNC' in a.db_refs or len(a.db_refs)==0)]
+            proteins = [a.name.upper() for a in agents if a is not None and ('UP' in a.db_refs or 'HGNC' in a.db_refs or len(a.db_refs)==0 or a.db_refs['TYPE'] in ont1)]
             #expand family name to members
             for a in agents:
                 if a is not None and 'FPLX' in a.db_refs and a.name.upper() not in proteins:
                     family.append(a)
             fmembers = self.tfta.find_members(family)
         elif isinstance(agents, Agent):
-            if 'UP' in agents.db_refs or 'HGNC' in agents.db_refs or len(agents.db_refs)==0:
+            if 'UP' in agents.db_refs or 'HGNC' in agents.db_refs or len(agents.db_refs)==0 or agents.db_refs['TYPE'] in ont1:
                 proteins = [agents.name.upper()]
             if not proteins and 'FPLX' in agents.db_refs:
                 fmembers[agents.name.upper()] = self.tfta.find_member(agents)
