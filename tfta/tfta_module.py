@@ -3088,7 +3088,7 @@ class TFTA_Module(Bioagent):
         proteins = []
         family = dict()
         
-        ont1 = {"ONT::GENE", "ONT:PROTEIN", "ONT:GENE-PROTEIN"}
+        ont1 = {"ONT::GENE", "ONT::PROTEIN", "ONT::GENE-PROTEIN", "KB::KINASE", "KB::TRANSCRIPTION-FACTOR"}
         target_arg = content.get(descr)
         if not target_arg:
             return None,None
@@ -3124,7 +3124,7 @@ class TFTA_Module(Bioagent):
         proteins = []
         family = []
         fmembers = dict()
-        ont1 = {"ONT::GENE", "ONT:PROTEIN", "ONT:GENE-PROTEIN"}
+        ont1 = {"ONT::GENE", "ONT::PROTEIN", "ONT::GENE-PROTEIN", "KB::KINASE", "KB::TRANSCRIPTION-FACTOR"}
         target_arg = content.get(descr)
         if not target_arg:
             return None,None
