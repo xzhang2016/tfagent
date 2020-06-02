@@ -1965,7 +1965,7 @@ class TFTA:
                 raise KinaseNotFoundException 
             if len(target_names)>1:
                 for i in range(1,len(target_names)):
-                    t = (target_names[i],)
+                    t = (target_names[i], keyword_name)
                     res = self.tfdb.execute("SELECT DISTINCT kinase FROM kinaseReg "
                                             "WHERE target = ? AND direction LIKE ? ", t).fetchall()
                     if res:
@@ -2159,7 +2159,7 @@ class TFTA:
         stmt_type: list[str], list of statement type
         """
         if not CAN_CHECK_STATEMENTS:
-            return []
+            return [],False
         statements = []
         try:
             for stype in stmt_types:
@@ -2393,7 +2393,7 @@ class TFTA:
                 text = ev.text
                 evidences.add((source_api, pmid, text))
         return evidences
-        
+    
     def find_member(self, agent):
         """
         Find members for a collection
