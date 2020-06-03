@@ -1,7 +1,7 @@
 import pickle
 import os
 import logging
-from utils.util import download_file_dropbox
+from utils.util import download_file_dropbox, make_folder
 
 
 logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
@@ -10,6 +10,10 @@ logger = logging.getLogger('TFTA')
 
 _resource_dir = os.path.dirname(os.path.realpath(__file__)) + '/resources/'
 _enrich_dir = os.path.dirname(os.path.realpath(__file__)) + '/enrichment/data'
+success = make_folder(_enrich_dir)
+if not success:
+    logger.info('Could not create {}.'.format(_enrich_dir))
+
 
 def main():
     #download tf-target db
