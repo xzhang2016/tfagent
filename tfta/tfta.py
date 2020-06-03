@@ -105,9 +105,6 @@ hgnc_genes_set = set(hgnc_symbol_id.keys())
 EXP_THR = 1.5
 
 class TFTA:
-    #transcription factor list, will set when it's first used
-    trans_factor = set()
-    
     def __init__(self):
         #Load TF_target database
         self.tfdb = self.load_db()
@@ -116,6 +113,8 @@ class TFTA:
         
         #for exclusive query
         self.tissue_gene_exclusive = defaultdict(set)
+        #transcription factor list, will set when it's first used
+        self.trans_factor = self.tf_set()
             
     def __del__(self):
         self.tfdb.close()
@@ -2107,6 +2106,13 @@ class TFTA:
         else:
             tf_set = self.trans_factor
         return tf_set
+        
+    def tf_set(self):
+        tfs = set()
+        if self.tfdb is not None:
+            res = self.tfdb.execute("SELECT DISTINCT tf FROM transFactor").fetchall()
+            tfs = set([r[0] for r in res])
+        return tfs
         
     def get_pathway_genes(self, db_source):
         """
