@@ -1,5 +1,5 @@
 import urllib.request
-
+import os
 
 def merge_dict_sum(dict1, dict2):
     """
@@ -34,4 +34,11 @@ def download_file_dropbox(url, fout_name):
     with open(fout_name, 'wb') as fw:
         fw.write(data)
         
-
+def make_folder(data_folder):
+    if not os.path.isfile(data_folder):
+        # Emulate mkdir -p (no error if folder exists)
+        try:
+            os.mkdir(data_folder)
+            return True
+        except Exception:
+            return False
