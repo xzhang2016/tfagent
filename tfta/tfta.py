@@ -2155,7 +2155,7 @@ class TFTA:
         statements = []
         try:
             for stype in stmt_types:
-                stmts = get_statements(subject=subj, object=obj, stmt_type=stype, simple_response=True)
+                stmts = get_statements(subject=subj, object=obj, stmt_type=stype, simple_response=True, ev_limit=5, max_stmts=100, persist=False)
                 if len(stmts):
                     stmts_filtered = filter_evidence_source(stmts, ['reach'], policy='one')
                     if len(stmts_filtered):
@@ -2236,11 +2236,11 @@ class TFTA:
        
         tfs = genes.intersection(self.trans_factor)
         nontfs = genes - tfs
-        mirnas = nontfs.intersection(mirna_indra_set)
-        others = nontfs - mirnas
-        gene = others.intersection(hgnc_genes_set)
-        other = others - gene
-        return tfs, gene, mirnas, other, stmt_f
+        #mirnas = nontfs.intersection(mirna_indra_set)
+        #others = nontfs - mirnas
+        gene = nontfs.intersection(hgnc_genes_set)
+        #other = others - gene
+        return tfs, gene, stmt_f
         
     def find_regulator_indra_targets(self, stmts_d, of_those=None, target_type=None):
         """
