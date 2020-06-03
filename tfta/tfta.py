@@ -113,15 +113,7 @@ class TFTA:
         self.tfdb = self.load_db()
         if self.tfdb:
             self.tfdb.row_factory = sqlite3.Row
-        """
-        if os.path.isfile(tf_db_file):
-            self.tfdb = sqlite3.connect(tf_db_file, check_same_thread=False)
-            logger.info('TFTA loaded TF-target database')
-            self.tfdb.row_factory = sqlite3.Row
-        else:
-            logger.error('TFTA could not load TF-target database.')
-            self.tfdb = None;
-        """
+        
         #for exclusive query
         self.tissue_gene_exclusive = defaultdict(set)
             
@@ -220,7 +212,7 @@ class TFTA:
             res = self.tfdb.execute("SELECT DISTINCT TF,dbnames FROM CombinedDB "
                                     "WHERE Target = ? ", t).fetchall()
             if res:
-                tf_names = [r[0] for r in res]
+                tf_names = set([r[0] for r in res])
                 for r in res:
                     dbname[(r[0],target_names[0])] = r[1]
             else:
@@ -231,16 +223,16 @@ class TFTA:
                     res = self.tfdb.execute("SELECT DISTINCT TF,dbnames FROM CombinedDB "
                                             "WHERE Target = ? ", t).fetchall()
                     if res:
-                        tf_names = list(set(tf_names) & set([r[0] for r in res]))
+                        tf_names = tf_names & set([r[0] for r in res])
                         for r in res:
                             dbname[(r[0],target_names[i])] = r[1]
                     else:
                         raise TargetNotFoundException
-            if len(tf_names):
-                tf_names.sort()
+            #if len(tf_names):
+                #tf_names.sort()
         else:
             tf_names = []
-        return tf_names,dbname
+        return list(tf_names),dbname
 
     def find_tfs_count(self,target_names):
         """
