@@ -227,11 +227,13 @@ class TFTA:
                             dbname[(r[0],target_names[i])] = r[1]
                     else:
                         raise TargetNotFoundException
-            #if len(tf_names):
+            #make the results consistent in both db and TF list
+            if len(tf_names):
                 #tf_names.sort()
+                tf_names = tf_names.intersection(self.trans_factor)
         else:
-            tf_names = []
-        return list(tf_names),dbname
+            tf_names = set()
+        return tf_names,dbname
 
     def find_tfs_count(self,target_names):
         """
