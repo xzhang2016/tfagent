@@ -77,7 +77,7 @@ def _get_mirna_indra():
         mirna_indra.add(line.strip())
     return mirna_indra
 
-mirna_indra_set = _get_mirna_indra()
+#mirna_indra_set = _get_mirna_indra()
 
 #hgnc official symbol to id mapping
 def _get_hgnc_genes():
@@ -2189,11 +2189,11 @@ class TFTA:
        
         tfs = subjects.intersection(self.trans_factor)
         nontfs = subjects - tfs
-        mirnas = nontfs.intersection(mirna_indra_set)
-        others = nontfs - mirnas
-        genes = others.intersection(hgnc_genes_set)
-        other = others - genes
-        return tfs, genes, mirnas, other
+        #mirnas = nontfs.intersection(mirna_indra_set)
+        #others = nontfs - mirnas
+        genes = nontfs.intersection(hgnc_genes_set)
+        #other = others - genes
+        return tfs, genes#, mirnas, other
         
     def find_regulator_indra_gene(self, stmts, of_those=None):
         """
