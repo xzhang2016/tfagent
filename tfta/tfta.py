@@ -115,6 +115,7 @@ class TFTA:
         self.tissue_gene_exclusive = defaultdict(set)
         #transcription factor list, will set when it's first used
         self.trans_factor = self.tf_set()
+        self.mirna = self.mirna_set()
             
     def __del__(self):
         self.tfdb.close()
@@ -2084,6 +2085,12 @@ class TFTA:
             tfs = set([r[0] for r in res])
         return tfs
         
+    def mirna_set(self):
+        mirnas = set()
+        if self.tfdb is not None:
+            res = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo").fetchall()
+            mirnas = set([r[0] for r in res])
+        return mirnas
     def get_pathway_genes(self, db_source):
         """
         Return pathway-gene dict. 
@@ -2212,11 +2219,11 @@ class TFTA:
        
         tfs = genes.intersection(self.trans_factor)
         nontfs = genes - tfs
-        #mirnas = nontfs.intersection(mirna_indra_set)
-        #others = nontfs - mirnas
-        gene = nontfs.intersection(hgnc_genes_set)
+        mirnas = nontfs.intersection(self.mirna)
+        others = nontfs - mirnas
+        gene = others.intersection(hgnc_genes_set)
         #other = others - gene
-        return tfs, gene, stmt_f
+        return tfs, gene, mirnas, stmt_f
         
     def find_regulator_indra_targets(self, stmts_d, of_those=None, target_type=None):
         """
