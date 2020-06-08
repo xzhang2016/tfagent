@@ -2469,7 +2469,7 @@ class TFTA_Module(Bioagent):
             else:
                 self.send_background_support([], 'what', target_str, keyword_name)
                 return None,None,None,None
-        tfs, genes, stmt_f = self.tfta.find_regulators_indra(stmts_d)
+        tfs, genes, mirnas, stmt_f = self.tfta.find_regulators_indra(stmts_d)
         tf_json, gene_json, mirna_json, oth_json = [],[],[],[]
         if len(tfs):
             tf_json = self._get_genes_json(tfs)
@@ -2477,9 +2477,9 @@ class TFTA_Module(Bioagent):
         if len(genes):
             gene_json = self._get_genes_json(genes)
             #lit_messages.set('gene-literature', gene_json)
-        # if len(mirnas):
-#             mirna_agent = [Agent(mir, db_refs={'TYPE':'MIRNA'}) for mir in mirnas]
-#             mirna_json = self.make_cljson(mirna_agent)
+        if len(mirnas):
+            mirna_agent = [Agent(mir, db_refs={'TYPE':'MIRNA'}) for mir in mirnas]
+            mirna_json = self.make_cljson(mirna_agent)
 #             #lit_messages.set('miRNA-literature', mirna_json)
 #         if len(others):
 #             oth_agent = [Agent(oth) for oth in others]
