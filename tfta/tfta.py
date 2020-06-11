@@ -9,7 +9,8 @@ import numpy as np
 from collections import defaultdict, Counter
 import math
 from indra import has_config
-from indra.tools import expand_families
+from indra.ontology.bio import bio_ontology
+from indra.tools.expand_families import expand_agent
 from utils.util import merge_dict_sum, merge_dict_list
 from utils.util import download_file_dropbox
 import pickle
@@ -22,8 +23,6 @@ logger = logging.getLogger('TFTA')
 if has_config('INDRA_DB_REST_URL') and has_config('INDRA_DB_REST_API_KEY'):
     from indra.sources.indra_db_rest import get_statements
     from indra.tools.assemble_corpus import filter_evidence_source
-    from indra.tools import expand_families
-    from indra.preassembler.hierarchy_manager import hierarchies
     CAN_CHECK_STATEMENTS = True
 else:
     logger.warning("Harvard web api not specified. Cannot get evidence from literature.")
@@ -2424,18 +2423,12 @@ class TFTA:
             logger.error('TFTA could not load TF-target database.')
             tfdb = None;
         return tfdb
-            
+
+
 def _get_members(agent):
-    dbname, dbid = agent.get_grounding()
-    if dbname not in ['FPLX', 'BE']:
-        return None
-    eh = hierarchies['entity']
-    uri = eh.get_uri(dbname, dbid)
-    children_uris = sorted(eh.get_children(uri))
-    children_agents = [expand_families._agent_from_uri(uri)
-                        for uri in children_uris]
-    return children_agents
-    
+    return expand_agent(agent, bio_ontology, ns_filter=['HGNC'])
+
+
 def _check_overlap(genes, fmembers):
     """
     If genes overlap with any member of each family in fmembers, return True, otherwise False
