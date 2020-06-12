@@ -446,8 +446,8 @@ class TFTA:
         gene_names: list of gene symbols
         fmembers: dict, family name as key and list of Agent for members as value
         """
-        pathwayName = []
-        dblink = []
+        pathwayName = dict()
+        dblink = dict()
         fnum = 0
         if self.tfdb is not None:
             pathlist=[]
@@ -471,12 +471,10 @@ class TFTA:
                 if id_count[id] == (len(gene_names) + fnum):
                     t = (id,)
                     res = self.tfdb.execute("SELECT pathwayName,dblink FROM pathwayInfo "
-                                            "WHERE Id = ? ", t).fetchall()
-                    pathwayName.extend([r[0] for r in res])
-                    dblink.extend([r[1] for r in res])
-            if pathwayName:
-                pathwayName,dblink = list(zip(*sorted(zip(pathwayName,dblink))))
-            else:
+                                            "WHERE Id = ? ", t).fetchone()
+                    pathwayName[id] = res['pathwayName']
+                    dblink[id] = res['dblink']
+            if not pathwayName:
                 raise PathwayNotFoundException
         return pathwayName,dblink
     
