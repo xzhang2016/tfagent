@@ -691,7 +691,7 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             #reply = self.wrap_family_message_pathway(term_id, descr='pathways', msg="PATHWAY_NOT_FOUND")
             return reply
-        reply = _wrap_pathway_message(pathwayName, dblink, of_those=of_those)
+        reply = _wrap_pathway_message2(pathwayName, dblink, of_those=of_those)
         return reply
         
     def find_pathway_regulator(self,content):
@@ -720,7 +720,7 @@ class TFTA_Module(Bioagent):
             except PathwayNotFoundException:
                 reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
                 return reply
-            reply = _wrap_pathway_message(pathwayName, dblink, of_those=of_those)
+            reply = _wrap_pathway_message2(pathwayName, dblink, of_those=of_those)
             return reply
         else:
             try:
@@ -3436,7 +3436,69 @@ def _wrap_pathway_message(pathwayName, dblink, keyword=None, of_those=None):
         reply = KQMLList('SUCCESS')
         reply.set('pathways', pathway_list_str)
     return reply
-    
+
+def _wrap_pathway_message2(pathwayName, dblink, keyword=None, of_those=None):
+    """
+    pathwayName: dict
+    dblink: dict
+    keyword: list or None
+    of_those: list or None
+    """
+    pathway_list_str = ''
+    #limit the number of pathways to return
+    limit = 30
+    num = 1
+    if keyword:
+        if type(keyword).__name__ == 'str':
+            keyword = [keyword]
+        if of_those:
+            for id in pathwayName.keys():
+                if pathwayName[id].lower() in of_those:
+                    if _filter_subword(pathwayName[id], keyword):
+                        pnslash = '"' + pathwayName[id] +'"'
+                        dbl = '"' + dblink[id] +'"'
+                        pathway_list_str += '(:name %s :dblink %s :id %s) ' % (pnslash, dbl, str(id))
+                        num += 1
+                        if num > limit:
+                            break
+        else:
+            for id in pathwayName.keys():
+                if _filter_subword(pathwayName[id], keyword):
+                    pnslash = '"' + pathwayName[id] +'"'
+                    dbl = '"' + dblink[id] +'"'
+                    pathway_list_str += '(:name %s :dblink %s :id %s) ' % (pnslash, dbl, str(id))
+                    num += 1
+                    if num > limit:
+                        break
+        if pathway_list_str:
+            pathway_list_str = '(' + pathway_list_str + ')'
+            reply = KQMLList('SUCCESS')
+            reply.set('pathways', pathway_list_str)
+        else:
+            reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
+    else:
+        if of_those:
+            for id in pathwayName.keys():
+                if pathwayName[id].lower() in of_those:
+                    pnslash = '"' + pathwayName[id] + '"'
+                    dbl = '"' + dblink[id] + '"'
+                    pathway_list_str += '(:name %s :dblink %s :id %s) ' % (pnslash, dbl, str(id))
+                    num += 1
+                    if num > limit:
+                        break
+        else:
+            for id in pathwayName.keys():
+                pnslash = '"' + pathwayName[id] + '"'
+                dbl = '"' + dblink[id] + '"'
+                pathway_list_str += '(:name %s :dblink %s :id %s) ' % (pnslash, dbl, str(id))
+                num += 1
+                if num > limit:
+                    break
+        pathway_list_str = '(' + pathway_list_str + ')'
+        reply = KQMLList('SUCCESS')
+        reply.set('pathways', pathway_list_str)
+    return reply
+
 def _filter_subword(sentence, pattern_list):
     """
     If the sentence contains any pattern in the pattern_list as a single word or phrase, 
