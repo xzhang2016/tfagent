@@ -305,8 +305,8 @@ class TFTA:
         """
         return pathway information for given dbsource and gene_names
         """
-        pathwayName = []
-        dblink = []
+        pathwayName = dict()
+        dblink = dict()
         fnum = 0
         if self.tfdb is not None:
             pathlist = []
@@ -333,11 +333,9 @@ class TFTA:
                     res = self.tfdb.execute("SELECT pathwayName,dblink FROM pathwayInfo "
                                             "WHERE Id = ? AND source LIKE ?", t).fetchone()
                     if res:
-                        pathwayName.append(res['pathwayName'])
-                        dblink.append(res['dblink'])
-            if pathwayName:
-                pathwayName,dblink = list(zip(*sorted(zip(pathwayName,dblink))))
-            else:
+                        pathwayName[id] = res['pathwayName']
+                        dblink[id] = res['dblink']
+            if not pathwayName:
                 raise PathwayNotFoundException
         return pathwayName,dblink
 
