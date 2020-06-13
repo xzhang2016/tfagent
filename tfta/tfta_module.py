@@ -884,22 +884,27 @@ class TFTA_Module(Bioagent):
         Response content to FIND_TF_PATHWAY request
         For a given pathway name, reply the tfs within the pathway
         """
-        logger.info('TFTA is processing the task: FIND-TF-PATHWAY.')
+        #logger.info('TFTA is processing the task: FIND-TF-PATHWAY.')
         pathway_names = self._get_pathway_name(content)
         if not pathway_names:
-            reply = make_failure('NO_PATHWAY_NAME')
-            return reply
+            id = _get_pathway_id(content, descr='id')
+            if not id:
+                reply = make_failure('NO_PATHWAY_NAME')
+                return reply
         
         #consider another optional parameter for subsequent query
         of_gene_names,nouse = self._get_targets(content, descr='of-those')
         
         try:
-            pathwayName,tflist,dblink = self.tfta.find_tf_pathway(pathway_names)
+            if pathway_names:
+                pathwayName,tflist,dblink = self.tfta.find_tf_pathway(pathway_names)
+            else:
+                pathwayName,tflist,dblink = self.tfta.find_tf_pathway_id(id)
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
             
-        logger.info('FIND-TF-PATHWAY: wrapping message...')
+        #logger.info('FIND-TF-PATHWAY: wrapping message...')
         reply = self._wrap_pathway_genelist_message(pathwayName, dblink, tflist, pathway_names=pathway_names,
                                                gene_descr='tfs', of_gene_names=of_gene_names)
         return reply
@@ -3546,7 +3551,15 @@ def _get_keyword_name(content, descr='keyword', hyphen=False, low_case=True):
     except Exception as e:
         return keyword_name
     return keyword_name
-            
+
+def _get_pathway_id(content, descr='id'):
+    try:
+        id_arg = content.get(descr)
+        id = id_arg.data
+        ids = set(id.replace(' ','').split(','))
+        return ids
+    except Exception:
+        return None
 
 if __name__ == "__main__":
     TFTA_Module(argv=sys.argv[1:])
