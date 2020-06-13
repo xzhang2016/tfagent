@@ -1529,7 +1529,7 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
             
-        reply = _wrap_pathway_message(pathwayName, dblink, keyword=pathway_names)
+        reply = _wrap_pathway_message2(pathwayName, dblink, keyword=pathway_names)
         return reply
 
     def respond_find_tissue_gene(self, content):
