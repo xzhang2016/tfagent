@@ -972,7 +972,7 @@ class TFTA_Module(Bioagent):
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
-        reply = _wrap_pathway_message(pathwayName, dblink, keyword=keyword_name, of_those=of_those)
+        reply = _wrap_pathway_message2(pathwayName, dblink, keyword=keyword_name, of_those=of_those)
         return reply
 
     def respond_find_tf_keyword(self, content):
