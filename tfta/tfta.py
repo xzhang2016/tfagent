@@ -1740,32 +1740,20 @@ class TFTA:
         Which reactome pathways involve immune signaling?
         """
         pathwayName = dict()
-        pw_link = dict()
-        fpname = []
-        fdblink = []
+        dblink = dict()
         if self.tfdb is not None:
-            pn = []
-            pids = []
-            plink = []
             for pathway_name in pathway_names:
                 regstr = '%' + pathway_name + '%'
                 t = (regstr, db_source)
                 res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
                                         "WHERE pathwayName LIKE ? AND source LIKE ?", t).fetchall()
                 if res:
-                    pids.extend([r[0] for r in res])
-                    pn.extend([r[1] for r in res])
-                    plink.extend([r[2] for r in res])
-            if len(pids):
-                pathwayId = list(set(pids))
-                for i in range(len(pids)):
-                    pathwayName[pids[i]] = pn[i]
-                    pw_link[pids[i]] = plink[i]
-            else:
+                    for r in res:
+                        pathwayName[r[0]] = r[1]
+                        dblink[r[0]] = r[2]
+            if not dblink:
                 raise PathwayNotFoundException
-            fpname = pathwayName.values()
-            fdblink = pw_link.values()
-        return fpname, fdblink
+        return pathwayName, dblink
 
     def gets_similar_miRNAs(self, miRNA_names):
         """
