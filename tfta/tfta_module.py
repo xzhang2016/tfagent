@@ -832,7 +832,7 @@ class TFTA_Module(Bioagent):
         except PathwayNotFoundException:
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             return reply
-        reply = _wrap_pathway_message(pathwayName, dblink, of_those=of_those)
+        reply = _wrap_pathway_message2(pathwayName, dblink, of_those=of_those)
         return reply
         
     def find_pathway_db_regulator(self, content):
@@ -865,7 +865,7 @@ class TFTA_Module(Bioagent):
             except PathwayNotFoundException:
                 reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
                 return reply
-            reply = _wrap_pathway_message(pathwayName, dblink, of_those=of_those)
+            reply = _wrap_pathway_message2(pathwayName, dblink, of_those=of_those)
             return reply
         else:
             try:
@@ -2990,6 +2990,7 @@ class TFTA_Module(Bioagent):
                                     mes = KQMLList()
                                     mes.sets('name', pathwayName[key])
                                     mes.sets('dblink', dblink[key])
+                                    mes.sets('id', str(key))
                                     mes.set(gene_descr, gene_json)
                                     pathway_list_json.append(mes.to_string())
                                     #check the limit
@@ -3010,6 +3011,7 @@ class TFTA_Module(Bioagent):
                                 mes = KQMLList()
                                 mes.sets('name', pathwayName[key])
                                 mes.sets('dblink', dblink[key])
+                                mes.sets('id', str(key))
                                 mes.set(gene_descr, gene_json)
                                 pathway_list_json.append(mes.to_string())
                                 #check the limit
@@ -3030,6 +3032,7 @@ class TFTA_Module(Bioagent):
                                 mes = KQMLList()
                                 mes.sets('name', pathwayName[key])
                                 mes.sets('dblink', dblink[key])
+                                mes.sets('id', str(key))
                                 mes.set(gene_descr, gene_json)
                                 pathway_list_json.append(mes.to_string())
                                 #check the limit
@@ -3049,6 +3052,7 @@ class TFTA_Module(Bioagent):
                             mes = KQMLList()
                             mes.sets('name', pathwayName[key])
                             mes.sets('dblink', dblink[key])
+                            mes.sets('id', str(key))
                             mes.set(gene_descr, gene_json)
                             pathway_list_json.append(mes.to_string())
                             #check the limit
