@@ -555,8 +555,8 @@ class TFTA:
         """
         return pathways having given genes and some information in pathway name
         """
-        pathwayName1 = []
-        dblink = []
+        pathwayName = dict()
+        dblink = dict()
         fnum = 0
         if self.tfdb is not None:
             pathlist = []
@@ -583,18 +583,14 @@ class TFTA:
                 if id_count[id] == (len(gene_names) + fnum):
                     t = (id, regstr)
                     res = self.tfdb.execute("SELECT pathwayName,dblink FROM pathwayInfo "
-                                            "WHERE Id = ? AND pathwayName LIKE ? ", t).fetchall()
+                                            "WHERE Id = ? AND pathwayName LIKE ? ", t).fetchone()
                     if res:
-                        pathwayName1.extend([r[0] for r in res])
-                        dblink.extend([r[1] for r in res])
+                        pathwayName[id] = res['pathwayName']
+                        dblink[id] = res['dblink']
             
-            if len(dblink):
-                pathwayName1,dblink = list(zip(*sorted(zip(pathwayName1,dblink))))
-            else:
+            if not len(dblink):
                 raise PathwayNotFoundException
-        else:
-            raise PathwayNotFoundException
-        return pathwayName1, dblink
+        return pathwayName, dblink
 
     def find_pathway_keyword(self, keyword):
         """
