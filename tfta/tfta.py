@@ -602,19 +602,20 @@ class TFTA:
         """
         return pathways containing the given keyword
         """
+        pathwayName = dict()
+        dblink = dict()
         if self.tfdb is not None:
             regstr = '%' + keyword + '%'
             t = (regstr,)
-            res = self.tfdb.execute("SELECT * FROM pathwayInfo "
+            res = self.tfdb.execute("SELECT Id,pathwayName,dblink FROM pathwayInfo "
                                     "WHERE pathwayName LIKE ? ORDER BY pathwayName", t).fetchall()
             if res:
-                pathwayName = [r[1] for r in res]
-                dblink = [r[4] for r in res]
+                for r in res:
+                    pathwayName[r[0]] = r[1]
+                    dblink[r[0]] = r[2]
             else:
                 raise PathwayNotFoundException		
-        else:
-            pathwayName = []
-            dblink = []
+        
         return pathwayName,dblink
 
     def find_tf_keyword(self, keyword_name):
