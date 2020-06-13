@@ -367,7 +367,7 @@ class TFTA:
                 raise PathwayNotFoundException
         return pathwayName,genelist,pw_link
 
-    def find_tf_pathway(self,pathway_names):
+    def find_tf_pathway(self, pathway_names):
         """
         Return TFs within the given pathway
         """
@@ -395,6 +395,29 @@ class TFTA:
                     tfs = self.trans_factor.intersection(set([r[0] for r in res1]))
                     if tfs:
                         tflist[pthID] = tfs
+            if not len(tflist):
+                raise PathwayNotFoundException
+        return pathwayName,tflist,dblink
+        
+    def find_tf_pathway_id(self, ids):
+        """
+        Return TFs within the given pathway
+        """
+        pathwayName = dict()
+        dblink = dict()
+        tflist = dict()
+        if self.tfdb is not None:
+            for id in ids:
+                t = (id,)
+                res1 = self.tfdb.execute("SELECT DISTINCT genesymbol FROM pathway2Genes "
+                                             "WHERE pathwayID = ? ", t).fetchall()
+                tfs = self.trans_factor.intersection(set([r[0] for r in res1]))
+                if tfs:
+                    tflist[id] = tfs
+                    res = self.tfdb.execute("SELECT pathwayName,dblink FROM pathwayInfo "
+                                            "WHERE Id = ? ", t).fetchone()
+                    pathwayName[id] = res['pathwayName']
+                    dblink[id] = res['dblink']
             if not len(tflist):
                 raise PathwayNotFoundException
         return pathwayName,tflist,dblink
