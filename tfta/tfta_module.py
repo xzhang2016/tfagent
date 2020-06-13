@@ -758,7 +758,7 @@ class TFTA_Module(Bioagent):
             reply = KQMLList.from_string('(SUCCESS :pathways NIL)')
             #reply = self.wrap_family_message_pathway(term_id, descr='pathways', msg="PATHWAY_NOT_FOUND")
             return reply
-        reply = _wrap_pathway_message(pathwayName, dblink, keyword=[keyword_name], of_those=of_those)
+        reply = _wrap_pathway_message2(pathwayName, dblink, keyword=[keyword_name], of_those=of_those)
         return reply
         
     def find_pathway_keyword_regulator(self,content):
@@ -793,7 +793,7 @@ class TFTA_Module(Bioagent):
             except PathwayNotFoundException:
                 reply = self.KQMLList.from_string('(SUCCESS :pathways NIL)')
                 return reply
-            reply = _wrap_pathway_message(pathwayName, dblink, keyword=[keyword_name], of_those=of_those)
+            reply = _wrap_pathway_message2(pathwayName, dblink, keyword=[keyword_name], of_those=of_those)
             return reply
         else:
             #go to find-common-pathway-genes
