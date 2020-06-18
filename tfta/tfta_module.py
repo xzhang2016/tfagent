@@ -3253,8 +3253,8 @@ def _filter_pathway_name(path_name, keyword):
     p = ''
     for k in keyword:
         if path_name:
-            p = path_name.lower().replace('signaling pathway', '').strip()
-            p = p.replace('pathway', '').strip()
+            p = path_name.lower().replace(k, '').strip()
+            #p = p.replace('pathway', '').strip()
     return p
 
 def make_failure(reason):
