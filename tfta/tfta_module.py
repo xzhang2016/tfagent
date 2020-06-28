@@ -56,7 +56,8 @@ class TFTA_Module(Bioagent):
              'IS-GENE-TISSUE', 'FIND-KINASE-PATHWAY', 'GO-ENRICHMENT', 
              'IS-MIRNA-DISEASE', 'FIND-MIRNA-DISEASE', 'FIND-DISEASE-MIRNA',
              'MAKE-HEATMAP', 'PATHWAY-ENRICHMENT', 'DISEASE-ENRICHMENT',
-             'MIRNA-DISEASE-ENRICHMENT', 'FIND-EVIDENCE-MIRNA-EXP']
+             'MIRNA-DISEASE-ENRICHMENT', 'FIND-EVIDENCE-MIRNA-EXP',
+             'FIND-GENE-DISEASE']
     #keep the genes from the most recent previous call, which are used to input 
     #find-gene-onto if there's no gene input 
     #gene_list = ['STAT3', 'JAK1', 'JAK2', 'ELK1', 'FOS', 'SMAD2', 'KDM4B']
@@ -2214,6 +2215,41 @@ class TFTA_Module(Bioagent):
         reply.set('result', is_express_str)
         return reply
         
+    def respond_find_gene_disease(self, content):
+        """
+        Respond to FIND-GENE-DISEASE
+        """
+        #take disease and keyword as string
+        disease = _get_keyword_name(content, descr='disease')
+        if not disease:
+            reply = make_failure('NO_DISEASE_NAME')
+            return reply
+        
+        keyword = _get_keyword_name(content, descr='keyword')
+        if keyword not in ['increase', 'decrease']:
+            reply = make_failure('INVALID_KEYWORD')
+            return reply
+            
+        try:
+            dres, dgene = self.tfta.find_gene_disease(disease, keyword)
+        except Exception:
+            reply = KQMLList.from_string('(SUCCESS :results NIL)')
+            return reply
+            
+        if dres:
+            mes_json = []
+            for id in dres:
+                mes = KQMLList()
+                mes.sets('disease', dres[id])
+                gene_agent = [Agent(g, db_refs={'TYPE':'ONT::GENE-PROTEIN'}) for g in dgene[id]]
+                gene_json = self.make_cljson(gene_agent)
+                mes.set('genes', gene_json)
+                mes_json.append(mes.to_string())
+            reply=KQMLList('SUCCESS')
+            res_str = '(' + ' '.join(mes_json) + ')'
+            reply.set('results', res_str)
+            return reply
+            
     def respond_go_enrichment(self, content):
         """
         Respond to GO-ENRICHMENT
@@ -2421,6 +2457,7 @@ class TFTA_Module(Bioagent):
                  'IS-MIRNA-DISEASE':respond_is_mirna_disease,
                  'FIND-MIRNA-DISEASE':respond_find_mirna_disease,
                  'FIND-DISEASE-MIRNA':respond_find_disease_mirna,
+                 'FIND-GENE-DISEASE':respond_find_gene_disease,
                  'MAKE-HEATMAP':respond_make_heatmap, 'PATHWAY-ENRICHMENT':respond_pathway_enrichment,
                  'DISEASE-ENRICHMENT': respond_disease_enrichment,
                  'MIRNA-DISEASE-ENRICHMENT': respond_mirna_disease_enrichment}
