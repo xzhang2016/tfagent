@@ -110,12 +110,15 @@ class TFTA:
         if self.tfdb:
             self.tfdb.row_factory = sqlite3.Row
         
+        self.ldd = self.load_ldd_db()
+        if self.ldd:
+            self.ldd.row_factory = sqlite3.Row
+        
         #for exclusive query
         self.tissue_gene_exclusive = defaultdict(set)
-        #transcription factor list, will set when it's first used
         self.trans_factor = self.tf_set()
         self.mirna = self.mirna_set()
-            
+        
     def __del__(self):
         self.tfdb.close()
 
@@ -2038,7 +2041,29 @@ class TFTA:
             else:
                 db_names = set()
         return db_names
-                
+        
+    def find_gene_disease(self, disease, keyword):
+        """
+        Return genes perturbated in the disease
+        """
+        dname = dict()
+        genes = dict()
+        if self.ldd is not None:
+            reg1 = '%' + disease + '%'
+            t = (reg1, keyword)
+            res = self.ldd.execute("SELECT Id, disease FROM diseaseName "
+                                    "WHERE disease LIKE ? AND direction LIKE ? ", t).fetchall()
+            if res:
+                for r in res:
+                    dname[r[0]] = r[1]
+            if dname:
+                for id in dname:
+                    t = (id,)
+                    res = self.ldd.execute("SELECT DISTINCT gene FROM diseaseGene "
+                                    "WHERE diseaseId = ? ORDER BY gene", t).fetchall()
+                    genes[id] = [r[0] for r in res]
+        return dname, genes
+    
     def get_onto_set(self, go_name):
         """
         Return the genes which are in the category of go_name
@@ -2094,6 +2119,7 @@ class TFTA:
             res = self.tfdb.execute("SELECT DISTINCT mirna FROM mirnaInfo").fetchall()
             mirnas = set([r[0] for r in res])
         return mirnas
+    
     def get_pathway_genes(self, db_source):
         """
         Return pathway-gene dict. 
@@ -2124,8 +2150,9 @@ class TFTA:
                 with open(fn, 'wb') as pickle_out:
                     pickle.dump(p_genes, pickle_out)
         return p_genes
-                
-            
+    
+    
+        
     
     #---------------------------------------------#
     #--------methods for querying indra database--#
@@ -2427,7 +2454,23 @@ class TFTA:
             logger.error('TFTA could not load TF-target database.')
             tfdb = None;
         return tfdb
-
+        
+    @staticmethod
+    def load_ldd_db():
+        logger.info('Loading ldd.db...')
+        ldd_file = os.path.join(_resource_dir, 'ldd.db')
+        if not os.path.exists(ldd_file):
+            logger.info('Downloading ldd.db file...')
+            url = 'https://www.dropbox.com/s/zihor8mhpozle1e/ldd.db?dl=1'
+            download_file_dropbox(url, ldd_file)
+            
+        if os.path.isfile(ldd_file):
+            ldd = sqlite3.connect(ldd_file, check_same_thread=False)
+            logger.info('TFTA loaded ldd database')
+        else:
+            logger.error('TFTA could not load ldd database.')
+            ldd = None
+        return ldd
 
 def _get_members(agent):
     return expand_agent(agent, bio_ontology, ns_filter=['HGNC'])
