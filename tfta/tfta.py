@@ -2063,6 +2063,60 @@ class TFTA:
                                     "WHERE diseaseId = ? ORDER BY gene", t).fetchall()
                     genes[id] = [r[0] for r in res]
         return dname, genes
+        
+    def find_gene_ligand(self, ligand_name, keyword, limit=10):
+        """
+        Return genes perturbated by the ligand
+        """
+        lname = dict()
+        genes = dict()
+        if self.ldd is not None:
+            ligands = [ligand_name, ligand_name.replace(' ', '-')]
+            for ligand in ligands:
+                reg1 = '%' + ligand + '%'
+                t = (reg1, keyword)
+                res = self.ldd.execute("SELECT Id, ligand FROM ligandName "
+                                    "WHERE ligand LIKE ? AND direction LIKE ? ", t).fetchall()
+                if res:
+                    for r in res:
+                        lname[r[0]] = r[1]
+            if lname:
+                num = 1
+                for id in lname:
+                    t = (id,)
+                    res = self.ldd.execute("SELECT DISTINCT gene FROM ligandGene "
+                                    "WHERE ligandId = ? ORDER BY gene", t).fetchall()
+                    genes[id] = [r[0] for r in res]
+                    num += 1
+                    if num > limit:
+                        break
+        return lname, genes
+        
+    def find_gene_drug(self, drug, keyword, limit=10):
+        """
+        Return genes perturbated by the drug
+        """
+        dname = dict()
+        genes = dict()
+        if self.ldd is not None:
+            reg1 = '%' + drug + '%'
+            t = (reg1, keyword)
+            res = self.ldd.execute("SELECT Id, drug FROM drugName "
+                                    "WHERE drug LIKE ? AND direction LIKE ? ", t).fetchall()
+            if res:
+                for r in res:
+                    dname[r[0]] = r[1]
+            if dname:
+                num = 1
+                for id in dname:
+                    t = (id,)
+                    res = self.ldd.execute("SELECT DISTINCT gene FROM drugGene "
+                                    "WHERE drugId = ? ORDER BY gene", t).fetchall()
+                    genes[id] = [r[0] for r in res]
+                    num += 1
+                    if num > limit:
+                        break
+        return dname, genes
     
     def get_onto_set(self, go_name):
         """
