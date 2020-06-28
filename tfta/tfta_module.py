@@ -57,7 +57,7 @@ class TFTA_Module(Bioagent):
              'IS-MIRNA-DISEASE', 'FIND-MIRNA-DISEASE', 'FIND-DISEASE-MIRNA',
              'MAKE-HEATMAP', 'PATHWAY-ENRICHMENT', 'DISEASE-ENRICHMENT',
              'MIRNA-DISEASE-ENRICHMENT', 'FIND-EVIDENCE-MIRNA-EXP',
-             'FIND-GENE-DISEASE']
+             'FIND-GENE-DISEASE', 'FIND-GENE-LIGAND']
     #keep the genes from the most recent previous call, which are used to input 
     #find-gene-onto if there's no gene input 
     #gene_list = ['STAT3', 'JAK1', 'JAK2', 'ELK1', 'FOS', 'SMAD2', 'KDM4B']
@@ -2250,6 +2250,68 @@ class TFTA_Module(Bioagent):
             reply.set('results', res_str)
             return reply
             
+    def respond_find_gene_ligand(self, content):
+        """
+        Respond to FIND-GENE-LIGAND
+        """
+        #take disease and keyword as string
+        ligand = _get_keyword_name(content, descr='ligand')
+        if not ligand:
+            reply = make_failure('NO_LIGAND_NAME')
+            return reply
+        
+        keyword = _get_keyword_name(content, descr='keyword')
+        if keyword not in ['increase', 'decrease']:
+            reply = make_failure('INVALID_KEYWORD')
+            return reply
+        try:
+            lname,lgene = self.tfta.find_gene_ligand(ligand, keyword)
+        except Exception:
+            logger.info('No results from ligand perturbation data.')
+            lgene = ''
+        
+        try:
+            dname,dgene = self.tfta.find_gene_drug(ligand, keyword)
+        except Exception:
+            logger.info('No results from drug perturbation data.')
+            dgene = ''
+            
+        if not lgene and not dgene:
+            reply = KQMLList.from_string('(SUCCESS :results NIL)')
+            return reply
+        
+        #wrap  message
+        ligand_json = []
+        if lgene:
+            for id in lgene:
+                mes = KQMLList()
+                mes.sets('name', lname[id])
+                gene_agent = [Agent(g, db_refs={'TYPE':'ONT::GENE-PROTEIN'}) for g in lgene[id]]
+                gene_json = self.make_cljson(gene_agent)
+                mes.set('genes', gene_json)
+                ligand_json.append(mes.to_string())
+            
+        drug_json = []
+        if dgene:
+            for id in dgene:
+                mes = KQMLList()
+                mes.sets('name', dname[id])
+                gene_agent = [Agent(g, db_refs={'TYPE':'ONT::GENE-PROTEIN'}) for g in dgene[id]]
+                gene_json = self.make_cljson(gene_agent)
+                mes.set('genes', gene_json)
+                drug_json.append(mes.to_string())
+        
+        reply=KQMLList('SUCCESS')
+        res_str = ''
+        if ligand_json:
+            res_str = ':ligand (' + ' '.join(ligand_json) + ') '
+        
+        if drug_json:
+            res_str += ' :drug (' + ' '.join(drug_json) + ') '
+        res_str = '(' + res_str + ')'
+        reply.set('results', res_str)
+        return reply
+            
     def respond_go_enrichment(self, content):
         """
         Respond to GO-ENRICHMENT
@@ -2457,7 +2519,7 @@ class TFTA_Module(Bioagent):
                  'IS-MIRNA-DISEASE':respond_is_mirna_disease,
                  'FIND-MIRNA-DISEASE':respond_find_mirna_disease,
                  'FIND-DISEASE-MIRNA':respond_find_disease_mirna,
-                 'FIND-GENE-DISEASE':respond_find_gene_disease,
+                 'FIND-GENE-DISEASE':respond_find_gene_disease, 'FIND-GENE-LIGAND':respond_find_gene_ligand,
                  'MAKE-HEATMAP':respond_make_heatmap, 'PATHWAY-ENRICHMENT':respond_pathway_enrichment,
                  'DISEASE-ENRICHMENT': respond_disease_enrichment,
                  'MIRNA-DISEASE-ENRICHMENT': respond_mirna_disease_enrichment}
