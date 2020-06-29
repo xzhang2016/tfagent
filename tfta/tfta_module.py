@@ -57,7 +57,7 @@ class TFTA_Module(Bioagent):
              'IS-MIRNA-DISEASE', 'FIND-MIRNA-DISEASE', 'FIND-DISEASE-MIRNA',
              'MAKE-HEATMAP', 'PATHWAY-ENRICHMENT', 'DISEASE-ENRICHMENT',
              'MIRNA-DISEASE-ENRICHMENT', 'FIND-EVIDENCE-MIRNA-EXP',
-             'FIND-GENE-DISEASE', 'FIND-GENE-LIGAND']
+             'FIND-GENE-DISEASE', 'IS-GENE-DISEASE', 'FIND-GENE-LIGAND']
     #keep the genes from the most recent previous call, which are used to input 
     #find-gene-onto if there's no gene input 
     #gene_list = ['STAT3', 'JAK1', 'JAK2', 'ELK1', 'FOS', 'SMAD2', 'KDM4B']
@@ -2214,6 +2214,36 @@ class TFTA_Module(Bioagent):
         is_express_str = 'TRUE' if is_express else 'FALSE'
         reply.set('result', is_express_str)
         return reply
+    
+    def respond_is_gene_disease(self, content):
+        """
+        Respond to IS-GENE-DISEASE request
+        """
+        gene_name,term_id = self._get_targets(content, descr='gene')
+        if not gene_name:
+            reply = self.wrap_family_message(term_id, 'NO_GENE_NAME')
+            return reply
+        
+        disease = _get_keyword_name(content, descr='disease')
+        if not disease:
+            reply = make_failure('NO_DISEASE_NAME')
+            return reply
+        
+        keyword = _get_keyword_name(content, descr='keyword')
+        if keyword not in ['increase', 'decrease', 'regulate']:
+            reply = make_failure('INVALID_KEYWORD')
+            return reply
+            
+        try:
+            result = self.tfta.is_gene_disease(gene_name[0], disease, keyword)
+        except Exception:
+            reply = KQMLList.from_string('(SUCCESS :result FALSE)')
+            return reply
+            
+        reply = KQMLList('SUCCESS')
+        is_reg = 'TRUE' if result else 'FALSE'
+        reply.set('result', is_reg)
+        return reply
         
     def respond_find_gene_disease(self, content):
         """
@@ -2229,16 +2259,19 @@ class TFTA_Module(Bioagent):
         if keyword not in ['increase', 'decrease']:
             reply = make_failure('INVALID_KEYWORD')
             return reply
-            
+        
+        #consider an optional parameter for subsequent query
+        of_those_names,nouse = self._get_targets(content, 'of-those')
+        
         try:
-            dres, dgene = self.tfta.find_gene_disease(disease, keyword)
+            dres, dgene = self.tfta.find_gene_disease(disease, keyword, of_those_names)
         except Exception:
             reply = KQMLList.from_string('(SUCCESS :results NIL)')
             return reply
             
-        if dres:
+        if dgene:
             mes_json = []
-            for id in dres:
+            for id in dgene:
                 mes = KQMLList()
                 mes.sets('disease', dres[id])
                 gene_agent = [Agent(g, db_refs={'TYPE':'ONT::GENE-PROTEIN'}) for g in dgene[id]]
@@ -2264,14 +2297,18 @@ class TFTA_Module(Bioagent):
         if keyword not in ['increase', 'decrease']:
             reply = make_failure('INVALID_KEYWORD')
             return reply
+            
+        #consider an optional parameter for subsequent query
+        of_those_names,nouse = self._get_targets(content, 'of-those')
+        
         try:
-            lname,lgene = self.tfta.find_gene_ligand(ligand, keyword)
+            lname,lgene = self.tfta.find_gene_ligand(ligand, keyword, of_those_names)
         except Exception:
             logger.info('No results from ligand perturbation data.')
             lgene = ''
         
         try:
-            dname,dgene = self.tfta.find_gene_drug(ligand, keyword)
+            dname,dgene = self.tfta.find_gene_drug(ligand, keyword, of_those_names)
         except Exception:
             logger.info('No results from drug perturbation data.')
             dgene = ''
@@ -2518,7 +2555,7 @@ class TFTA_Module(Bioagent):
                  'GO-ENRICHMENT':respond_go_enrichment, 'GO-ANNOTATION':respond_go_annotation,
                  'IS-MIRNA-DISEASE':respond_is_mirna_disease,
                  'FIND-MIRNA-DISEASE':respond_find_mirna_disease,
-                 'FIND-DISEASE-MIRNA':respond_find_disease_mirna,
+                 'FIND-DISEASE-MIRNA':respond_find_disease_mirna, 'IS-GENE-DISEASE':respond_is_gene_disease,
                  'FIND-GENE-DISEASE':respond_find_gene_disease, 'FIND-GENE-LIGAND':respond_find_gene_ligand,
                  'MAKE-HEATMAP':respond_make_heatmap, 'PATHWAY-ENRICHMENT':respond_pathway_enrichment,
                  'DISEASE-ENRICHMENT': respond_disease_enrichment,
