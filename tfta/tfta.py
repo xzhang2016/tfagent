@@ -2041,8 +2041,27 @@ class TFTA:
             else:
                 db_names = set()
         return db_names
-        
-    def find_gene_disease(self, disease, keyword):
+    
+    def is_gene_disease(self, gene, disease, keyword):
+        """
+        Return true if the gene is regulated in the disease in the keyword direction, otherwise false
+        """
+        if self.ldd is not None:
+            reg1 = '%' + disease + '%'
+            if keyword.lower() == 'regulate':
+                t = (gene, reg1)
+                res = self.ldd.execute("SELECT * FROM diseaseGene WHERE gene = ? AND diseaseId IN "
+                      "(SELECT Id FROM diseaseName WHERE disease LIKE ?)", t).fetchall()
+            else:
+                t = (gene, reg1, keyword)
+                res = self.ldd.execute("SELECT * FROM diseaseGene WHERE gene = ? AND diseaseId IN "
+                     "(SELECT Id FROM diseaseName WHERE disease LIKE ? AND direction LIKE ?)", t).fetchall()
+            if res:
+                return True
+            else:
+                return False
+    
+    def find_gene_disease(self, disease, keyword, of_those):
         """
         Return genes perturbated in the disease
         """
@@ -2061,10 +2080,15 @@ class TFTA:
                     t = (id,)
                     res = self.ldd.execute("SELECT DISTINCT gene FROM diseaseGene "
                                     "WHERE diseaseId = ? ORDER BY gene", t).fetchall()
-                    genes[id] = [r[0] for r in res]
+                    if of_those:
+                        temp = set(of_those).intersection(set([r[0] for r in res]))
+                        if temp:
+                            genes[id] = temp
+                    else:
+                        genes[id] = [r[0] for r in res]
         return dname, genes
         
-    def find_gene_ligand(self, ligand_name, keyword, limit=10):
+    def find_gene_ligand(self, ligand_name, keyword, of_those, limit=10):
         """
         Return genes perturbated by the ligand
         """
@@ -2086,13 +2110,19 @@ class TFTA:
                     t = (id,)
                     res = self.ldd.execute("SELECT DISTINCT gene FROM ligandGene "
                                     "WHERE ligandId = ? ORDER BY gene", t).fetchall()
-                    genes[id] = [r[0] for r in res]
-                    num += 1
+                    if of_those:
+                        temp = set(of_those).intersection(set([r[0] for r in res]))
+                        if temp:
+                            genes[id] = temp
+                            num += 1
+                    else:
+                        genes[id] = [r[0] for r in res]
+                        num += 1
                     if num > limit:
                         break
         return lname, genes
         
-    def find_gene_drug(self, drug, keyword, limit=10):
+    def find_gene_drug(self, drug, keyword, of_those, limit=10):
         """
         Return genes perturbated by the drug
         """
@@ -2112,7 +2142,14 @@ class TFTA:
                     t = (id,)
                     res = self.ldd.execute("SELECT DISTINCT gene FROM drugGene "
                                     "WHERE drugId = ? ORDER BY gene", t).fetchall()
-                    genes[id] = [r[0] for r in res]
+                    if of_those:
+                        temp = set(of_those).intersection(set([r[0] for r in res]))
+                        if temp:
+                            genes[id] = temp
+                            num += 1
+                    else:
+                        genes[id] = [r[0] for r in res]
+                        num += 1
                     num += 1
                     if num > limit:
                         break
