@@ -2067,7 +2067,7 @@ class TFTA:
         For 'regulate', combine the results from 'increase' and 'decrease'
         """
         dname = dict()
-        genes = defaultdict(set)
+        genes = dict()
         if self.ldd is not None:
             reg1 = '%' + disease + '%'
             if keyword.lower() == 'regulate':
@@ -2085,33 +2085,40 @@ class TFTA:
                 for id in dname:
                     t = (id,)
                     res = self.ldd.execute("SELECT DISTINCT gene FROM diseaseGene "
-                                    "WHERE diseaseId = ? ", t).fetchall()
+                                    "WHERE diseaseId = ? ORDER BY gene", t).fetchall()
                     if of_those:
                         temp = set(of_those).intersection(set([r[0] for r in res]))
                         if temp:
-                            genes[dname[id]] = genes[dname[id]].union(temp)
+                            genes[id] = temp
                     else:
-                        genes[dname[id]] = genes[dname[id]].union(set([r[0] for r in res]))
-        return genes
+                        genes[id] = [r[0] for r in res]
+        return dname, genes
         
-    def find_gene_ligand(self, ligand_name, keyword, of_those, limit=10):
+    def find_gene_ligand(self, ligand_name, keyword, of_those, limit=20):
         """
         Return genes perturbated by the ligand
         """
         lname = dict()
         genes = dict()
         if self.ldd is not None:
-            ligands = [ligand_name, ligand_name.replace(' ', '-')]
+            ligands = [ligand_name.strip()]
+            temp = ligand_name.strip().replace(' ', '-')
+            if temp not in ligands:
+                ligands.append(temp)
             for ligand in ligands:
                 reg1 = '%' + ligand + '%'
-                t = (reg1, keyword)
-                res = self.ldd.execute("SELECT Id, ligand FROM ligandName "
+                if keyword.lower() == 'regulate':
+                    t = (reg1,)
+                    res = self.ldd.execute("SELECT Id, ligand FROM ligandName "
+                                    "WHERE ligand LIKE ? ", t).fetchall()
+                else:
+                    t = (reg1, keyword)
+                    res = self.ldd.execute("SELECT Id, ligand FROM ligandName "
                                     "WHERE ligand LIKE ? AND direction LIKE ? ", t).fetchall()
                 if res:
                     for r in res:
                         lname[r[0]] = r[1]
             if lname:
-                num = 1
                 for id in lname:
                     t = (id,)
                     res = self.ldd.execute("SELECT DISTINCT gene FROM ligandGene "
@@ -2120,15 +2127,13 @@ class TFTA:
                         temp = set(of_those).intersection(set([r[0] for r in res]))
                         if temp:
                             genes[id] = temp
-                            num += 1
                     else:
                         genes[id] = [r[0] for r in res]
-                        num += 1
-                    if num > limit:
+                    if genes and len(genes) >= limit:
                         break
-        return lname, genes
+        return lname,genes
         
-    def find_gene_drug(self, drug, keyword, of_those, limit=10):
+    def find_gene_drug(self, drug, keyword, of_those, limit=20):
         """
         Return genes perturbated by the drug
         """
@@ -2136,14 +2141,18 @@ class TFTA:
         genes = dict()
         if self.ldd is not None:
             reg1 = '%' + drug + '%'
-            t = (reg1, keyword)
-            res = self.ldd.execute("SELECT Id, drug FROM drugName "
+            if keyword.lower() == 'regulate':
+                t = (reg1,)
+                res = self.ldd.execute("SELECT Id, drug FROM drugName "
+                                    "WHERE drug LIKE ? ", t).fetchall()
+            else:
+                t = (reg1, keyword)
+                res = self.ldd.execute("SELECT Id, drug FROM drugName "
                                     "WHERE drug LIKE ? AND direction LIKE ? ", t).fetchall()
             if res:
                 for r in res:
                     dname[r[0]] = r[1]
             if dname:
-                num = 1
                 for id in dname:
                     t = (id,)
                     res = self.ldd.execute("SELECT DISTINCT gene FROM drugGene "
@@ -2152,12 +2161,10 @@ class TFTA:
                         temp = set(of_those).intersection(set([r[0] for r in res]))
                         if temp:
                             genes[id] = temp
-                            num += 1
                     else:
                         genes[id] = [r[0] for r in res]
-                        num += 1
-                    num += 1
-                    if num > limit:
+                    
+                    if genes and len(genes) >= limit:
                         break
         return dname, genes
     
@@ -2554,11 +2561,11 @@ class TFTA:
         
     @staticmethod
     def load_ldd_db():
-        logger.info('Loading ldd.db...')
-        ldd_file = os.path.join(_resource_dir, 'ldd.db')
+        logger.info('Loading ldd db file...')
+        ldd_file = os.path.join(_resource_dir, 'ldd20200630.db')
         if not os.path.exists(ldd_file):
-            logger.info('Downloading ldd.db file...')
-            url = 'https://www.dropbox.com/s/zihor8mhpozle1e/ldd.db?dl=1'
+            logger.info('Downloading ldd db file...')
+            url = 'https://www.dropbox.com/s/h29spo0b1hdxcbv/ldd20200630.db?dl=1'
             download_file_dropbox(url, ldd_file)
             
         if os.path.isfile(ldd_file):
