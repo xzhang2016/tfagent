@@ -24,10 +24,10 @@ def main():
         download_file_dropbox(url, tf_db_file)
         
     #download ldd.db
-    ldd_file = os.path.join(_resource_dir, 'ldd.db')
+    ldd_file = os.path.join(_resource_dir, 'ldd20200630.db')
     if not os.path.exists(ldd_file):
-        logger.info('Downloading ldd.db file...')
-        url = 'https://www.dropbox.com/s/zihor8mhpozle1e/ldd.db?dl=1'
+        logger.info('Downloading ldd db file...')
+        url = 'https://www.dropbox.com/s/h29spo0b1hdxcbv/ldd20200630.db?dl=1'
         download_file_dropbox(url, ldd_file)
         
     #download mirna-disease db file and related files
