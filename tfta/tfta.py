@@ -2068,6 +2068,9 @@ class TFTA:
         """
         dname = dict()
         genes = dict()
+        chdname = {'allergy': 'allergic'}
+        if disease in chdname:
+            disease = chdname[disease]
         if self.ldd is not None:
             reg1 = '%' + disease + '%'
             if keyword.lower() == 'regulate':
