@@ -2264,24 +2264,26 @@ class TFTA_Module(Bioagent):
         of_those_names,nouse = self._get_targets(content, 'of-those')
         
         try:
-            dgene = self.tfta.find_gene_disease(disease, keyword, of_those_names)
+            dname,dgene = self.tfta.find_gene_disease(disease, keyword, of_those_names)
         except Exception:
             reply = KQMLList.from_string('(SUCCESS :results NIL)')
             return reply
             
         if dgene:
             mes_json = []
-            for name in dgene:
+            for id in dgene:
                 mes = KQMLList()
-                mes.sets('disease', name)
-                gene_agent = [Agent(g, db_refs={'TYPE':'ONT::GENE-PROTEIN'}) for g in dgene[name]]
+                mes.sets('disease', dname[id])
+                gene_agent = [Agent(g, db_refs={'TYPE':'ONT::GENE-PROTEIN'}) for g in dgene[id]]
                 gene_json = self.make_cljson(gene_agent)
                 mes.set('genes', gene_json)
                 mes_json.append(mes.to_string())
             reply=KQMLList('SUCCESS')
             res_str = '(' + ' '.join(mes_json) + ')'
             reply.set('results', res_str)
-            return reply
+        else:
+            reply = KQMLList.from_string('(SUCCESS :results NIL)')
+        return reply
             
     def respond_find_gene_ligand(self, content):
         """
@@ -2294,7 +2296,7 @@ class TFTA_Module(Bioagent):
             return reply
         
         keyword = _get_keyword_name(content, descr='keyword')
-        if keyword not in ['increase', 'decrease']:
+        if keyword not in ['increase', 'decrease', 'regulate']:
             reply = make_failure('INVALID_KEYWORD')
             return reply
             
