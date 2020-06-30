@@ -2064,13 +2064,19 @@ class TFTA:
     def find_gene_disease(self, disease, keyword, of_those):
         """
         Return genes perturbated in the disease
+        For 'regulate', combine the results from 'increase' and 'decrease'
         """
         dname = dict()
-        genes = dict()
+        genes = defaultdict(set)
         if self.ldd is not None:
             reg1 = '%' + disease + '%'
-            t = (reg1, keyword)
-            res = self.ldd.execute("SELECT Id, disease FROM diseaseName "
+            if keyword.lower() == 'regulate':
+                t = (reg1, )
+                res = self.ldd.execute("SELECT Id, disease FROM diseaseName "
+                                    "WHERE disease LIKE ? ", t).fetchall()
+            else:
+                t = (reg1, keyword)
+                res = self.ldd.execute("SELECT Id, disease FROM diseaseName "
                                     "WHERE disease LIKE ? AND direction LIKE ? ", t).fetchall()
             if res:
                 for r in res:
@@ -2079,14 +2085,14 @@ class TFTA:
                 for id in dname:
                     t = (id,)
                     res = self.ldd.execute("SELECT DISTINCT gene FROM diseaseGene "
-                                    "WHERE diseaseId = ? ORDER BY gene", t).fetchall()
+                                    "WHERE diseaseId = ? ", t).fetchall()
                     if of_those:
                         temp = set(of_those).intersection(set([r[0] for r in res]))
                         if temp:
-                            genes[id] = temp
+                            genes[dname[id]] = genes[dname[id]].union(temp)
                     else:
-                        genes[id] = [r[0] for r in res]
-        return dname, genes
+                        genes[dname[id]] = genes[dname[id]].union(set([r[0] for r in res]))
+        return genes
         
     def find_gene_ligand(self, ligand_name, keyword, of_those, limit=10):
         """
