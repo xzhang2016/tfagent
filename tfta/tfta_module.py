@@ -3388,10 +3388,10 @@ class TFTA_Module(Bioagent):
 #------------------------------------------------------------------------#######
 
 def _filter_pathway_name(path_name, keyword):
-    p = ''
+    p = path_name
     for k in keyword:
-        if path_name:
-            p = path_name.lower().replace(k, '').strip()
+        if p:
+            p = p.lower().replace(k, '').strip()
             #p = p.replace('pathway', '').strip()
     return p
 
