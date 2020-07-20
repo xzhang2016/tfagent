@@ -2250,7 +2250,7 @@ class TFTA_Module(Bioagent):
         Respond to FIND-GENE-DISEASE
         """
         #take disease and keyword as string
-        disease = _get_keyword_name(content, descr='disease')
+        disease = _get_keyword_name(content, descr='disease', hyphen=True)
         if not disease:
             reply = make_failure('NO_DISEASE_NAME')
             return reply
@@ -2290,7 +2290,7 @@ class TFTA_Module(Bioagent):
         Respond to FIND-GENE-LIGAND
         """
         #take disease and keyword as string
-        ligand = _get_keyword_name(content, descr='ligand')
+        ligand = _get_keyword_name(content, descr='ligand', hyphen=True)
         if not ligand:
             reply = make_failure('NO_LIGAND_NAME')
             return reply
