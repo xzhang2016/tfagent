@@ -2097,7 +2097,7 @@ class TFTA:
                         genes[id] = [r[0] for r in res]
         return dname, genes
         
-    def find_gene_ligand(self, ligand_name, keyword, of_those, limit=20):
+    def find_gene_ligand(self, ligand_name, keyword, of_those, limit=5):
         """
         Return genes perturbated by the ligand
         """
@@ -2136,7 +2136,7 @@ class TFTA:
                         break
         return lname,genes
         
-    def find_gene_drug(self, drug, keyword, of_those, limit=20):
+    def find_gene_drug(self, drug, keyword, of_those, limit=5):
         """
         Return genes perturbated by the drug
         """
