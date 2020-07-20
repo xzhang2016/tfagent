@@ -3652,6 +3652,10 @@ def _filter_subword(sentence, pattern_list):
     return true, else false
     """
     word = False
+    sentence = sentence.replace('-', ' ')
+    sentence = sentence.replace('/', ' ')
+    sentence = sentence.replace('_', ' ')
+    sentence = sentence.replace('.', ' ')
     sen_list = sentence.lower().split(' ')
     for p in pattern_list:
         ps = p.split(' ')
