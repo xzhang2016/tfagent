@@ -1,7 +1,7 @@
 # TFTA
-TFTA (Transcription Factor and Target Agent): The TFTA's task is to search for targets for known transcription factors, and TFs for known targets; TF and target involved in specific pathways and tissues; TF and target involved in specific GO terms;microRNA and target relationship; find evidence for given regulation from both our database and literatures. I also provides enrichment analysis, such as GO enrichment, pathway enrichment, and disease enrichment.
+TFTA (Transcription Factor and Target Agent): The TFTA's task is to search for targets for known transcription factors, and TFs for known targets; TF and target involved in specific pathways and tissues; TF and target involved in specific GO terms;microRNA and target relationship; find evidence for given regulation from both our database and literatures. It also provides enrichment analysis, such as GO enrichment, pathway enrichment, and disease enrichment.
 
-TFTA is designed to be launched in a commucation system. Its ability is limited when running by itself. Welcome to visit our [biodialog system](http://54.84.114.146/).
+TFTA is designed to be launched in a commucation system. Its ability is limited when running by itself. Welcome to visit our [biodialog system](http://dialogue.bio).
 
 KQML messaging classes used by the agent are available [here](https://github.com/bgyori/pykqml).
 
